@@ -1,0 +1,245 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   CSS Variables - 主题系统
+   ============================================ */
+:root {
+    /* 深色主题 (默认) */
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+
+    /* Apple 风格圆角 */
+    --radius-sm: 0.75rem;
+    --radius-md: 1rem;
+    --radius-lg: 1.25rem;
+    --radius-xl: 1.5rem;
+    --radius-2xl: 2rem;
+}
+
+/* 浅色主题 */
+.light {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+}
+
+/* ============================================
+   Dark/Light Mode Backgrounds
+   ============================================ */
+.dark body,
+.dark {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+.light body,
+.light {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f8fafc 100%);
+}
+
+/* ============================================
+   Glassmorphism - 玻璃态效果
+   ============================================ */
+.glass {
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.light .glass {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================
+   Glow Effects - 发光效果
+   ============================================ */
+.glow-cyan {
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.15);
+}
+
+.glow-violet {
+    box-shadow: 0 0 20px rgba(167, 139, 250, 0.15);
+}
+
+.glow-emerald {
+    box-shadow: 0 0 20px rgba(52, 211, 153, 0.15);
+}
+
+/* ============================================
+   Custom Scrollbar - 自定义滚动条
+   ============================================ */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.3);
+    border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 116, 139, 0.5);
+}
+
+/* ============================================
+   Animations
+   ============================================ */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 40px rgba(34, 211, 238, 0.4);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* ============================================
+   Light Theme Text Colors
+   ============================================ */
+.light .text-white {
+    color: #1e293b;
+}
+
+.light .text-slate-400 {
+    color: #64748b;
+}
+
+.light .text-slate-500 {
+    color: #475569;
+}
+
+.light .text-slate-300 {
+    color: #334155;
+}
+
+/* ============================================
+   Light Theme Borders
+   ============================================ */
+.light .border-white\/5,
+.light .border-white\/10 {
+    border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================
+   Light Theme Backgrounds
+   ============================================ */
+.light .bg-slate-900 {
+    background-color: #f8fafc;
+}
+
+.light .bg-slate-800 {
+    background-color: #f1f5f9;
+}
+
+.light .bg-slate-950 {
+    background-color: #e2e8f0;
+}
+
+.light .bg-white\/5 {
+    background-color: rgba(0, 0, 0, 0.03);
+}
+
+.light .bg-white\/10 {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.light .hover\:bg-white\/5:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.light .hover\:bg-white\/10:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================
+   Apple 风格圆角组件
+   ============================================ */
+.rounded-apple {
+    border-radius: 1.25rem;
+}
+
+.rounded-apple-sm {
+    border-radius: 0.75rem;
+}
+
+.rounded-apple-lg {
+    border-radius: 1.5rem;
+}

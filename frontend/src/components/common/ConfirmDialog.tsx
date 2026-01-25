@@ -1,0 +1,107 @@
+import * as React from "react"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
+import { X } from "lucide-react"
+import { cn } from "@/lib/utils"
+
+const Dialog = DialogPrimitive.Root
+const DialogTrigger = DialogPrimitive.Trigger
+const DialogPortal = DialogPrimitive.Portal
+const DialogClose = DialogPrimitive.Close
+
+const DialogOverlay = React.forwardRef<
+    React.ElementRef<typeof DialogPrimitive.Overlay>,
+    React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
+>(({ className, ...props }, ref) => (
+    <DialogPrimitive.Overlay
+        ref={ref}
+        className={cn(
+            "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+            className
+        )}
+        {...props}
+    />
+))
+DialogOverlay.displayName = DialogPrimitive.Overlay.displayName
+
+const DialogContent = React.forwardRef<
+    React.ElementRef<typeof DialogPrimitive.Content>,
+    React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+    <DialogPortal>
+        <DialogOverlay />
+        <DialogPrimitive.Content
+            ref={ref}
+            className={cn(
+                "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-white/10 bg-slate-900 p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] sm:rounded-lg",
+                className
+            )}
+            {...props}
+        >
+            {children}
+            <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground text-slate-400 hover:text-white">
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close</span>
+            </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
+    </DialogPortal>
+))
+DialogContent.displayName = DialogPrimitive.Content.displayName
+
+interface ConfirmDialogProps {
+    isOpen: boolean
+    onClose: () => void
+    onConfirm: () => void
+    title: string
+    description?: string
+    confirmText?: string
+    cancelText?: string
+    isDestructive?: boolean
+}
+
+export function ConfirmDialog({
+    isOpen,
+    onClose,
+    onConfirm,
+    title,
+    description,
+    confirmText = "Confirm",
+    cancelText = "Cancel",
+    isDestructive = false,
+}: ConfirmDialogProps) {
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+            <DialogContent className="sm:max-w-[425px]">
+                <div className="flex flex-col space-y-2 text-center sm:text-left">
+                    <h2 className="text-lg font-semibold text-white">{title}</h2>
+                    {description && (
+                        <p className="text-sm text-slate-400">{description}</p>
+                    )}
+                </div>
+                <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 gap-2 mt-4">
+                    <button
+                        type="button"
+                        className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-white/10 bg-transparent hover:bg-white/5 text-white h-10 px-4 py-2"
+                        onClick={onClose}
+                    >
+                        {cancelText}
+                    </button>
+                    <button
+                        type="button"
+                        className={cn(
+                            "inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2",
+                            isDestructive
+                                ? "bg-red-500 text-white hover:bg-red-600"
+                                : "bg-cyan-500 text-white hover:bg-cyan-600"
+                        )}
+                        onClick={() => {
+                            onConfirm()
+                            onClose()
+                        }}
+                    >
+                        {confirmText}
+                    </button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}

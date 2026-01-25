@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+sqlmodel
+psycopg2-binary
+asyncpg
+python-jose[cryptography]
+passlib[bcrypt]
+pydantic[email]
+pydantic-settings
+alembic
+aiosqlite
+httpx[socks]
+socksio
+minio
+pyyaml
+python-multipart

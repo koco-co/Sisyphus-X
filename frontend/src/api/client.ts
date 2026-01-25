@@ -1,0 +1,137 @@
+import axios from 'axios'
+
+// API 基础配置
+const api = axios.create({
+    baseURL: 'http://localhost:8000/api/v1',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+})
+
+// 请求拦截器 - 自动添加 Authorization header
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('sisyphus-token')
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+})
+
+// 响应拦截器 - 处理 401 错误
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // 排除登录/注册请求的 401 错误，不自动跳转
+            const url = error.config?.url || ''
+            if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
+                localStorage.removeItem('sisyphus-token')
+                window.location.href = '/login'
+            }
+        }
+        return Promise.reject(error)
+    }
+)
+
+// 项目相关 API
+export const projectsApi = {
+    list: (params?: { page?: number; size?: number }) => api.get('/projects/', { params }),
+    get: (id: number) => api.get(`/projects/${id}`),
+    create: (data: { name: string; key: string; owner: string; description?: string }) =>
+        api.post('/projects/', data),
+    delete: (id: number) => api.delete(`/projects/${id}`),
+
+    // 环境配置 API
+    listEnvironments: (projectId: number) => api.get(`/projects/${projectId}/environments`),
+    createEnvironment: (projectId: number, data: { name: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> }) =>
+        api.post(`/projects/${projectId}/environments`, data),
+    getEnvironment: (projectId: number, envId: number) => api.get(`/projects/${projectId}/environments/${envId}`),
+    updateEnvironment: (projectId: number, envId: number, data: { name?: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> }) =>
+        api.put(`/projects/${projectId}/environments/${envId}`, data),
+    deleteEnvironment: (projectId: number, envId: number) => api.delete(`/projects/${projectId}/environments/${envId}`),
+    copyEnvironment: (projectId: number, envId: number) => api.post(`/projects/${projectId}/environments/${envId}/copy`),
+
+    // 数据源 API
+    listDataSources: (projectId: number) => api.get(`/projects/${projectId}/datasources`),
+    createDataSource: (projectId: number, data: { name: string; db_type: string; host: string; port: number; db_name?: string; username?: string; password?: string }) =>
+        api.post(`/projects/${projectId}/datasources`, data),
+    updateDataSource: (projectId: number, dsId: number, data: { name?: string; db_type?: string; host?: string; port?: number; db_name?: string; username?: string; password?: string }) =>
+        api.put(`/projects/${projectId}/datasources/${dsId}`, data),
+    deleteDataSource: (projectId: number, dsId: number) => api.delete(`/projects/${projectId}/datasources/${dsId}`),
+    testDataSource: (data: { db_type: string; host: string; port: number; db_name?: string; username?: string; password?: string }) =>
+        api.post('/projects/datasources/test', data),
+}
+
+// 接口相关 API
+export const interfacesApi = {
+    list: (params?: { page?: number; size?: number; folder_id?: number }) => api.get('/interfaces/', { params }),
+    get: (id: number) => api.get(`/interfaces/${id}`),
+    create: (data: { project_id: number; name: string; url: string; method: string; status?: string }) =>
+        api.post('/interfaces/', data),
+    update: (id: number, data: any) => api.put(`/interfaces/${id}`, data),
+    delete: (id: number) => api.delete(`/interfaces/${id}`),
+    sendRequest: (data: { url: string; method: string; headers?: Record<string, string>; params?: Record<string, any>; body?: any }) =>
+        api.post('/interfaces/debug/send', data),
+    listFolders: (params?: { project_id?: number }) => api.get('/interfaces/folders', { params }),
+    createFolder: (data: { project_id: number; name: string; parent_id?: number }) => api.post('/interfaces/folders', data),
+    deleteFolder: (id: number) => api.delete(`/interfaces/folders/${id}`),
+    importSwagger: (formData: FormData) => api.post('/interfaces/import/swagger', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+}
+
+// 场景相关 API
+export const scenariosApi = {
+    list: () => api.get('/scenarios/'),
+    get: (id: number) => api.get(`/scenarios/${id}`),
+    create: (data: { project_id: number; name: string; graph_data: Record<string, any> }) =>
+        api.post('/scenarios/', data),
+    update: (id: number, data: { project_id: number; name: string; graph_data: Record<string, any> }) =>
+        api.put(`/scenarios/${id}`, data),
+    run: (graph_data: { nodes: any[]; edges: any[] }) =>
+        api.post('/scenarios/run', { graph_data }),
+}
+
+// Dashboard 统计 API
+export const dashboardApi = {
+    getStats: () => api.get('/dashboard/stats'),
+    getTrend: () => api.get('/dashboard/trend'),
+    getActivities: () => api.get('/dashboard/activities'),
+}
+
+// 测试报告 API
+export const reportsApi = {
+    list: (params?: { page?: number; size?: number; scenario_id?: number }) =>
+        api.get('/reports/', { params }),
+    get: (id: number) => api.get(`/reports/${id}`),
+    getDetails: (id: number) => api.get(`/reports/${id}/details`),
+    delete: (id: number) => api.delete(`/reports/${id}`),
+}
+
+// 测试计划 API
+export const plansApi = {
+    list: (params?: { page?: number; size?: number }) =>
+        api.get('/plans/', { params }),
+    create: (data: { name: string; scenario_id: number; cron_expression: string; status?: string }) =>
+        api.post('/plans/', data),
+    get: (id: number) => api.get(`/plans/${id}`),
+    update: (id: number, data: any) => api.put(`/plans/${id}`, data),
+    delete: (id: number) => api.delete(`/plans/${id}`),
+    pause: (id: number) => api.post(`/plans/${id}/pause`),
+    resume: (id: number) => api.post(`/plans/${id}/resume`),
+    trigger: (id: number) => api.post(`/plans/${id}/trigger`),
+}
+
+// 关键字 API
+export const keywordsApi = {
+    list: (params?: { page?: number; size?: number; project_id?: number }) =>
+        api.get('/keywords/', { params }),
+    create: (data: any) => api.post('/keywords/', data),
+    get: (id: number) => api.get(`/keywords/${id}`),
+    update: (id: number, data: any) => api.put(`/keywords/${id}`, data),
+    delete: (id: number) => api.delete(`/keywords/${id}`),
+    toggle: (id: number) => api.put(`/keywords/${id}/toggle`),
+    generateFile: (id: number) => api.post(`/keywords/${id}/generate-file`),
+}
+
+export default api

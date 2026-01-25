@@ -1,0 +1,76 @@
+# ============================================
+# Sisyphus X - Git 忽略配置
+# ============================================
+
+# 依赖目录
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.pnpm-store/
+venv/
+.venv/
+env/
+
+# 构建输出
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 环境变量
+.env
+.env.local
+.env.*.local
+
+# 日志文件
+*.log
+logs/
+
+# 测试覆盖率
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# 数据库文件
+*.db
+*.sqlite
+*.sqlite3
+
+# 上传文件目录
+uploads/
+
+# 缓存
+.cache/
+.parcel-cache/
+
+# 系统文件
+Thumbs.db
+ehthumbs.db
+
+# 编译输出
+*.o
+*.so
+*.dylib
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 秘钥文件
+*.pem
+*.key
+*.crt

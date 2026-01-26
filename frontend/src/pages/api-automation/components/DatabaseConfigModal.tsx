@@ -44,13 +44,11 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                 port: editData.port,
                 db_name: editData.db_name || '',
                 username: editData.username || '',
-                password: '', // Don't fill password
+                password: '', // 编辑时密码为空，用户可输入新密码
                 variable_name: editData.variable_name || ''
             })
-            // If editing, assume connected if status is valid? User choice. Strict req says test before save.
-            // But if updating only name, do we force test?
-            // User req: "需要测试连接成功才能保存" (Need test success to save).
-            setHasTestedSuccess(false) // Force re-test on edit
+            setShowPassword(false)
+            setHasTestedSuccess(false)
         } else {
             setForm({
                 name: '',
@@ -62,6 +60,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                 password: '',
                 variable_name: ''
             })
+            setShowPassword(false)
             setHasTestedSuccess(false)
         }
         setTestResult(null)
@@ -70,11 +69,13 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
     // Mutations
     const createMutation = useMutation({
         mutationFn: (data: any) => projectsApi.createDataSource(projectId, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['datasources', projectId] })
+        onSuccess: async () => {
+            // 先让后端有时间保存数据
+            await new Promise(resolve => setTimeout(resolve, 200))
+            // 然后刷新查询
+            await queryClient.invalidateQueries({ queryKey: ['datasources', projectId] })
+            await queryClient.refetchQueries({ queryKey: ['datasources', projectId] })
             success('添加成功')
-            // 立即刷新查询
-            queryClient.refetchQueries({ queryKey: ['datasources', projectId] })
             onClose()
         },
         onError: () => error('添加数据源失败')
@@ -82,11 +83,13 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
 
     const updateMutation = useMutation({
         mutationFn: (data: any) => projectsApi.updateDataSource(projectId, editData.id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['datasources', projectId] })
+        onSuccess: async () => {
+            // 先让后端有时间保存数据
+            await new Promise(resolve => setTimeout(resolve, 200))
+            // 然后刷新查询
+            await queryClient.invalidateQueries({ queryKey: ['datasources', projectId] })
+            await queryClient.refetchQueries({ queryKey: ['datasources', projectId] })
             success('编辑成功')
-            // 立即刷新查询
-            queryClient.refetchQueries({ queryKey: ['datasources', projectId] })
             onClose()
         },
         onError: () => error('更新数据源失败')
@@ -98,9 +101,20 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
             return
         }
 
-        // 提示用户：如果要测试数据库连接，需要提供用户名和密码
-        if (!form.username || !form.password) {
-            error('请输入用户名和密码以测试数据库连接')
+        if (!form.username) {
+            error('请输入用户名')
+            return
+        }
+
+        // 新建模式必须输入密码
+        if (!editData && !form.password) {
+            error('请输入密码')
+            return
+        }
+
+        // 编辑模式如果输入了密码就测试
+        if (editData && !form.password) {
+            error('请输入新密码以测试连接')
             return
         }
 
@@ -125,8 +139,14 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
     }
 
     const handleSubmit = () => {
-        if (!form.name || !form.db_type || !form.host || !form.port || !form.username || !form.password || !form.db_name || !form.variable_name) {
+        if (!form.name || !form.db_type || !form.host || !form.port || !form.username || !form.db_name || !form.variable_name) {
             error('请填写所有必填项')
+            return
+        }
+
+        // 新建模式必须输入密码
+        if (!editData && !form.password) {
+            error('请输入密码')
             return
         }
 
@@ -135,10 +155,18 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
             return
         }
 
+        // 准备提交的数据
+        let submitData = { ...form }
+
+        // 编辑模式：如果密码为空，移除密码字段（后端会保留原密码）
+        if (editData && !form.password) {
+            delete submitData.password
+        }
+
         if (editData) {
-            updateMutation.mutate(form)
+            updateMutation.mutate(submitData)
         } else {
-            createMutation.mutate(form)
+            createMutation.mutate(submitData)
         }
     }
 
@@ -263,8 +291,11 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             value={form.password}
-                                            onChange={e => { setForm({ ...form, password: e.target.value }); setHasTestedSuccess(false); }}
-                                            placeholder={editData ? "如果不修改密码请留空" : "请输入密码（测试连接必需）"}
+                                            onChange={e => {
+                                                setForm({ ...form, password: e.target.value })
+                                                setHasTestedSuccess(false)
+                                            }}
+                                            placeholder={editData ? "不修改密码请留空" : "请输入密码"}
                                             className="w-full bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 pr-10"
                                         />
                                         <button
@@ -290,7 +321,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                         <div className="p-6 pt-0 flex gap-4">
                             <button
                                 onClick={handleTest}
-                                disabled={isTesting || !form.host || !form.username || !form.password}
+                                disabled={isTesting || !form.host || !form.username || (!editData && !form.password)}
                                 className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2
                                     ${hasTestedSuccess ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}
                                     disabled:opacity-50 disabled:cursor-not-allowed

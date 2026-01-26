@@ -15,13 +15,15 @@ import {
     XCircle,
     AlertCircle,
     Copy,
-    Edit2
+    Edit2,
+    HelpCircle
 } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { EmptyState } from '@/components/common/EmptyState';
 import { DatabaseConfigModal } from './components/DatabaseConfigModal';
 import { motion } from 'framer-motion';
+import { Tooltip } from '@/components/ui/tooltip';
 
 interface DataSource {
     id: number;
@@ -128,9 +130,6 @@ export default function DatabaseConfigList() {
                             <Database className="w-8 h-8 text-cyan-500" />
                             数据库配置
                         </h1>
-                        <p className="text-slate-400">
-                            默认每10分钟自动检测一次连接状态
-                        </p>
                     </div>
                     <div className="flex gap-3">
                         <button
@@ -154,14 +153,21 @@ export default function DatabaseConfigList() {
             </div>
 
             {/* List */}
-            <div className="bg-slate-900 border border-white/5 rounded-3xl overflow-hidden shadow-xl">
+            <div className="bg-slate-900 border border-white/5 rounded-3xl shadow-xl">
                 <table className="w-full text-left">
                     <thead className="bg-slate-800/50 border-b border-white/5">
                         <tr>
                             <th className="px-6 py-4 text-sm font-medium text-slate-400">连接名称</th>
                             <th className="px-6 py-4 text-sm font-medium text-slate-400">引用变量</th>
                             <th className="px-6 py-4 text-sm font-medium text-slate-400">配置信息</th>
-                            <th className="px-6 py-4 text-sm font-medium text-slate-400">连接状态</th>
+                            <th className="px-6 py-4 text-sm font-medium text-slate-400 relative">
+                                <div className="flex items-center gap-1">
+                                    连接状态
+                                    <Tooltip content="默认每10分钟自动检测一次连接状态" position="top">
+                                        <HelpCircle className="w-3.5 h-3.5 text-slate-500 hover:text-slate-300 cursor-help" />
+                                    </Tooltip>
+                                </div>
+                            </th>
                             <th className="px-6 py-4 text-sm font-medium text-slate-400">启用状态</th>
                             <th className="px-6 py-4 text-sm font-medium text-slate-400 text-left">操作</th>
                         </tr>
@@ -175,9 +181,22 @@ export default function DatabaseConfigList() {
                                 </td>
                                 <td className="px-6 py-4">
                                     {ds.variable_name ? (
-                                        <code className="bg-slate-800 px-2 py-1 rounded text-cyan-400 text-xs font-mono">
-                                            ${`{${ds.variable_name}}`}
-                                        </code>
+                                        <div className="flex items-center gap-2">
+                                            <code className="bg-slate-800 px-2 py-1 rounded text-cyan-400 text-xs font-mono">
+                                                ${`{${ds.variable_name}}`}
+                                            </code>
+                                            <button
+                                                onClick={() => {
+                                                    const fullVar = '${' + ds.variable_name + '}'
+                                                    navigator.clipboard.writeText(fullVar)
+                                                    success(`变量 ${fullVar} 已复制到剪贴板`)
+                                                }}
+                                                className="p-1 text-slate-500 hover:text-cyan-400 hover:bg-cyan-400/10 rounded transition-colors"
+                                                title="复制变量"
+                                            >
+                                                <Copy className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
                                     ) : '-'}
                                 </td>
                                 <td className="px-6 py-4 text-sm text-slate-300 font-mono">
@@ -245,7 +264,12 @@ export default function DatabaseConfigList() {
             {isCreateOpen && (
                 <DatabaseConfigModal
                     isOpen={isCreateOpen}
-                    onClose={() => { setIsCreateOpen(false); setEditingDs(null); }}
+                    onClose={() => {
+                        setIsCreateOpen(false);
+                        setEditingDs(null);
+                        // 立即刷新数据列表
+                        setTimeout(() => refetch(), 100);
+                    }}
                     projectId={Number(projectId)}
                     projectName={project?.name || ''}
                     editData={editingDs || undefined} // Pass editing data

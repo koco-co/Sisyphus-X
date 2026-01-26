@@ -67,7 +67,7 @@ class DataSourceUpdate(BaseModel):
 
 
 class DataSourceResponse(BaseModel):
-    """数据源响应 (不返回密码)"""
+    """数据源响应（不返回密码）"""
     id: int
     project_id: int
     name: str
@@ -76,13 +76,13 @@ class DataSourceResponse(BaseModel):
     port: int
     db_name: str
     username: str
-    
+
     variable_name: str
     is_enabled: bool
     status: str
     last_test_at: Optional[datetime]
     error_msg: Optional[str]
-    
+
     created_at: datetime
     updated_at: datetime
 

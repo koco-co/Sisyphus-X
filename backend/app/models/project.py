@@ -9,6 +9,7 @@ class Project(SQLModel, table=True):
     owner: str # 负责人
     description: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class InterfaceFolder(SQLModel, table=True):
     """接口文件夹 - 支持树形组织结构"""
@@ -68,6 +69,14 @@ class ProjectDataSource(SQLModel, table=True):
     db_name: str = ""  # 数据库名
     username: str = ""
     password_hash: str = ""  # 加密存储的密码
+    
+    # 新增配置字段
+    variable_name: str = ""   # 引用变量名
+    is_enabled: bool = Field(default=True)  # 是否启用
+    status: str = "unchecked" # unchecked, connected, error
+    last_test_at: Optional[datetime] = None
+    error_msg: Optional[str] = None
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

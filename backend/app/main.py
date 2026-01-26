@@ -7,8 +7,22 @@ from app.api.v1.api import api_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Initialize DB
     await init_db()
+    
+    # Start Background Scheduler
+    from app.core.scheduler import start_scheduler
+    import asyncio
+    task = asyncio.create_task(start_scheduler())
+    
     yield
+    
+    # Cleanup
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

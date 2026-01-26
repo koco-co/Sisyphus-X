@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Search, Filter, Play, Edit, Trash2, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import api from '@/api/client'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 
 interface TestCase {
     id: number
@@ -191,30 +192,34 @@ export default function TestCasesPage() {
 
                             <div className="flex gap-4">
                                 <div className="flex-1">
-                                    <label className="text-sm text-slate-400 block mb-2">Priority</label>
-                                    <select
-                                        value={newCase.priority}
-                                        onChange={(e) => setNewCase({ ...newCase, priority: e.target.value })}
-                                        className="w-full h-10 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:outline-none focus:border-cyan-500/50"
-                                    >
-                                        <option value="P0">P0 - Critical</option>
-                                        <option value="P1">P1 - High</option>
-                                        <option value="P2">P2 - Medium</option>
-                                        <option value="P3">P3 - Low</option>
-                                    </select>
-                                </div>
-                                <div className="flex-1">
-                                    <label className="text-sm text-slate-400 block mb-2">Engine</label>
-                                    <select
-                                        value={newCase.engine_type}
-                                        onChange={(e) => setNewCase({ ...newCase, engine_type: e.target.value })}
-                                        className="w-full h-10 bg-white/5 border border-white/10 rounded-lg px-4 text-white focus:outline-none focus:border-cyan-500/50"
-                                    >
-                                        <option value="api">API</option>
-                                        <option value="web">Web</option>
-                                        <option value="app">App</option>
-                                        <option value="manual">Manual</option>
-                                    </select>
+                                    <div className="flex-1">
+                                        <label className="text-sm text-slate-400 block mb-2">Priority</label>
+                                        <CustomSelect
+                                            value={newCase.priority}
+                                            onChange={(val) => setNewCase({ ...newCase, priority: val })}
+                                            options={[
+                                                { label: 'P0 - Critical', value: 'P0' },
+                                                { label: 'P1 - High', value: 'P1' },
+                                                { label: 'P2 - Medium', value: 'P2' },
+                                                { label: 'P3 - Low', value: 'P3' }
+                                            ]}
+                                            placeholder="Select Priority"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="text-sm text-slate-400 block mb-2">Engine</label>
+                                        <CustomSelect
+                                            value={newCase.engine_type}
+                                            onChange={(val) => setNewCase({ ...newCase, engine_type: val })}
+                                            options={[
+                                                { label: 'API', value: 'api' },
+                                                { label: 'Web', value: 'web' },
+                                                { label: 'App', value: 'app' },
+                                                { label: 'Manual', value: 'manual' }
+                                            ]}
+                                            placeholder="Select Engine"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>

@@ -49,6 +49,8 @@ class DataSourceCreate(BaseModel):
     db_name: str = ""
     username: str = ""
     password: str = ""  # 前端传明文，后端加密存储
+    variable_name: str = ""
+    is_enabled: bool = True
 
 
 class DataSourceUpdate(BaseModel):
@@ -60,6 +62,8 @@ class DataSourceUpdate(BaseModel):
     db_name: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None  # 如果提供则更新密码
+    variable_name: Optional[str] = None
+    is_enabled: Optional[bool] = None
 
 
 class DataSourceResponse(BaseModel):
@@ -72,6 +76,13 @@ class DataSourceResponse(BaseModel):
     port: int
     db_name: str
     username: str
+    
+    variable_name: str
+    is_enabled: bool
+    status: str
+    last_test_at: Optional[datetime]
+    error_msg: Optional[str]
+    
     created_at: datetime
     updated_at: datetime
 

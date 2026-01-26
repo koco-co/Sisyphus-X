@@ -7,34 +7,9 @@ import uuid
 from datetime import datetime
 import os
 
+from app.core.storage import get_minio_client, ensure_bucket_exists, MINIO_BUCKET, MINIO_ENDPOINT, MINIO_USE_SSL
+
 router = APIRouter()
-
-# MinIO 配置 (从环境变量读取)
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "admin")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "password123")
-MINIO_BUCKET = os.getenv("MINIO_BUCKET", "sisyphus")
-MINIO_USE_SSL = os.getenv("MINIO_USE_SSL", "false").lower() == "true"
-
-
-def get_minio_client():
-    """获取 MinIO 客户端"""
-    try:
-        from minio import Minio
-        client = Minio(
-            MINIO_ENDPOINT,
-            access_key=MINIO_ACCESS_KEY,
-            secret_key=MINIO_SECRET_KEY,
-            secure=MINIO_USE_SSL
-        )
-        # 确保 bucket 存在
-        if not client.bucket_exists(MINIO_BUCKET):
-            client.make_bucket(MINIO_BUCKET)
-        return client
-    except ImportError:
-        raise HTTPException(status_code=500, detail="MinIO 客户端未安装，请运行: pip install minio")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"MinIO 连接失败: {e}")
 
 
 @router.post("/upload")
@@ -48,6 +23,7 @@ async def upload_file(
     """
     try:
         client = get_minio_client()
+        ensure_bucket_exists(client)
         
         # 生成唯一文件名
         ext = os.path.splitext(file.filename)[1] if file.filename else ""

@@ -10,8 +10,9 @@ from app.core.db import get_session
 from app.core.security import decode_access_token
 from app.models.user import User
 
+from app.core.config import settings
 # 全局配置: 是否禁用鉴权
-AUTH_DISABLED = os.getenv("AUTH_DISABLED", "false").lower() == "true"
+AUTH_DISABLED = settings.AUTH_DISABLED
 
 
 async def get_current_user(
@@ -27,11 +28,11 @@ async def get_current_user(
         if user:
             return user
         # 如果没有用户，创建一个默认用户
-        from app.core.security import hash_password
+        from app.core.security import get_password_hash
         default_user = User(
             username="admin",
             email="admin@sisyphus.dev",
-            hashed_password=hash_password("admin123"),
+            hashed_password=get_password_hash("admin123"),
             is_active=True
         )
         session.add(default_user)

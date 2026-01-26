@@ -55,6 +55,40 @@
 - Docker & Docker Compose
 - Conda (推荐)
 
+### 配置说明
+
+#### 后端配置
+
+后端使用 `.env` 文件管理配置。复制示例文件并根据需要修改:
+
+```bash
+cp .env.example .env
+```
+
+主要配置项:
+- `DATABASE_URL`: PostgreSQL 数据库连接
+- `REDIS_URL`: Redis 连接 (可选)
+- `SECRET_KEY`: JWT 密钥
+- `FRONTEND_URL`: 前端地址 (用于 OAuth 回调)
+- `AUTH_DISABLED`: 是否禁用认证 (开发模式)
+
+#### 前端配置
+
+前端使用环境变量配置，位于 `frontend/.env`:
+
+```bash
+cd frontend
+cp .env.example .env
+```
+
+主要配置项:
+- `VITE_API_BASE_URL`: 后端 API 地址 (默认: http://localhost:8000/api/v1)
+- `VITE_AUTH_DISABLED`: 是否禁用认证
+
+所有配置项统一在 `frontend/src/config/index.ts` 中定义。
+
+---
+
 ### 1. 启动基础服务
 
 ```bash
@@ -97,6 +131,49 @@ npm run dev
 |------|------|
 | 前端 | http://localhost:5173 |
 | API 文档 | http://localhost:8000/docs |
+
+---
+
+## 🧩 可复用组件
+
+### 前端组件
+
+项目封装了以下可复用组件,位于 `frontend/src/components/`:
+
+| 组件 | 路径 | 用途 |
+|------|------|------|
+| EmptyState | `common/EmptyState.tsx` | 统一的空状态展示 |
+| Pagination | `common/Pagination.tsx` | 分页组件 |
+| ConfirmDialog | `common/ConfirmDialog.tsx` | 通用确认对话框 (支持文本验证) |
+| CustomSelect | `ui/CustomSelect.tsx` | 自定义下拉选择器 |
+| Toast | `ui/Toast.tsx` | 消息提示 |
+
+#### 使用示例
+
+```tsx
+// EmptyState 示例
+import { EmptyState } from '@/components/common/EmptyState'
+
+<EmptyState
+    title="暂无数据"
+    description="这里什么都没有..."
+    icon={Database}
+    action={<button>创建</button>}
+/>
+
+// ConfirmDialog 示例 (带文本验证)
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+
+<ConfirmDialog
+    isOpen={isOpen}
+    onClose={() => setIsOpen(false)}
+    onConfirm={() => handleDelete()}
+    title="删除项目"
+    description="请输入项目名称确认删除"
+    verificationText={projectName}  // 需要用户输入此文本才能确认
+    isDestructive={true}
+/>
+```
 
 ---
 

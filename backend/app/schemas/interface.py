@@ -7,6 +7,7 @@ class InterfaceSendRequest(BaseModel):
     headers: Optional[Dict[str, str]] = {}
     params: Optional[Dict[str, Any]] = {}
     body: Optional[Any] = None
+    files: Optional[Dict[str, str]] = {} # key: filename, value: object_name
     timeout: int = 10
 
     model_config = {

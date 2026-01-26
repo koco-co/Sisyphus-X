@@ -1,20 +1,22 @@
 import axios from 'axios'
+import config from '@/config'
 
 // API 基础配置
 const api = axios.create({
-    baseURL: 'http://localhost:8000/api/v1',
+    baseURL: config.apiBaseURL,
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: config.requestTimeout
 })
 
 // 请求拦截器 - 自动添加 Authorization header
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('sisyphus-token')
+api.interceptors.request.use((axiosConfig) => {
+    const token = localStorage.getItem(config.storageKeys.token)
     if (token) {
-        config.headers.Authorization = `Bearer ${token}`
+        axiosConfig.headers.Authorization = `Bearer ${token}`
     }
-    return config
+    return axiosConfig
 })
 
 // 响应拦截器 - 处理 401 错误
@@ -22,10 +24,14 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
+            // Check if auth is disabled
+            if (import.meta.env.VITE_AUTH_DISABLED === 'true') {
+                return Promise.reject(error)
+            }
             // 排除登录/注册请求的 401 错误，不自动跳转
             const url = error.config?.url || ''
             if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
-                localStorage.removeItem('sisyphus-token')
+                localStorage.removeItem(config.storageKeys.token)
                 window.location.href = '/login'
             }
         }
@@ -33,12 +39,24 @@ api.interceptors.response.use(
     }
 )
 
+// 文件 API
+export const filesApi = {
+    upload: (file: File) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        return api.post('/files/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+    }
+}
+
 // 项目相关 API
 export const projectsApi = {
-    list: (params?: { page?: number; size?: number }) => api.get('/projects/', { params }),
+    list: (params?: { page?: number; size?: number; name?: string }) => api.get('/projects/', { params }),
     get: (id: number) => api.get(`/projects/${id}`),
     create: (data: { name: string; key: string; owner: string; description?: string }) =>
         api.post('/projects/', data),
+    update: (id: number, data: any) => api.put(`/projects/${id}`, data),
     delete: (id: number) => api.delete(`/projects/${id}`),
 
     // 环境配置 API
@@ -70,7 +88,7 @@ export const interfacesApi = {
         api.post('/interfaces/', data),
     update: (id: number, data: any) => api.put(`/interfaces/${id}`, data),
     delete: (id: number) => api.delete(`/interfaces/${id}`),
-    sendRequest: (data: { url: string; method: string; headers?: Record<string, string>; params?: Record<string, any>; body?: any }) =>
+    sendRequest: (data: { url: string; method: string; headers?: Record<string, string>; params?: Record<string, any>; body?: any; files?: Record<string, string> }) =>
         api.post('/interfaces/debug/send', data),
     listFolders: (params?: { project_id?: number }) => api.get('/interfaces/folders', { params }),
     createFolder: (data: { project_id: number; name: string; parent_id?: number }) => api.post('/interfaces/folders', data),

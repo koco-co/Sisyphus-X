@@ -6,18 +6,15 @@ import {
     ArrowLeft,
     Send,
     Save,
-    ChevronDown,
     Plus,
     Trash2,
-    Copy,
     Loader2,
-    Check,
-    X,
-    FileJson,
-    Code
 } from 'lucide-react'
 import { interfacesApi, projectsApi } from '@/api/client'
 import { cn } from '@/lib/utils'
+import { CustomSelect } from '@/components/ui/CustomSelect'
+import { FormDataEditor } from './components/FormDataEditor'
+import type { KeyValueTypePair } from './components/FormDataEditor'
 
 interface KeyValuePair {
     key: string
@@ -146,6 +143,9 @@ export default function InterfaceEditor() {
         body_type: 'json',
     })
 
+    // For form-data editing
+    const [formDataBodyPairs, setFormDataBodyPairs] = useState<KeyValueTypePair[]>([])
+
     // 响应数据
     const [response, setResponse] = useState<{
         status_code: number
@@ -194,6 +194,23 @@ export default function InterfaceEditor() {
                     : JSON.stringify(interfaceData.body || {}, null, 2),
                 body_type: interfaceData.body_type || 'json',
             })
+
+            // 初始化 formDataBodyPairs
+            if (interfaceData.body_type === 'form-data' && Array.isArray(interfaceData.body)) {
+                // 如果后端存储的是结构化数据
+                setFormDataBodyPairs(interfaceData.body)
+            } else if (interfaceData.body_type === 'form-data' && typeof interfaceData.body === 'object') {
+                // 兼容旧数据或 key-value 对象
+                setFormDataBodyPairs(Object.entries(interfaceData.body || {}).map(([key, value]) => ({
+                    key,
+                    value: String(value),
+                    type: 'text',
+                    enabled: true
+                })))
+            } else {
+                setFormDataBodyPairs([])
+            }
+
             setProjectId(interfaceData.project_id)
         }
     }, [interfaceData])
@@ -252,11 +269,30 @@ export default function InterfaceEditor() {
 
             // 解析 body
             let body = undefined
+            let files: Record<string, string> | undefined = undefined
+
             if (formData.body_type === 'json' && formData.body) {
                 try {
                     body = JSON.parse(formData.body)
                 } catch {
                     body = formData.body
+                }
+            } else if (formData.body_type === 'form-data') {
+                // 分离 text 和 file
+                const textData: Record<string, string> = {}
+                const fileData: Record<string, string> = {}
+
+                formDataBodyPairs.filter(p => p.enabled).forEach(p => {
+                    if (p.type === 'file') {
+                        fileData[p.key] = p.value // value stored is object_name
+                    } else {
+                        textData[p.key] = p.value
+                    }
+                })
+
+                body = textData
+                if (Object.keys(fileData).length > 0) {
+                    files = fileData
                 }
             } else if (formData.body) {
                 body = formData.body
@@ -267,7 +303,8 @@ export default function InterfaceEditor() {
                 method: formData.method,
                 headers: mergedHeaders,
                 params: keyValueArrayToObject(formData.params),
-                body
+                body,
+                files
             })
             setResponse(res.data)
         } catch (e: any) {
@@ -295,7 +332,9 @@ export default function InterfaceEditor() {
             cookies: keyValueArrayToObject(formData.cookies),
             body: formData.body_type === 'json' && formData.body
                 ? (() => { try { return JSON.parse(formData.body) } catch { return {} } })()
-                : {},
+                : formData.body_type === 'form-data'
+                    ? formDataBodyPairs // Save the structured array
+                    : {},
             body_type: formData.body_type,
         })
     }
@@ -340,16 +379,17 @@ export default function InterfaceEditor() {
                 />
 
                 {/* 环境选择器 */}
-                <select
-                    value={selectedEnvId || ''}
-                    onChange={(e) => setSelectedEnvId(e.target.value ? parseInt(e.target.value) : null)}
-                    className="h-10 px-4 bg-slate-800 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-cyan-500/50"
-                >
-                    <option value="">无环境</option>
-                    {environments.map((env: any) => (
-                        <option key={env.id} value={env.id}>{env.name}</option>
-                    ))}
-                </select>
+                <div className="w-48">
+                    <CustomSelect
+                        value={selectedEnvId || ''}
+                        onChange={(val) => setSelectedEnvId(val ? parseInt(val) : null)}
+                        options={[
+                            { label: '无环境', value: '' },
+                            ...environments.map((env: any) => ({ label: env.name, value: env.id }))
+                        ]}
+                        placeholder="选择环境"
+                    />
+                </div>
 
                 <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -365,18 +405,15 @@ export default function InterfaceEditor() {
 
             {/* 请求 URL 栏 */}
             <div className="flex items-center gap-3 px-6 py-4 border-b border-white/5">
-                <select
-                    value={formData.method}
-                    onChange={(e) => setFormData({ ...formData, method: e.target.value })}
-                    className={cn(
-                        "h-10 px-3 rounded-xl text-sm font-bold focus:outline-none",
-                        methodColors[formData.method] || 'bg-slate-700 text-white'
-                    )}
-                >
-                    {['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map(m => (
-                        <option key={m} value={m}>{m}</option>
-                    ))}
-                </select>
+                <div className="w-32">
+                    <CustomSelect
+                        value={formData.method}
+                        onChange={(val) => setFormData({ ...formData, method: val })}
+                        options={['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].map(m => ({ label: m, value: m }))}
+                        placeholder="Method"
+                        className={methodColors[formData.method] || 'bg-slate-700 text-white'}
+                    />
+                </div>
 
                 <input
                     type="text"
@@ -475,6 +512,13 @@ export default function InterfaceEditor() {
                                         onChange={(e) => setFormData({ ...formData, body: e.target.value })}
                                         placeholder={formData.body_type === 'json' ? '{\n  "key": "value"\n}' : '请求体内容'}
                                         className="w-full h-64 bg-slate-800 border border-white/10 rounded-xl p-4 text-white font-mono text-sm resize-none focus:outline-none focus:border-cyan-500/50"
+                                    />
+                                )}
+
+                                {formData.body_type === 'form-data' && (
+                                    <FormDataEditor
+                                        pairs={formDataBodyPairs}
+                                        onChange={setFormDataBodyPairs}
                                     />
                                 )}
                             </div>

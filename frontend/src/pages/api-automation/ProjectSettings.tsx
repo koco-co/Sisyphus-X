@@ -17,6 +17,7 @@ import {
     Server
 } from 'lucide-react'
 import { projectsApi } from '@/api/client'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 
 // 类型定义
 interface Environment {
@@ -558,16 +559,17 @@ export default function ProjectSettings() {
                                 {/* 类型 */}
                                 <div>
                                     <label className="block text-slate-400 text-sm mb-2">数据库类型</label>
-                                    <select
+                                    <CustomSelect
                                         value={dsForm.db_type}
-                                        onChange={(e) => setDsForm({ ...dsForm, db_type: e.target.value })}
-                                        className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50"
-                                    >
-                                        <option value="mysql">MySQL</option>
-                                        <option value="postgresql">PostgreSQL</option>
-                                        <option value="mongodb">MongoDB</option>
-                                        <option value="redis">Redis</option>
-                                    </select>
+                                        onChange={(val) => setDsForm({ ...dsForm, db_type: val })}
+                                        options={[
+                                            { label: 'MySQL', value: 'mysql' },
+                                            { label: 'PostgreSQL', value: 'postgresql' },
+                                            { label: 'MongoDB', value: 'mongodb' },
+                                            { label: 'Redis', value: 'redis' }
+                                        ]}
+                                        placeholder="选择数据库类型"
+                                    />
                                 </div>
 
                                 {/* Host & Port */}

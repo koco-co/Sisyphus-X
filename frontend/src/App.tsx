@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { SidebarProvider } from '@/contexts/SidebarContext'
+import { ToastProvider } from '@/components/ui/Toast'
 import AppLayout from '@/components/layout/AppLayout'
 import Dashboard from '@/pages/Dashboard'
 import InterfacePage from '@/pages/interface'
@@ -12,8 +13,10 @@ import TestCasesPage from '@/pages/cases'
 import LoginPage from '@/pages/auth/LoginPage'
 // 新增模块导入
 import ProjectManagement from '@/pages/api-automation/ProjectManagement'
+import DatabaseConfigList from '@/pages/api-automation/DatabaseConfigList'
 import ProjectSettings from '@/pages/api-automation/ProjectSettings'
 import KeywordManagement from '@/pages/api-automation/KeywordManagement'
+import KeywordEditor from '@/pages/api-automation/KeywordEditor'
 import ApiManagement from '@/pages/api-automation/ApiManagement'
 import InterfaceEditor from '@/pages/interface/InterfaceEditor'
 import TestReport from '@/pages/reports/TestReport'
@@ -66,8 +69,11 @@ function AppRoutes() {
 
         {/* 接口自动化模块 */}
         <Route path="/api/projects" element={<ProjectManagement />} />
+        <Route path="/api/projects/:id/datasources" element={<DatabaseConfigList />} />
         <Route path="/api/projects/:id/settings" element={<ProjectSettings />} />
         <Route path="/api/keywords" element={<KeywordManagement />} />
+        <Route path="/api/keywords/new" element={<KeywordEditor />} />
+        <Route path="/api/keywords/:id" element={<KeywordEditor />} />
         <Route path="/api/interfaces" element={<ApiManagement />} />
         <Route path="/api/interfaces/new" element={<InterfaceEditor />} />
         <Route path="/api/interfaces/:id" element={<InterfaceEditor />} />
@@ -97,9 +103,11 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
+          <ToastProvider>
+            <BrowserRouter>
+              <AppRoutes />
+            </BrowserRouter>
+          </ToastProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

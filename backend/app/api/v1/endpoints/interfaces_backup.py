@@ -8,8 +8,6 @@ from app.schemas.pagination import PageResponse
 import httpx
 import time
 from app.schemas.interface import InterfaceSendRequest, InterfaceSendResponse
-from app.core.storage import get_minio_client, MINIO_BUCKET
-import io
 
 router = APIRouter()
 
@@ -172,52 +170,15 @@ async def delete_interface(
 async def send_interface_request(
     request: InterfaceSendRequest
 ):
-    async with httpx.AsyncClient(trust_env=False) as client:
+    async with httpx.AsyncClient() as client:
         start_time = time.time()
         try:
-            # 处理文件
-            files = None
-            data = None
-            json_body = None
-
-            if request.files:
-                minio_client = get_minio_client()
-                files = {}
-                for field_name, object_name in request.files.items():
-                    try:
-                        # 从 MinIO 获取文件流
-                        response = minio_client.get_object(MINIO_BUCKET, object_name)
-                        file_content = response.read()
-                        response.close()
-                        response.release_conn()
-                        
-                        # 获取文件名 (假设 object_name 包含扩展名，或者需要从元数据获取)
-                        filename = object_name.split('/')[-1]
-                        files[field_name] = (filename, file_content)
-                    except Exception as e:
-                        raise HTTPException(status_code=400, detail=f"Failed to retrieve file {object_name}: {str(e)}")
-            
-            # 处理 Body
-            if request.body:
-                if files:
-                    # 如果有文件，Body 通常作为 form data 发送
-                    # 假设 request.body 是字典
-                    if isinstance(request.body, dict):
-                         data = {k: str(v) for k, v in request.body.items()}
-                    else:
-                         # 这里的逻辑可能需要根据具体需求调整，如果 body 不是 dict 且有 files，可能不兼容
-                         data = {"data": str(request.body)}
-                else:
-                    json_body = request.body
-
             response = await client.request(
                 method=request.method,
                 url=request.url,
                 headers=request.headers,
                 params=request.params,
-                json=json_body,
-                data=data,
-                files=files,
+                json=request.body,
                 timeout=request.timeout
             )
             elapsed = time.time() - start_time

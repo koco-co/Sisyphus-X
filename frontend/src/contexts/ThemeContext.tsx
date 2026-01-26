@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import config from '@/config'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -12,7 +13,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setThemeState] = useState<Theme>(() => {
-        const saved = localStorage.getItem('sisyphus-theme') as Theme
+        const saved = localStorage.getItem(config.storageKeys.theme) as Theme
         return saved || 'system'
     })
 
@@ -48,7 +49,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     const setTheme = (newTheme: Theme) => {
         setThemeState(newTheme)
-        localStorage.setItem('sisyphus-theme', newTheme)
+        localStorage.setItem(config.storageKeys.theme, newTheme)
     }
 
     return (

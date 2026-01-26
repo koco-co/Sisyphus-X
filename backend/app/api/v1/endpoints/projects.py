@@ -5,6 +5,7 @@ from sqlmodel import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from passlib.hash import bcrypt
 from app.core.db import get_session
+from app.api import deps
 from app.models.project import Project, ProjectEnvironment, ProjectDataSource
 from app.schemas.pagination import PageResponse
 from app.schemas.environment import (
@@ -23,21 +24,25 @@ router = APIRouter()
 async def read_projects(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
+    name: str = Query(None, description="Project name search term"),
     session: AsyncSession = Depends(get_session)
 ):
-    # 计算偏移量
-    skip = (page - 1) * size
-    
-    # 获取总数
-    count_statement = select(func.count()).select_from(Project)
+    # Base query
+    query = select(Project)
+    if name:
+        query = query.where(Project.name.contains(name))
+
+    # Count
+    count_statement = select(func.count()).select_from(query.subquery())
     total = (await session.execute(count_statement)).scalar()
     
-    # 获取分页数据
-    statement = select(Project).offset(skip).limit(size)
+    # Pagination
+    skip = (page - 1) * size
+    statement = query.order_by(Project.updated_at.desc()).offset(skip).limit(size)
     result = await session.execute(statement)
     projects = result.scalars().all()
     
-    # 计算总页数
+    # Calculate pages
     pages = (total + size - 1) // size
     
     return PageResponse(
@@ -51,8 +56,33 @@ async def read_projects(
 @router.post("/", response_model=Project)
 async def create_project(
     project: Project,
+    session: AsyncSession = Depends(get_session),
+    current_user = Depends(deps.get_current_user)
+):
+    # Auto-assign owner from current user
+    project.owner = current_user.username
+    
+    session.add(project)
+    await session.commit()
+    await session.refresh(project)
+    return project
+
+@router.put("/{project_id}", response_model=Project)
+async def update_project(
+    project_id: int,
+    project_update: dict,
     session: AsyncSession = Depends(get_session)
 ):
+    project = await session.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Update fields
+    for key, value in project_update.items():
+        if hasattr(project, key) and key not in ['id', 'created_at', 'updated_at']:
+            setattr(project, key, value)
+    
+    project.updated_at = datetime.utcnow()
     session.add(project)
     await session.commit()
     await session.refresh(project)
@@ -227,7 +257,9 @@ async def create_datasource(
         port=ds.port,
         db_name=ds.db_name,
         username=ds.username,
-        password_hash=password_hash
+        password_hash=password_hash,
+        variable_name=ds.variable_name,
+        is_enabled=ds.is_enabled
     )
     session.add(db_ds)
     await session.commit()
@@ -283,33 +315,24 @@ async def test_datasource_connection(
     test_req: DataSourceTestRequest
 ):
     """测试数据源连接 (不保存)"""
-    import socket
+    from app.core.network import test_tcp_connection
     
-    try:
-        # 简单的 TCP 连接测试
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5)  # 5秒超时
-        result = sock.connect_ex((test_req.host, test_req.port))
-        sock.close()
-        
-        if result == 0:
-            return DataSourceTestResponse(
-                success=True,
-                message=f"Successfully connected to {test_req.host}:{test_req.port}"
-            )
-        else:
-            return DataSourceTestResponse(
-                success=False,
-                message=f"Failed to connect to {test_req.host}:{test_req.port} (error code: {result})"
-            )
-    except socket.timeout:
+    if not test_req.host or not test_req.port:
         return DataSourceTestResponse(
             success=False,
-            message=f"Connection timed out to {test_req.host}:{test_req.port}"
+            message="Host and Port are required"
         )
-    except Exception as e:
+    
+    success, message = test_tcp_connection(test_req.host, test_req.port)
+    
+    if success:
+        return DataSourceTestResponse(
+            success=True,
+            message=f"Successfully connected to {test_req.host}:{test_req.port}"
+        )
+    else:
         return DataSourceTestResponse(
             success=False,
-            message=f"Connection error: {str(e)}"
+            message=f"Connection failed: {message}"
         )
 

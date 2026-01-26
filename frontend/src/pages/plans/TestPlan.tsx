@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { plansApi, scenariosApi } from '@/api/client'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { CustomSelect } from '@/components/ui/CustomSelect'
 
 interface TestPlanItem {
     id: number
@@ -268,16 +269,12 @@ export default function TestPlan() {
                             </div>
                             <div>
                                 <label className="block text-sm text-slate-400 mb-2">关联场景</label>
-                                <select
-                                    value={formData.scenario_id}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, scenario_id: Number(e.target.value) }))}
-                                    className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:outline-none focus:border-cyan-500/50"
-                                >
-                                    <option value="">选择测试场景</option>
-                                    {scenarios.map(s => (
-                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                    ))}
-                                </select>
+                                <CustomSelect
+                                    value={formData.scenario_id || ''}
+                                    onChange={(val) => setFormData(prev => ({ ...prev, scenario_id: Number(val) }))}
+                                    options={scenarios.map(s => ({ label: s.name, value: s.id }))}
+                                    placeholder="选择测试场景"
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm text-slate-400 mb-2">{t('plans.cronExpression')}</label>

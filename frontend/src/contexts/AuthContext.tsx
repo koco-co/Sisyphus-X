@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import api from '@/api/client'
+import config from '@/config'
 
 interface User {
     id: number
@@ -28,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         // 开发模式跳过登录
-        const devModeSkipLogin = import.meta.env.VITE_DEV_MODE_SKIP_LOGIN === 'true'
+        const devModeSkipLogin = import.meta.env.VITE_DEV_MODE_SKIP_LOGIN === 'true' || import.meta.env.VITE_AUTH_DISABLED === 'true'
         if (devModeSkipLogin) {
             setUser({
                 id: 0,
@@ -46,18 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (token) {
             // OAuth 回调带的 token
-            localStorage.setItem('sisyphus-token', token)
+            localStorage.setItem(config.storageKeys.token, token)
             // 清除 URL 中的 token 参数
             window.history.replaceState({}, document.title, window.location.pathname)
         }
 
         // 检查本地存储的 token
-        const storedToken = localStorage.getItem('sisyphus-token')
+        const storedToken = localStorage.getItem(config.storageKeys.token)
         if (storedToken) {
             // 验证 token 并获取用户信息
             api.get('/auth/me')
                 .then(res => setUser(res.data))
-                .catch(() => localStorage.removeItem('sisyphus-token'))
+                .catch(() => localStorage.removeItem(config.storageKeys.token))
                 .finally(() => setIsLoading(false))
         } else {
             setIsLoading(false)
@@ -79,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const logout = () => {
-        localStorage.removeItem('sisyphus-token')
+        localStorage.removeItem(config.storageKeys.token)
         setUser(null)
     }
 

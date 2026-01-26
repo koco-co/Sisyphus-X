@@ -33,7 +33,7 @@ interface Project {
 export default function ProjectManagement() {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
-    const { success, error } = useToast();
+    const { success, error: showError } = useToast();
     const [page, setPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const size = 10;
@@ -46,6 +46,56 @@ export default function ProjectManagement() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [createForm, setCreateForm] = useState({ name: '', key: '', description: '' });
+    const [formErrors, setFormErrors] = useState<{ name?: string; description?: string }>({});
+
+    // 验证表单
+    const validateForm = (): boolean => {
+        const errors: { name?: string; description?: string } = {};
+
+        // 验证项目名称
+        const name = createForm.name.trim();
+        if (!name) {
+            errors.name = '项目名称不能为空';
+        } else if (name.length > 50) {
+            errors.name = `项目名称不能超过50个字符（当前${name.length}个字符）`;
+        }
+
+        // 验证项目描述
+        const description = createForm.description.trim();
+        if (description && description.length > 200) {
+            errors.description = `项目描述不能超过200个字符（当前${description.length}个字符）`;
+        }
+
+        setFormErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    // 处理输入变化
+    const handleInputChange = (field: 'name' | 'description', value: string) => {
+        setCreateForm({ ...createForm, [field]: value });
+
+        // 实时验证并清除错误
+        const trimmedValue = value.trim();
+        if (field === 'name' && trimmedValue) {
+            if (trimmedValue.length > 50) {
+                setFormErrors(prev => ({
+                    ...prev,
+                    name: `项目名称不能超过50个字符（当前${trimmedValue.length}个字符）`
+                }));
+            } else {
+                setFormErrors(prev => ({ ...prev, name: undefined }));
+            }
+        } else if (field === 'description' && trimmedValue) {
+            if (trimmedValue.length > 200) {
+                setFormErrors(prev => ({
+                    ...prev,
+                    description: `项目描述不能超过200个字符（当前${trimmedValue.length}个字符）`
+                }));
+            } else {
+                setFormErrors(prev => ({ ...prev, description: undefined }));
+            }
+        }
+    };
 
     // Fetch projects
     const { data: projectData, isLoading } = useQuery({
@@ -67,7 +117,7 @@ export default function ProjectManagement() {
             setProjectToDelete(null);
             success('删除成功');
         },
-        onError: () => error('删除失败')
+        onError: () => showError('删除失败')
     });
 
     // Create/Update mutations
@@ -78,7 +128,21 @@ export default function ProjectManagement() {
             closeCreateModal();
             success('创建成功');
         },
-        onError: () => error('创建失败')
+        onError: (err: any) => {
+            // 处理后端验证错误
+            if (err?.response?.data?.detail) {
+                const detail = err.response.data.detail;
+                if (typeof detail === 'string') {
+                    showError(detail);
+                } else if (Array.isArray(detail)) {
+                    // Pydantic 验证错误格式
+                    const errorMsg = detail.map((e: any) => e.msg).join('; ');
+                    showError(errorMsg);
+                }
+            } else {
+                showError('创建失败');
+            }
+        }
     });
 
     const updateMutation = useMutation({
@@ -88,12 +152,26 @@ export default function ProjectManagement() {
             closeCreateModal();
             success('编辑成功');
         },
-        onError: () => error('编辑失败')
+        onError: (err: any) => {
+            // 处理后端验证错误
+            if (err?.response?.data?.detail) {
+                const detail = err.response.data.detail;
+                if (typeof detail === 'string') {
+                    showError(detail);
+                } else if (Array.isArray(detail)) {
+                    const errorMsg = detail.map((e: any) => e.msg).join('; ');
+                    showError(errorMsg);
+                }
+            } else {
+                showError('编辑失败');
+            }
+        }
     });
 
     const openCreateModal = () => {
         setEditingProject(null);
         setCreateForm({ name: '', key: '', description: '' });
+        setFormErrors({});
         setIsCreateOpen(true);
     };
 
@@ -102,8 +180,9 @@ export default function ProjectManagement() {
         setCreateForm({
             name: project.name,
             key: project.key,
-            description: project.description
+            description: project.description || ''
         });
+        setFormErrors({});
         setIsCreateOpen(true);
     };
 
@@ -111,6 +190,7 @@ export default function ProjectManagement() {
         setIsCreateOpen(false);
         setEditingProject(null);
         setCreateForm({ name: '', key: '', description: '' });
+        setFormErrors({});
     };
 
     const formatDate = (dateStr?: string) => {
@@ -306,21 +386,55 @@ export default function ProjectManagement() {
                                     <input
                                         type="text"
                                         value={createForm.name}
-                                        onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                                        onChange={(e) => handleInputChange('name', e.target.value)}
                                         placeholder="e.g. Sisyphus接口自动化测试"
-                                        className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600"
+                                        className={`w-full bg-slate-800 border rounded-xl px-4 py-3 text-white focus:outline-none placeholder:text-slate-600 transition-colors ${
+                                            formErrors.name
+                                                ? 'border-red-500/50 focus:border-red-500/50'
+                                                : 'border-white/10 focus:border-cyan-500/50'
+                                        }`}
                                     />
+                                    {formErrors.name && (
+                                        <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            {formErrors.name}
+                                        </p>
+                                    )}
+                                    {!formErrors.name && createForm.name && (
+                                        <p className="text-slate-500 text-xs mt-1.5">
+                                            {createForm.name.trim().length} / 50
+                                        </p>
+                                    )}
                                 </div>
 
                                 <div>
                                     <label className="block text-slate-400 text-sm mb-2">项目描述</label>
                                     <textarea
                                         value={createForm.description}
-                                        onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                                        onChange={(e) => handleInputChange('description', e.target.value)}
                                         placeholder="e.g. 包含电商核心链路的自动化测试用例集合，覆盖登录、购物车、下单等场景..."
                                         rows={3}
-                                        className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white resize-none focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600"
+                                        className={`w-full bg-slate-800 border rounded-xl px-4 py-3 text-white resize-none focus:outline-none placeholder:text-slate-600 transition-colors ${
+                                            formErrors.description
+                                                ? 'border-red-500/50 focus:border-red-500/50'
+                                                : 'border-white/10 focus:border-cyan-500/50'
+                                        }`}
                                     />
+                                    {formErrors.description && (
+                                        <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1">
+                                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                            </svg>
+                                            {formErrors.description}
+                                        </p>
+                                    )}
+                                    {!formErrors.description && createForm.description && (
+                                        <p className="text-slate-500 text-xs mt-1.5">
+                                            {createForm.description.trim().length} / 200
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -333,24 +447,34 @@ export default function ProjectManagement() {
                                 </button>
                                 <button
                                     onClick={() => {
+                                        // 前端验证
+                                        if (!validateForm()) {
+                                            return;
+                                        }
+
                                         // Auto-generate key if creating new project
                                         const timestamp = new Date().getTime().toString().slice(-6);
                                         const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
                                         const autoKey = `PRJ_${timestamp}${randomSuffix}`;
 
                                         const payload = {
-                                            ...createForm,
+                                            name: createForm.name.trim(),
+                                            description: createForm.description.trim(),
                                             key: editingProject ? editingProject.key : autoKey,
                                             owner: 'auto-assigned'
                                         };
 
                                         if (editingProject) {
-                                            updateMutation.mutate({ ...createForm, id: editingProject.id });
+                                            updateMutation.mutate({
+                                                name: createForm.name.trim(),
+                                                description: createForm.description.trim(),
+                                                id: editingProject.id
+                                            });
                                         } else {
                                             createMutation.mutate(payload);
                                         }
                                     }}
-                                    disabled={!createForm.name || createMutation.isPending || updateMutation.isPending}
+                                    disabled={!createForm.name.trim() || createMutation.isPending || updateMutation.isPending}
                                     className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center gap-2 transition-colors"
                                 >
                                     {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}

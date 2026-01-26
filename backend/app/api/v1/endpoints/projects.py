@@ -8,6 +8,7 @@ from app.core.db import get_session
 from app.api import deps
 from app.models.project import Project, ProjectEnvironment, ProjectDataSource
 from app.schemas.pagination import PageResponse
+from app.schemas.project import ProjectCreate, ProjectUpdate
 from app.schemas.environment import (
     EnvironmentCreate, EnvironmentUpdate, EnvironmentResponse,
     DataSourceCreate, DataSourceUpdate, DataSourceResponse,
@@ -55,33 +56,50 @@ async def read_projects(
 
 @router.post("/", response_model=Project)
 async def create_project(
-    project: Project,
+    project: ProjectCreate,
     session: AsyncSession = Depends(get_session),
     current_user = Depends(deps.get_current_user)
 ):
+    """创建新项目
+
+    - **name**: 项目名称，1-50个字符
+    - **key**: 项目标识
+    - **description**: 项目描述，最多200个字符
+    """
     # Auto-assign owner from current user
-    project.owner = current_user.username
-    
-    session.add(project)
+    new_project = Project(
+        name=project.name.strip(),
+        key=project.key.strip(),
+        description=project.description.strip() if project.description else None,
+        owner=current_user.username
+    )
+
+    session.add(new_project)
     await session.commit()
-    await session.refresh(project)
-    return project
+    await session.refresh(new_project)
+    return new_project
 
 @router.put("/{project_id}", response_model=Project)
 async def update_project(
     project_id: int,
-    project_update: dict,
+    project_update: ProjectUpdate,
     session: AsyncSession = Depends(get_session)
 ):
+    """更新项目信息
+
+    - **name**: 项目名称，1-50个字符
+    - **description**: 项目描述，最多200个字符
+    """
     project = await session.get(Project, project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=404, detail="项目不存在")
 
     # Update fields
-    for key, value in project_update.items():
+    update_data = project_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
         if hasattr(project, key) and key not in ['id', 'created_at', 'updated_at']:
             setattr(project, key, value)
-    
+
     project.updated_at = datetime.utcnow()
     session.add(project)
     await session.commit()

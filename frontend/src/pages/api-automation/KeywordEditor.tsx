@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
@@ -143,12 +143,16 @@ export default function KeywordEditor() {
     })
 
     // 如果是编辑模式，获取关键字详情
-    useQuery({
+    const { data: keywordData } = useQuery({
         queryKey: ['keyword', id],
         queryFn: () => keywordsApi.get(Number(id)),
-        enabled: isEditing,
-        select: (res) => {
-            const data = res.data
+        enabled: isEditing
+    })
+
+    // 当关键字数据加载完成时，更新表单数据
+    useEffect(() => {
+        if (keywordData?.data && isEditing) {
+            const data = keywordData.data
             setFormData({
                 name: data.name,
                 func_name: data.func_name,
@@ -160,9 +164,8 @@ export default function KeywordEditor() {
                 output_params: data.output_params || [],
                 language: data.language || 'python'
             })
-            return data
         }
-    })
+    }, [keywordData, isEditing])
 
     const mutation = useMutation({
         mutationFn: (data: typeof formData) => {

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { ArrowLeft, Save, Sparkles, Plus, Trash2, Loader2, Code } from 'lucide-react'
+import { ArrowLeft, Save, Sparkles, Plus, Trash2, Loader2, Code, ChevronDown, ChevronUp } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { keywordsApi, projectsApi } from '@/api/client'
 import { CustomSelect } from '@/components/ui/CustomSelect'
@@ -78,6 +78,17 @@ export default function KeywordEditor() {
     const isEditing = !!id
     const queryClient = useQueryClient()
     const { success, error: toastError } = useToast()
+
+    // 折叠状态
+    const [collapsedSections, setCollapsedSections] = useState<string[]>([])
+
+    const toggleSection = (section: string) => {
+        setCollapsedSections(prev =>
+            prev.includes(section)
+                ? prev.filter(s => s !== section)
+                : [...prev, section]
+        )
+    }
 
     const [formData, setFormData] = useState({
         name: '',
@@ -225,13 +236,20 @@ export default function KeywordEditor() {
                     transition={{ delay: 0.1 }}
                 >
                     {/* Basic Info Card */}
-                    <div className="bg-slate-900/50 border border-white/5 rounded-3xl p-6 space-y-6 backdrop-blur-xl">
-                        <div className="flex items-center gap-2 text-slate-100 font-semibold mb-4">
-                            <Code className="w-5 h-5 text-cyan-400" />
-                            基本信息
-                        </div>
+                    <div className="bg-slate-900/50 border border-white/5 rounded-3xl backdrop-blur-xl overflow-hidden">
+                        <button
+                            onClick={() => toggleSection('basic')}
+                            className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors"
+                        >
+                            <div className="flex items-center gap-2 text-slate-100 font-semibold">
+                                <Code className="w-5 h-5 text-cyan-400" />
+                                基本信息
+                            </div>
+                            {collapsedSections.includes('basic') ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronUp className="w-5 h-5 text-slate-400" />}
+                        </button>
 
-                        <div className="space-y-4">
+                        {!collapsedSections.includes('basic') && (
+                            <div className="p-6 space-y-4">
                             <div>
                                 <label className="block text-sm text-slate-400 mb-2">关键字名称 *</label>
                                 <input
@@ -281,55 +299,72 @@ export default function KeywordEditor() {
                                     placeholder="描述该关键字的功能和用途..."
                                 />
                             </div>
-                        </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Variables Card */}
-                    <div className="bg-slate-900/50 border border-white/5 rounded-3xl p-6 space-y-4 backdrop-blur-xl">
-                        <div className="flex items-center justify-between">
-                            <label className="text-slate-100 font-semibold">变量定义</label>
-                            <button
-                                onClick={() => setFormData(prev => ({
-                                    ...prev,
-                                    input_params: [...prev.input_params, { name: '', description: '' }]
-                                }))}
-                                className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 px-2 py-1 hover:bg-cyan-950/30 rounded-lg transition-colors"
-                            >
-                                <Plus className="w-3 h-3" />
-                                添加变量
-                            </button>
-                        </div>
+                    <div className="bg-slate-900/50 border border-white/5 rounded-3xl backdrop-blur-xl overflow-hidden">
+                        <button
+                            onClick={() => toggleSection('variables')}
+                            className="w-full flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors"
+                        >
+                            <div className="flex items-center justify-between flex-1">
+                                <span className="text-slate-100 font-semibold">变量定义</span>
+                                <span className="text-xs text-slate-500">{formData.input_params.length}/10</span>
+                            </div>
+                            {collapsedSections.includes('variables') ? <ChevronDown className="w-5 h-5 text-slate-400 ml-2" /> : <ChevronUp className="w-5 h-5 text-slate-400 ml-2" />}
+                        </button>
+
+                        {!collapsedSections.includes('variables') && (
+                            <div className="p-6 space-y-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-xs text-slate-500">变量名称 | 描述</span>
+                                    <button
+                                        onClick={() => {
+                                            if (formData.input_params.length < 10) {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    input_params: [...prev.input_params, { name: '', description: '' }]
+                                                }))
+                                            }
+                                        }}
+                                        disabled={formData.input_params.length >= 10}
+                                        className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1 px-2 py-1 hover:bg-cyan-950/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Plus className="w-3 h-3" />
+                                        添加变量
+                                    </button>
+                                </div>
                         <div className="space-y-3">
                             {formData.input_params.map((v, i) => (
-                                <div key={i} className="flex gap-2 items-start group">
-                                    <div className="flex-1 space-y-2">
-                                        <input
-                                            value={v.name}
-                                            onChange={(e) => {
-                                                const newParams = [...formData.input_params]
-                                                newParams[i].name = e.target.value
-                                                setFormData(prev => ({ ...prev, input_params: newParams }))
-                                            }}
-                                            placeholder="变量名"
-                                            className="w-full h-10 bg-white/5 border border-white/10 rounded-lg px-3 text-white text-sm focus:outline-none focus:border-cyan-500/50 transition-colors"
-                                        />
-                                        <input
-                                            value={v.description}
-                                            onChange={(e) => {
-                                                const newParams = [...formData.input_params]
-                                                newParams[i].description = e.target.value
-                                                setFormData(prev => ({ ...prev, input_params: newParams }))
-                                            }}
-                                            placeholder="描述"
-                                            className="w-full h-10 bg-white/5 border border-white/10 rounded-lg px-3 text-white text-sm focus:outline-none focus:border-cyan-500/50 transition-colors"
-                                        />
-                                    </div>
+                                <div key={i} className="flex gap-2 items-center group">
+                                    <input
+                                        value={v.name}
+                                        onChange={(e) => {
+                                            const newParams = [...formData.input_params]
+                                            newParams[i].name = e.target.value
+                                            setFormData(prev => ({ ...prev, input_params: newParams }))
+                                        }}
+                                        placeholder="变量名称"
+                                        className="w-1/3 h-10 bg-white/5 border border-white/10 rounded-lg px-3 text-white text-sm focus:outline-none focus:border-cyan-500/50 transition-colors font-mono"
+                                    />
+                                    <input
+                                        value={v.description}
+                                        onChange={(e) => {
+                                            const newParams = [...formData.input_params]
+                                            newParams[i].description = e.target.value
+                                            setFormData(prev => ({ ...prev, input_params: newParams }))
+                                        }}
+                                        placeholder="描述"
+                                        className="flex-1 h-10 bg-white/5 border border-white/10 rounded-lg px-3 text-white text-sm focus:outline-none focus:border-cyan-500/50 transition-colors"
+                                    />
                                     <button
                                         onClick={() => setFormData(prev => ({
                                             ...prev,
                                             input_params: prev.input_params.filter((_, idx) => idx !== i)
                                         }))}
-                                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors mt-0.5 opacity-0 group-hover:opacity-100"
+                                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                                     >
                                         <Trash2 className="w-4 h-4" />
                                     </button>
@@ -341,12 +376,14 @@ export default function KeywordEditor() {
                                 </div>
                             )}
                         </div>
+                            </div>
+                        )}
                     </div>
                 </motion.div>
 
                 {/* Right Column: Code Editor */}
                 <motion.div
-                    className="lg:col-span-2 flex flex-col h-full min-h-[600px]"
+                    className="lg:col-span-2 flex flex-col"
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
@@ -372,12 +409,12 @@ export default function KeywordEditor() {
                                 生成示例代码
                             </button>
                         </div>
-                        <div className="flex-1 h-full min-h-[600px]">
+                        <div className="flex-1">
                             <MonacoEditor
                                 value={formData.function_code}
                                 onChange={(value) => setFormData(prev => ({ ...prev, function_code: value }))}
                                 language={formData.language}
-                                height="600px"
+                                height="100%"
                             />
                         </div>
                     </div>

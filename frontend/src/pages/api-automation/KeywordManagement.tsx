@@ -237,7 +237,7 @@ export default function KeywordManagement() {
                                             </button>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center justify-start gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center justify-start gap-2">
                                                 <button
                                                     onClick={() => navigate(`/api/keywords/${keyword.id}`)}
                                                     className="p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"

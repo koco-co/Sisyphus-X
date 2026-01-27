@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/components/ui/Toast';
 import { projectsApi } from '@/api/client';
@@ -42,6 +42,7 @@ interface DataSource {
 
 export default function DatabaseConfigList() {
     const { id: projectId } = useParams<{ id: string }>();
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { success, error } = useToast();
 
@@ -113,48 +114,57 @@ export default function DatabaseConfigList() {
     };
 
     return (
-        <div className="p-8 max-w-[1600px] mx-auto">
+        <div className="h-[calc(100vh-64px)] p-6 md:p-8 flex flex-col">
             {/* Header */}
-            <div className="mb-8">
-                <div className="flex items-center gap-2 text-slate-400 text-sm mb-4">
-                    <Link to={`/project/${projectId}`} className="hover:text-cyan-400 transition-colors">项目管理</Link>
-                    <ArrowLeft className="w-3 h-3 rotate-180" />
-                    <Link to={`/project/${projectId}`} className="hover:text-cyan-400 transition-colors">{project?.name || 'Loading...'}</Link>
-                    <ArrowLeft className="w-3 h-3 rotate-180" />
-                    <span className="text-white">数据库配置</span>
-                </div>
-
-                <div className="flex justify-between items-end">
+            <motion.div
+                className="flex items-center justify-between mb-6"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+            >
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate('/api/projects')}
+                        className="p-2 -ml-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
                     <div>
-                        <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-                            <Database className="w-8 h-8 text-cyan-500" />
+                        <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+                            <Database className="w-6 h-6 text-cyan-500" />
                             数据库配置
                         </h1>
-                    </div>
-                    <div className="flex gap-3">
-                        <button
-                            onClick={() => refetch()}
-                            className="p-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors"
-                            title="刷新状态"
-                        >
-                            <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
-                        </button>
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => { setEditingDs(null); setIsCreateOpen(true); }}
-                            className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-xl flex items-center gap-2 font-semibold transition-all shadow-lg shadow-cyan-500/20"
-                        >
-                            <Plus className="w-5 h-5" />
-                            新增配置
-                        </motion.button>
+                        <p className="text-slate-400 text-sm mt-0.5">{project?.name || 'Loading...'}</p>
                     </div>
                 </div>
-            </div>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => refetch()}
+                        className="p-2 -mr-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                        title="刷新状态"
+                    >
+                        <RefreshCcw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => { setEditingDs(null); setIsCreateOpen(true); }}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 text-white font-medium shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all flex items-center gap-2"
+                    >
+                        <Plus className="w-4 h-4" />
+                        新增配置
+                    </motion.button>
+                </div>
+            </motion.div>
 
             {/* List */}
-            <div className="bg-slate-900 border border-white/5 rounded-3xl shadow-xl">
-                <table className="w-full text-left">
+            <motion.div
+                className="flex-1 bg-slate-900 border border-white/5 rounded-3xl shadow-xl overflow-hidden flex flex-col"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+            >
+                <div className="flex-1 overflow-auto">
+                    <table className="w-full text-left">
                     <thead className="bg-slate-800/50 border-b border-white/5">
                         <tr>
                             <th className="px-6 py-4 text-sm font-medium text-slate-400">连接名称</th>
@@ -173,8 +183,14 @@ export default function DatabaseConfigList() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                        {dataSources.map((ds: DataSource) => (
-                            <tr key={ds.id} className="hover:bg-white/5 transition-colors group">
+                        {dataSources.map((ds: DataSource, index: number) => (
+                            <motion.tr
+                                key={ds.id}
+                                className="hover:bg-white/5 transition-colors group"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.2 + index * 0.05 }}
+                            >
                                 <td className="px-6 py-4">
                                     <div className="font-medium text-white">{ds.name}</div>
                                     <div className="text-xs text-slate-500 uppercase mt-0.5">{ds.db_type}</div>
@@ -243,7 +259,7 @@ export default function DatabaseConfigList() {
                                         </button>
                                     </div>
                                 </td>
-                            </tr>
+                            </motion.tr>
                         ))}
                         {dataSources.length === 0 && !isLoading && (
                             <tr>
@@ -258,7 +274,8 @@ export default function DatabaseConfigList() {
                         )}
                     </tbody>
                 </table>
-            </div>
+                </div>
+            </motion.div>
 
             {/* Modal - Reusing/Creating Create/Edit Modal */}
             {isCreateOpen && (

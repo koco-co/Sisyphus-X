@@ -156,7 +156,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
         }
 
         // 准备提交的数据
-        let submitData = { ...form }
+        let submitData: any = { ...form }
 
         // 编辑模式：如果密码为空，移除密码字段（后端会保留原密码）
         if (editData && !form.password) {

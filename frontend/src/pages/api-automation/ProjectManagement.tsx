@@ -199,10 +199,17 @@ export default function ProjectManagement() {
     };
 
     return (
-        <div className="p-8 max-w-[1600px] mx-auto">
-            <header className="flex justify-between items-center mb-8">
+        <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+            <motion.header
+                className="flex justify-between items-center"
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+            >
                 <div>
-                    <h1 className="text-3xl font-bold text-white mb-2">{t('nav.projectManagement')}</h1>
+                    <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                        <FolderKanban className="w-8 h-8 text-cyan-500" />
+                        {t('nav.projectManagement')}
+                    </h1>
                     <p className="text-slate-400">管理您的自动化测试项目</p>
                 </div>
                 <motion.button
@@ -214,10 +221,14 @@ export default function ProjectManagement() {
                     <Plus className="w-5 h-5" />
                     新建项目
                 </motion.button>
-            </header>
+            </motion.header>
 
             {/* Search Box */}
-            <div className="mb-6">
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1 }}
+            >
                 <div className="relative max-w-md">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <input
@@ -231,10 +242,15 @@ export default function ProjectManagement() {
                         className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
                     />
                 </div>
-            </div>
+            </motion.div>
 
             {/* List View */}
-            <div className="bg-slate-900 border border-white/5 rounded-3xl overflow-hidden shadow-xl">
+            <motion.div
+                className="bg-slate-900 border border-white/5 rounded-3xl overflow-hidden shadow-xl"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+            >
                 {isLoading ? (
                     <div className="flex justify-center items-center py-20 text-slate-400">
                         <Loader2 className="w-6 h-6 animate-spin mr-2" /> 加载中...
@@ -253,8 +269,14 @@ export default function ProjectManagement() {
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {projects.length > 0 ? (
-                                projects.map((project: Project) => (
-                                    <tr key={project.id} className="hover:bg-white/5 transition-colors group">
+                                projects.map((project: Project, index: number) => (
+                                    <motion.tr
+                                        key={project.id}
+                                        className="hover:bg-white/5 transition-colors group"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.3 + index * 0.05 }}
+                                    >
                                         <td className="px-6 py-4 w-[200px]">
                                             <Tooltip content={project.name} position="top">
                                                 <span className="font-medium text-white group-hover:text-cyan-400 transition-colors truncate block w-full">
@@ -312,7 +334,7 @@ export default function ProjectManagement() {
                                                 </Tooltip>
                                             </div>
                                         </td>
-                                    </tr>
+                                    </motion.tr>
                                 ))
                             ) : (
                                 <tr>
@@ -349,7 +371,7 @@ export default function ProjectManagement() {
                         />
                     </div>
                 )}
-            </div>
+            </motion.div>
 
             {/* Confirm Dialog */}
             <ConfirmDialog

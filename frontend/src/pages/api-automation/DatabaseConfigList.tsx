@@ -18,9 +18,9 @@ import {
     Edit2,
     HelpCircle
 } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { EmptyState } from '@/components/common/EmptyState';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { DatabaseConfigModal } from './components/DatabaseConfigModal';
 import { motion } from 'framer-motion';
 import { Tooltip } from '@/components/ui/tooltip';
@@ -229,9 +229,11 @@ export default function DatabaseConfigList() {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <Switch
-                                        checked={ds.is_enabled}
-                                        onCheckedChange={() => toggleMutation.mutate(ds)}
+                                    <StatusBadge
+                                        active={ds.is_enabled}
+                                        activeLabel="已启用"
+                                        inactiveLabel="已禁用"
+                                        onClick={() => toggleMutation.mutate(ds)}
                                     />
                                 </td>
                                 <td className="px-6 py-4 text-left">

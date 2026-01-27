@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom'
 import { keywordsApi } from '@/api/client'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CustomSelect } from '@/components/ui/CustomSelect'
+import { StatusBadge } from '@/components/ui/StatusBadge'
 import { useToast } from '@/components/ui/Toast'
 import { EmptyState } from '@/components/common/EmptyState'
 
@@ -219,22 +220,12 @@ export default function KeywordManagement() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <button
+                                            <StatusBadge
+                                                active={keyword.is_active}
+                                                activeLabel={t('common.enable')}
+                                                inactiveLabel={t('common.disable')}
                                                 onClick={() => toggleMutation.mutate(keyword.id)}
-                                                className="flex items-center gap-2 group/status"
-                                            >
-                                                {keyword.is_active ? (
-                                                    <>
-                                                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] group-hover/status:scale-125 transition-transform" />
-                                                        <span className="text-emerald-400 text-sm">{t('common.enable')}</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <div className="w-2 h-2 rounded-full bg-slate-500 group-hover/status:scale-125 transition-transform" />
-                                                        <span className="text-slate-500 text-sm">{t('common.disable')}</span>
-                                                    </>
-                                                )}
-                                            </button>
+                                            />
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-start gap-2">

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from app.api.v1.endpoints import (
     projects, interfaces, testcases, scenarios, engine, auth,
     dashboard, reports, plans, keywords, swagger, upload, curl_parser,
-    settings, functional, documents
+    settings, functional, documents, execution
 )
 from app.api import deps
 
@@ -23,4 +23,5 @@ api_router.include_router(keywords.router, prefix="/keywords", tags=["keywords"]
 api_router.include_router(settings.router, prefix="/settings", tags=["settings"], dependencies=[Depends(deps.get_current_user)])
 api_router.include_router(functional.router, prefix="/functional", tags=["functional"], dependencies=[Depends(deps.get_current_user)])
 api_router.include_router(documents.router, prefix="/documents", tags=["documents"], dependencies=[Depends(deps.get_current_user)])
+api_router.include_router(execution.router, prefix="/execution", tags=["execution"], dependencies=[Depends(deps.get_current_user)])
 

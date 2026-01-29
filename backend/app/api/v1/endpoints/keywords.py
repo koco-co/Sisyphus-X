@@ -130,7 +130,7 @@ async def generate_keyword_file(
     
     # 确定文件路径
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-    keywords_dir = os.path.join(base_dir, "engines", "api-engine", "keywords")
+    keywords_dir = os.path.join(base_dir, "engines", "Sisyphus-api-engine", "keywords")
     
     # 创建目录
     os.makedirs(keywords_dir, exist_ok=True)

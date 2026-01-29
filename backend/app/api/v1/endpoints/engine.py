@@ -14,8 +14,8 @@ from pydantic import BaseModel
 
 router = APIRouter()
 
-# api-engine 路径
-ENGINE_PATH = Path(__file__).parent.parent.parent.parent.parent / "engines" / "api-engine"
+# Sisyphus-api-engine 路径
+ENGINE_PATH = Path(__file__).parent.parent.parent.parent.parent / "engines" / "Sisyphus-api-engine"
 
 
 class RunRequest(BaseModel):

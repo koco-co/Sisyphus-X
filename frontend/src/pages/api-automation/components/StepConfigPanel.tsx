@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { X, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { StepItemData, StepType, HttpMethod } from '../TestCaseEditor.types'
+import type { StepItemData, HttpMethod } from '../TestCaseEditor.types'
+import { StepType } from '../TestCaseEditor.types'
 
 interface StepConfigPanelProps {
     stepItem: StepItemData | null

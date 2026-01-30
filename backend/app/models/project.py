@@ -59,7 +59,7 @@ class ProjectEnvironment(SQLModel, table=True):
 class ProjectDataSource(SQLModel, table=True):
     """项目数据源配置 - 存储数据库连接信息"""
     __tablename__ = "projectdatasource"
-    
+
     id: Optional[int] = Field(default=None, primary_key=True)
     project_id: int = Field(foreign_key="project.id")
     name: str  # 数据源名称 (如: 主库, 从库)
@@ -69,14 +69,18 @@ class ProjectDataSource(SQLModel, table=True):
     db_name: str = ""  # 数据库名
     username: str = ""
     password_hash: str = ""  # 加密存储的密码
-    
+
     # 新增配置字段
     variable_name: str = ""   # 引用变量名
     is_enabled: bool = Field(default=True)  # 是否启用
     status: str = "unchecked" # unchecked, connected, error
     last_test_at: Optional[datetime] = None
     error_msg: Optional[str] = None
-    
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+# 别名，用于简化导入
+Environment = ProjectEnvironment
 

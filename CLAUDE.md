@@ -1,6 +1,8 @@
-# Claude AI Assistant Guide - SisyphusX
+# CLAUDE.md
 
-> Last updated: 2026-01-28
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+> Last updated: 2025-01-30
 
 ## Project Overview
 
@@ -8,6 +10,12 @@
 
 ### Core Purpose
 Enable teams to create, manage, and execute automated tests through a visual interface while supporting code-driven workflows for advanced users.
+
+### AI Features（NEW）
+- **智能需求分析** - Multi-turn conversational AI for gathering test requirements
+- **AI 用例生成** - Automatic test case generation from requirements
+- **智能文档生成** - Auto-generate test documentation
+- **LangGraph Agent** - Complex workflow orchestration for AI interactions
 
 ### Architecture
 ```
@@ -25,44 +33,111 @@ Enable teams to create, manage, and execute automated tests through a visual int
 
 ---
 
-## Quick Reference
+## Quick Reference - Essential Commands
 
-### Environment Setup
+### Starting Development Environment
 
-**Frontend Development:**
 ```bash
+# 1. Start infrastructure services (PostgreSQL, Redis, MinIO)
+docker compose up -d
+
+# 2. Start backend (requires conda environment)
+conda activate platform-auto
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --reload  # Runs on http://localhost:8000
+
+# 3. Start frontend (new terminal)
 cd frontend
 npm install
-npm run dev          # http://localhost:5173
+npm run dev  # Runs on http://localhost:5173
+
+# 4. Access API documentation
+open http://localhost:8000/docs  # Auto-generated OpenAPI docs
 ```
 
-**Backend Development:**
-```bash
-# Activate conda environment
-conda activate platform-auto
+### Database Migrations
 
-# Navigate to backend
+```bash
 cd backend
 
-# Install dependencies (from root requirements.txt)
-pip install -r requirements.txt
+# Create migration after model changes
+alembic revision --autogenerate -m "Describe your changes"
 
-# Start development server
-uvicorn app.main:app --reload  # http://localhost:8000
+# Apply migrations
+alembic upgrade head
+
+# Rollback one migration
+alembic downgrade -1
+
+# View migration history
+alembic history
 ```
 
-**Infrastructure Services:**
+### Frontend Commands
+
 ```bash
-# Start PostgreSQL, Redis, MinIO
-docker compose up -d
+cd frontend
+
+npm run dev       # Development server with hot reload
+npm run build     # Production build (outputs to dist/)
+npm run preview   # Preview production build locally
+npm run lint      # Run ESLint to check code quality
 ```
 
-**API Engine (Standalone Test Runner):**
+### Backend Commands
+
 ```bash
-cd engines/api-engine
-pip install -r requirements.txt
-python setup.py install
-huace-apirun --cases=测试用例路径 -sv --capture=tee-sys
+cd backend
+
+# Run with auto-reload during development
+uvicorn app.main:app --reload
+
+# Run with specific host/port
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# Check dependencies
+pip list
+```
+
+### Testing (Manual)
+
+```bash
+# Backend API testing - use the interactive docs
+open http://localhost:8000/docs
+
+# Frontend testing - manual testing in browser
+npm run dev
+
+# Engine testing (when api-engine is implemented)
+# See engines/api_engine/ directory structure
+```
+
+---
+
+## Environment Setup
+
+**Conda Environment:**
+```bash
+# Activate the Python environment
+conda activate platform-auto
+```
+
+**Frontend Environment Variables** (`frontend/.env`):
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_AUTH_DISABLED=true
+VITE_DEV_MODE_SKIP_LOGIN=true  # Bypass login in development
+```
+
+**Backend Environment Variables** (root `.env`):
+```env
+DATABASE_URL=sqlite+aiosqlite:///./sisyphus.db
+# Or for PostgreSQL: postgresql+asyncpg://user:pass@localhost:5432/dbname
+
+REDIS_URL=redis://localhost:6379/0
+SECRET_KEY=change_this_in_production
+AUTH_DISABLED=true  # Set to false in production
 ```
 
 ### Key Technologies
@@ -86,190 +161,253 @@ huace-apirun --cases=测试用例路径 -sv --capture=tee-sys
 - Alembic (migrations)
 
 **Test Engines:**
-- api-engine: YAML-driven API test execution
+- `engines/api_engine/` - API test execution (currently empty, being developed)
 - web-engine: Web UI automation (planned)
 - app-engine: Mobile app automation (planned)
 
 ---
 
-## Project Structure
+## High-Level Architecture
+
+### Three-Layer Separation
+
+**1. Frontend (Visual Interface)**
+- Path: `frontend/src/`
+- Responsibility: User interaction, data visualization, workflow editing
+- State Management: React Query (server state), Context (global state), useState (local state)
+- API Communication: Centralized Axios client with auto-auth
+
+**2. Backend (API & Data)**
+- Path: `backend/app/`
+- Responsibility: REST API, business logic, data persistence
+- Architecture: FastAPI + SQLModel (ORM) + PostgreSQL/SQLite
+- Key Pattern: All endpoints use async/await, dependency injection for auth/session
+
+**3. Engines (Test Execution)**
+- Path: `engines/`
+- Responsibility: Execute test definitions, return results
+- Status: `api_engine` exists but is empty; being actively developed
+- Note: Engines are standalone Python packages that can run independently
+
+### Data Flow Architecture
 
 ```
-sisyphus/
-├── frontend/                    # React 19 frontend
-│   ├── src/
-│   │   ├── api/                # API client (Axios)
-│   │   │   └── client.ts       # Centralized API methods
-│   │   ├── components/         # React components
-│   │   │   ├── common/         # EmptyState, ConfirmDialog, Pagination
-│   │   │   ├── layout/         # AppLayout, Sidebar
-│   │   │   └── ui/             # shadcn/ui components
-│   │   ├── contexts/           # Global state (Auth, Theme, Sidebar)
-│   │   ├── i18n/               # Internationalization
-│   │   │   └── locales/        # zh-CN.json, en-US.json
-│   │   ├── pages/              # Page components
-│   │   │   ├── api-automation/ # API testing pages
-│   │   │   ├── auth/           # Login/Register
-│   │   │   ├── interface/      # API management
-│   │   │   ├── scenario/       # Workflow orchestration
-│   │   │   ├── cases/          # Test case management
-│   │   │   ├── plans/          # Test plans
-│   │   │   └── reports/        # Test reports
-│   │   ├── config/             # App configuration
-│   │   ├── lib/                # Utilities (cn() helper)
-│   │   └── types/              # TypeScript types
-│   ├── .env                    # Environment variables
-│   ├── package.json
-│   ├── vite.config.ts          # Vite config with @ alias
-│   └── tsconfig.json
-│
-├── backend/                     # FastAPI backend
-│   └── app/
-│       ├── api/
-│       │   └── v1/
-│       │       ├── api.py              # Router registration
-│       │       └── endpoints/          # API route handlers
-│       │           ├── projects.py     # Project CRUD + environments
-│       │           ├── interfaces.py   # API management
-│       │           ├── scenarios.py    # Workflow execution
-│       │           ├── keywords.py     # Keyword management
-│       │           ├── auth.py         # Authentication
-│       │           ├── dashboard.py    # Statistics
-│       │           └── ...
-│       ├── core/
-│       │   ├── config.py      # Settings from env
-│       │   ├── db.py          # Database connection
-│       │   └── security.py    # JWT auth
-│       ├── models/             # SQLModel database tables
-│       │   ├── project.py     # Project, Interface, Environment
-│       │   ├── scenario.py    # Scenario, Node, Edge
-│       │   ├── keyword.py     # Keyword definitions
-│       │   └── ...
-│       ├── schemas/            # Pydantic request/response models
-│       ├── services/           # Business logic layer
-│       └── main.py             # FastAPI app entry point
-│
-├── engines/                     # Test execution engines
-│   ├── api-engine/             # YAML-driven API testing
-│   │   ├── apirun/            # Core runner logic
-│   │   ├── setup.py           # Package setup
-│   │   └── examples/          # Example YAML test cases
-│   ├── web-engine/             # Web UI automation (placeholder)
-│   └── app-engine/             # Mobile automation (placeholder)
-│
-├── .env                         # Root environment config
-├── .gitignore
-├── docker-compose.yml           # Infrastructure services
-├── requirements.txt             # Python dependencies
-├── README.md                    # User-facing documentation
-├── AGENTS.md                    # AI agent development guide
-└── CLAUDE.md                    # This file
+User Action (Frontend)
+    ↓
+React Query Mutation/Query
+    ↓
+API Client (Axios with JWT auto-inject)
+    ↓
+FastAPI Endpoint (async)
+    ↓
+Service Layer (business logic)
+    ↓
+Database (SQLModel/SQLAlchemy)
+    ↓
+Response → Query Cache → UI Update
 ```
+
+### Critical Architectural Patterns
+
+**1. API Client Centralization**
+- Location: `frontend/src/api/client.ts`
+- Pattern: Single Axios instance with interceptors
+- Auto-injects JWT from localStorage on every request
+- Handles 401 errors with auto-redirect to login
+- All API methods organized by domain (e.g., `projectsApi`, `interfacesApi`)
+
+**2. Backend Router Organization**
+- Location: `backend/app/api/v1/api.py`
+- Pattern: All routers registered with consistent prefixes
+- Authentication: `dependencies=[Depends(deps.get_current_user)]` on protected routes
+- Tags for OpenAPI documentation grouping
+
+**3. Database Model-Schema Separation**
+- Models (`backend/app/models/`): SQLModel classes with `table=True`
+- Schemas (`backend/app/schemas/`): Pydantic models for request/response validation
+- Pattern: Models = database tables, Schemas = API contracts
+
+**4. Frontend Component Architecture**
+- Pages (`frontend/src/pages/`): Route-level components
+- Common components (`frontend/src/components/common/`): Reusable across pages
+- UI components (`frontend/src/components/ui/`): shadcn/ui base components
+- Pattern: Lift state up when components need to share data
+
+**5. Authentication Flow**
+- Frontend: Token stored in localStorage (`sisyphus-token`)
+- Backend: JWT validation via `get_current_user` dependency
+- Dev bypass: `VITE_DEV_MODE_SKIP_LOGIN=true` or `AUTH_DISABLED=true`
+- 401 handling: Auto-redirect to login (except on auth endpoints)
 
 ---
 
-## Development Workflows
+## Common Development Tasks
 
-### Adding a New Feature
+### Adding a New Backend Feature
 
-**1. Backend (FastAPI):**
+**Step 1: Create Database Model**
 ```python
-# 1. Create model in backend/app/models/feature.py
+# backend/app/models/feature.py
 from sqlmodel import SQLModel, Field
 from datetime import datetime
+from typing import Optional
 
 class Feature(SQLModel, table=True):
+    __tablename__ = "features"
+
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str
+    description: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+```
 
-# 2. Create schemas in backend/app/schemas/feature.py
+**Step 2: Create Pydantic Schemas**
+```python
+# backend/app/schemas/feature.py
 from pydantic import BaseModel
 
 class FeatureCreate(BaseModel):
     name: str
+    description: Optional[str] = None
 
-class FeatureResponse(Feature):
-    pass
+class FeatureUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
 
-# 3. Create endpoint in backend/app/api/v1/endpoints/feature.py
-from fastapi import APIRouter, Depends
+class FeatureResponse(FeatureCreate):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+```
+
+**Step 3: Create API Endpoint**
+```python
+# backend/app/api/v1/endpoints/feature.py
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlmodel import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import List
+
 from app.core.db import get_session
 from app.models.feature import Feature
+from app.schemas.feature import FeatureCreate, FeatureResponse
 
 router = APIRouter()
 
-@router.get("/features")
-async def list_features(session: AsyncSession = Depends(get_session)):
+@router.get("/", response_model=List[FeatureResponse])
+async def list_features(
+    session: AsyncSession = Depends(get_session)
+) -> List[FeatureResponse]:
     result = await session.execute(select(Feature))
-    return result.scalars().all()
+    features = result.scalars().all()
+    return features
 
-# 4. Register in backend/app/api/v1/api.py
-from app.api.v1.endpoints import feature
-api_router.include_router(feature.router, prefix="/features", tags=["features"])
+@router.post("/", response_model=FeatureResponse)
+async def create_feature(
+    data: FeatureCreate,
+    session: AsyncSession = Depends(get_session)
+) -> FeatureResponse:
+    feature = Feature(**data.model_dump())
+    session.add(feature)
+    await session.commit()
+    await session.refresh(feature)
+    return feature
 ```
 
-**2. Frontend (React + TypeScript):**
+**Step 4: Register Router**
+```python
+# backend/app/api/v1/api.py
+from app.api.v1.endpoints import feature
+api_router.include_router(
+    feature.router,
+    prefix="/features",
+    tags=["features"],
+    dependencies=[Depends(deps.get_current_user)]
+)
+```
+
+**Step 5: Generate Database Migration**
+```bash
+cd backend
+alembic revision --autogenerate -m "Add features table"
+alembic upgrade head
+```
+
+### Adding a New Frontend Page
+
+**Step 1: Add API Client Methods**
 ```typescript
-// 1. Add API client in frontend/src/api/client.ts
+// frontend/src/api/client.ts
 export const featuresApi = {
   list: () => api.get('/features/'),
   get: (id: number) => api.get(`/features/${id}`),
-  create: (data: { name: string }) => api.post('/features/', data),
+  create: (data: FeatureCreate) => api.post('/features/', data),
+  update: (id: number, data: FeatureUpdate) => api.patch(`/features/${id}`, data),
+  delete: (id: number) => api.delete(`/features/${id}`),
 }
+```
 
-// 2. Create page component in frontend/src/pages/feature/FeatureList.tsx
+**Step 2: Create Page Component**
+```typescript
+// frontend/src/pages/features/FeatureList.tsx
 import { useQuery } from '@tanstack/react-query'
 import { featuresApi } from '@/api/client'
 
 export function FeatureList() {
-  const { data, isLoading } = useQuery({
+  const { data: features, isLoading } = useQuery({
     queryKey: ['features'],
     queryFn: () => featuresApi.list().then(res => res.data)
   })
 
   if (isLoading) return <div>Loading...</div>
-  return <div>{/* render features */}</div>
-}
 
-// 3. Add route in frontend/src/App.tsx
-import { FeatureList } from './pages/feature/FeatureList'
+  return (
+    <div>
+      <h1>Features</h1>
+      {/* Render features list */}
+    </div>
+  )
+}
+```
+
+**Step 3: Add Route**
+```typescript
+// frontend/src/App.tsx
+import { FeatureList } from './pages/features/FeatureList'
 
 // Add to router configuration
+<Route path="/features" element={<FeatureList />} />
 ```
 
-### Adding Database Migrations
-
-```bash
-cd backend
-
-# Create migration
-alembic revision --autogenerate -m "Add feature table"
-
-# Apply migration
-alembic upgrade head
-```
-
-### Creating Reusable Components
-
-**Location:** `frontend/src/components/common/`
-
-**Example:**
+**Step 4: Add Navigation Link**
 ```typescript
-// ConfirmDialog component supports text verification
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-
-<ConfirmDialog
-  isOpen={isOpen}
-  onClose={() => setIsOpen(false)}
-  onConfirm={handleDelete}
-  title="Delete Project"
-  description="Type project name to confirm"
-  verificationText={projectName}  // User must type this to confirm
-  isDestructive={true}
-/>
+// Add to sidebar or navigation component
+<Link to="/features">Features</Link>
 ```
+
+### Debugging Common Issues
+
+**CORS Errors:**
+- Check `backend/app/main.py` CORS middleware configuration
+- Ensure frontend URL is in `allow_origins`
+- Both frontend and backend should be running
+
+**401 Unauthorized:**
+- Check if token exists in localStorage: `localStorage.getItem('sisyphus-token')`
+- Verify `AUTH_DISABLED=true` in both frontend `.env` and backend `.env` for dev mode
+- Check backend console for authentication errors
+
+**Database Connection Issues:**
+- Ensure PostgreSQL is running: `docker compose ps`
+- Check `DATABASE_URL` in backend `.env`
+- For SQLite, ensure the directory is writable
+- Run migrations: `alembic upgrade head`
+
+**Import Path Issues (@ alias):**
+- Frontend: Ensure `vite.config.ts` has `@` pointing to `./src`
+- Backend: Use absolute imports from `app.` prefix
 
 ---
 
@@ -291,7 +429,7 @@ import { cn } from '@/lib/utils'
 import { projectsApi } from '@/api/client'
 ```
 
-**Naming:**
+**Naming Conventions:**
 - Components: `PascalCase` (e.g., `UserList.tsx`)
 - Functions/variables: `camelCase` (e.g., `fetchUserData`)
 - Constants: `UPPER_SNAKE_CASE` (e.g., `API_BASE_URL`)
@@ -299,7 +437,7 @@ import { projectsApi } from '@/api/client'
 
 **Type Safety:**
 ```typescript
-// AVOID any - use unknown or specific types
+// NEVER use 'any' - use unknown or specific types
 const data: unknown = fetchData()
 
 // Use interfaces for component props
@@ -342,7 +480,7 @@ from app.core.db import get_session
 from app.models.project import Project
 ```
 
-**Naming:**
+**Naming Conventions:**
 - Functions/variables: `snake_case`
 - Classes: `PascalCase`
 - Constants: `UPPER_SNAKE_CASE`
@@ -382,127 +520,65 @@ await session.commit()
 
 ---
 
-## Configuration Management
+## Configuration & Environment
 
 ### Environment Variables
 
-**Root `.env` (Backend):**
+**Backend Configuration** (root `.env`):
 ```env
-# Database
-DATABASE_URL=sqlite+aiosqlite:///sisyphus.db
-# Or for PostgreSQL:
-# DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/dbname
+# Database - SQLite for development, PostgreSQL for production
+DATABASE_URL=sqlite+aiosqlite:///./sisyphus.db
+# DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/sisyphus
 
-# Redis
+# Redis (optional)
 REDIS_URL=redis://localhost:6379/0
 
-# App
+# Application
 SECRET_KEY=change_this_in_production
 PROJECT_NAME="Sisyphus X"
 API_V1_STR=/api/v1
 
-# Auth
-AUTH_DISABLED=true  # Set to false in production
+# Authentication - Set to false in production
+AUTH_DISABLED=true
 ```
 
-**Frontend `.env`:**
+**Frontend Configuration** (`frontend/.env`):
 ```env
 VITE_API_BASE_URL=http://localhost:8000/api/v1
 VITE_AUTH_DISABLED=true
-VITE_DEV_MODE_SKIP_LOGIN=true  # Bypass login in dev
+VITE_DEV_MODE_SKIP_LOGIN=true  # Bypass login in development
 ```
 
-**Access in Frontend:**
-```typescript
-const apiBaseURL = import.meta.env.VITE_API_BASE_URL
-```
+**Access Environment Variables:**
+- Frontend: `import.meta.env.VITE_API_BASE_URL`
+- Backend: `from app.core.config import settings; settings.DATABASE_URL`
 
-**Access in Backend:**
-```python
-from app.core.config import settings
-db_url = settings.DATABASE_URL
-```
-
-### Frontend Config
+### Frontend Configuration
 
 **Location:** `frontend/src/config/index.ts`
 
-```typescript
-const config = {
-  apiBaseURL: import.meta.env.VITE_API_BASE_URL,
-  appName: 'Sisyphus',
-  defaultPageSize: 10,
-  storageKeys: {
-    token: 'sisyphus-token',
-    theme: 'sisyphus-theme'
-  }
-}
-```
-
----
-
-## API Architecture
-
-### API Client Design
-
-**Centralized API Client:** `frontend/src/api/client.ts`
-
-All API calls use pre-configured Axios instance with:
-- Automatic JWT token injection from localStorage
-- 401 error handling (auto-redirect to login)
-- Consistent error handling
-
-**Usage:**
-```typescript
-import { projectsApi, interfacesApi } from '@/api/client'
-
-// GET request
-const { data } = await projectsApi.list({ page: 1, size: 10 })
-
-// POST request
-await projectsApi.create({ name: 'New Project', key: 'PROJ', owner: 'John' })
-
-// DELETE request
-await projectsApi.delete(id)
-```
-
-### Backend API Structure
-
-**Router Registration:** `backend/app/api/v1/api.py`
-
-All routers use:
-- `Depends(deps.get_current_user)` for authentication (except auth endpoints)
-- Consistent prefix: `/api/v1/{resource}`
-- Tag grouping for OpenAPI docs
-
-**Example Endpoint:**
-```python
-@router.get("/")
-async def list_projects(
-    page: int = 1,
-    size: int = 10,
-    session: AsyncSession = Depends(get_session)
-):
-    # Implementation
-    pass
-```
+Centralized configuration for:
+- API base URL
+- Storage keys (localStorage)
+- Default page size
+- App metadata
 
 ---
 
 ## Authentication Flow
 
-### Frontend
-1. Login stores JWT token in `localStorage` (key: `sisyphus-token`)
+### Frontend Authentication
+1. Login stores JWT token in localStorage (key: `sisyphus-token`)
 2. Axios interceptor adds `Authorization: Bearer <token>` to all requests
 3. 401 response triggers redirect to `/login` (excluding auth endpoints)
-4. Dev mode: Set `VITE_DEV_MODE_SKIP_LOGIN=true` to bypass
+4. Dev bypass: Set `VITE_DEV_MODE_SKIP_LOGIN=true`
 
-### Backend
+### Backend Authentication
 1. JWT token validation via `app.api.deps.get_current_user`
 2. OAuth support (GitHub/Google) - configured in `.env`
 3. Can disable auth with `AUTH_DISABLED=true` (dev mode)
 
-### Protected Routes
+### Protected Routes Example
 ```python
 from app.api import deps
 
@@ -510,93 +586,8 @@ from app.api import deps
 async def protected_route(
     current_user: User = Depends(deps.get_current_user)
 ):
-    # current_user is available
+    # current_user is available here
     pass
-```
-
----
-
-## Key Features Implementation
-
-### 1. API Management (Interface Editor)
-
-**Backend:** `backend/app/api/v1/endpoints/interfaces.py`
-**Frontend:** `frontend/src/pages/interface/`
-
-Features:
-- CRUD for API endpoints
-- Folder organization (tree structure)
-- Import from Swagger/OpenAPI
-- Real-time request debugging
-- cURL command parsing
-
-### 2. Scenario Orchestration
-
-**Backend:** `backend/app/api/v1/endpoints/scenarios.py`
-**Frontend:** `frontend/src/pages/scenario/`
-
-Features:
-- Visual workflow editor using ReactFlow
-- Node-based test composition
-- Scenario execution with results
-- Drag-and-drop interface
-
-### 3. Keyword-Driven Testing
-
-**Backend:** `backend/app/api/v1/endpoints/keywords.py`
-**Frontend:** Keyword editor pages
-
-Features:
-- Define reusable test keywords
-- Code template generation
-- Variable extraction
-- Parameter management
-
-### 4. Test Execution
-
-**Engine:** `engines/api-engine/`
-
-Workflow:
-1. Frontend sends graph data to `/api/v1/scenarios/run`
-2. Backend validates and converts to YAML
-3. api-engine executes YAML test case
-4. Results returned and stored in database
-
----
-
-## Internationalization (i18n)
-
-**Setup:** `frontend/src/i18n/`
-
-**Locales:**
-- `zh-CN.json` - Chinese (Simplified)
-- `en-US.json` - English
-
-**Usage:**
-```typescript
-import { useTranslation } from 'react-i18next'
-
-function Component() {
-  const { t } = useTranslation()
-  return <h1>{t('nav.dashboard')}</h1>
-}
-```
-
-**Adding Translations:**
-```json
-// zh-CN.json
-{
-  "nav": {
-    "dashboard": "仪表板"
-  }
-}
-
-// en-US.json
-{
-  "nav": {
-    "dashboard": "Dashboard"
-  }
-}
 ```
 
 ---
@@ -604,39 +595,46 @@ function Component() {
 ## Component Library
 
 ### shadcn/ui Components
+**Location:** `frontend/src/components/ui/`
 
-Location: `frontend/src/components/ui/`
+Installed: Dialog, Dropdown Menu, Scroll Area, Switch, Tabs, Tooltip
 
-Installed components:
-- Dialog
-- Dropdown Menu
-- Scroll Area
-- Switch
-- Tabs
-- Tooltip
+### Custom Components
+**Location:** `frontend/src/components/`
 
-**Custom Components:**
+**Common Components** (`common/`):
+- `EmptyState.tsx` - Placeholder for empty lists
+- `ConfirmDialog.tsx` - Confirmation dialog with text verification
+- `Pagination.tsx` - List pagination
+
+**UI Components** (`ui/`):
 - `MonacoEditor.tsx` - Code editor wrapper
 - `CustomSelect.tsx` - Enhanced select
 - `StatusBadge.tsx` - Status display
 - `Toast.tsx` - Notification system
 
-### Common Components
+**Example Usage:**
+```typescript
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 
-Location: `frontend/src/components/common/`
-
-- `EmptyState.tsx` - Placeholder for empty lists
-- `ConfirmDialog.tsx` - Confirmation dialog with text verification
-- `Pagination.tsx` - List pagination
+<ConfirmDialog
+  isOpen={isOpen}
+  onClose={() => setIsOpen(false)}
+  onConfirm={handleDelete}
+  title="Delete Project"
+  description="Type project name to confirm"
+  verificationText={projectName}  // User must type this to confirm
+  isDestructive={true}
+/>
+```
 
 ---
 
 ## Common Patterns
 
-### Async Data Fetching
-
+### Async Data Fetching (React Query)
 ```typescript
-// Using React Query
+// Query
 const { data, isLoading, error } = useQuery({
   queryKey: ['projects', projectId],
   queryFn: () => projectsApi.get(projectId).then(res => res.data)
@@ -649,23 +647,6 @@ const mutation = useMutation({
     queryClient.invalidateQueries({ queryKey: ['projects'] })
   }
 })
-```
-
-### Form Handling
-
-```typescript
-const [formData, setFormData] = useState({
-  name: '',
-  url: '',
-  method: 'GET'
-})
-
-const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  setFormData(prev => ({
-    ...prev,
-    [e.target.name]: e.target.value
-  }))
-}
 ```
 
 ### Error Handling
@@ -690,54 +671,6 @@ if not project:
         status_code=status.HTTP_404_NOT_FOUND,
         detail="Project not found"
     )
-```
-
----
-
-## Testing
-
-### Current Status
-- No testing framework configured yet
-- AGENTS.md recommends adding:
-  - Backend: pytest
-  - Frontend: Vitest
-
-### Manual Testing
-```bash
-# Backend API docs
-open http://localhost:8000/docs
-
-# Frontend dev server
-npm run dev
-```
-
-### API Engine Testing
-```bash
-cd engines/api-engine
-huace-apirun --cases=examples/example_case.yaml -sv
-```
-
----
-
-## Build & Deployment
-
-### Frontend Build
-```bash
-cd frontend
-npm run build          # Production build to dist/
-npm run preview        # Preview production build
-```
-
-### Backend Deployment
-```bash
-cd backend
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-### Docker Services
-```bash
-docker compose up -d    # Start all services
-docker compose down     # Stop all services
 ```
 
 ---
@@ -774,108 +707,56 @@ refactor: extract reusable components
 
 ---
 
-## Troubleshooting
+## Key Files Reference
 
-### Common Issues
+### Frontend
+- `frontend/src/api/client.ts` - Centralized API client with interceptors
+- `frontend/src/config/index.ts` - Frontend configuration
+- `frontend/vite.config.ts` - Vite build config with @ alias
+- `frontend/eslint.config.js` - ESLint configuration
 
-**CORS Errors:**
-- Check `backend/app/main.py` CORS middleware
-- Ensure frontend URL is in `allow_origins`
+### Backend
+- `backend/app/main.py` - FastAPI application entry point
+- `backend/app/api/v1/api.py` - Router registration
+- `backend/app/core/config.py` - Settings and environment variables
+- `backend/app/core/db.py` - Database connection
+- `backend/app/api/deps.py` - Dependencies (get_current_user, etc.)
 
-**401 Unauthorized:**
-- Check if token exists in localStorage
-- Verify `SECRET_KEY` matches in backend
-- Check if `AUTH_DISABLED=true` in dev mode
-
-**Database Connection:**
-- Ensure PostgreSQL is running: `docker compose up -d postgres`
-- Check `DATABASE_URL` in `.env`
-- For SQLite: Ensure file path is writable
-
-**Import Errors (@ alias):**
-- Check `vite.config.ts` has `@` pointing to `./src`
-- Check `tsconfig.json` has path mapping
-
-**Engine Not Found:**
-- Run `python setup.py install` in engine directory
-- Check `pip list | grep HuaceAPIRunner`
-
----
-
-## Learning Resources
-
-### Project Documentation
-- `/README.md` - User guide and quick start
-- `/AGENTS.md` - Development conventions and workflows
-- `/engines/api-engine/README.md` - API engine usage
-
-### Key Files to Understand
-1. `frontend/src/api/client.ts` - API architecture
-2. `backend/app/main.py` - Backend initialization
-3. `backend/app/api/v1/api.py` - Route structure
-4. `frontend/src/config/index.ts` - Frontend configuration
-5. `backend/app/core/config.py` - Backend settings
-
-### External Documentation
-- [FastAPI](https://fastapi.tiangolo.com/)
-- [React Query](https://tanstack.com/query/latest)
-- [ReactFlow](https://reactflow.dev/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [SQLModel](https://sqlmodel.tiangolo.com/)
+### Documentation
+- `README.md` - User-facing documentation
+- `AGENTS.md` - Development conventions and workflows
+- `CLAUDE.md` - This file (AI assistant guide)
 
 ---
 
 ## Important Notes
 
-- **Database Models**: Use SQLModel (combines SQLAlchemy + Pydantic)
-- **Async Operations**: All database operations must be async/await
-- **API Versioning**: All routes prefixed with `/api/v1`
-- **Authentication**: JWT-based, can be disabled for development
-- **State Management**: React Query for server state, Context for global state
-- **Styling**: Tailwind CSS with `cn()` utility for class merging
-- **Type Safety**: Strict TypeScript on frontend, type hints on backend
-- **i18n**: All user-facing strings must use translation keys
-- **Error Handling**: Centralized error handling in API client
-- **File Uploads**: MinIO for object storage (configured in backend)
+**Database:** Use SQLModel (combines SQLAlchemy + Pydantic). All operations must be async/await.
 
----
+**API Versioning:** All routes prefixed with `/api/v1`
 
-## Quick Commands Reference
+**State Management:**
+- React Query for server state
+- React Context for global state
+- useState for local component state
 
-```bash
-# Start everything
-docker compose up -d                    # Infrastructure
-conda activate platform-auto            # Python env
-cd backend && uvicorn app.main:app --reload &  # Backend
-cd frontend && npm run dev              # Frontend
+**Styling:** Tailwind CSS with `cn()` utility for class merging
 
-# Database operations
-cd backend
-alembic revision --autogenerate -m "message"
-alembic upgrade head
-alembic downgrade -1
+**Type Safety:** Strict TypeScript on frontend, type hints on backend
 
-# Testing
-cd engines/api-engine
-huace-apirun --cases=examples/ -sv
+**i18n:** All user-facing strings must use translation keys
 
-# Linting
-cd frontend
-npm run lint
-
-# Build
-cd frontend && npm run build
-```
+**Error Handling:** Centralized in API client
 
 ---
 
 ## Summary
 
-SisyphusX is a modern, full-stack automated testing platform that separates concerns between:
-- **Frontend**: Visual interface for test management
-- **Backend**: API and data persistence
-- **Engines**: Test execution logic
+SisyphusX is a modern, full-stack automated testing platform with clear separation between:
+- **Frontend** (React + TypeScript): Visual interface
+- **Backend** (FastAPI + Python): API and persistence
+- **Engines** (Python): Test execution
 
-The project uses industry-standard technologies and follows best practices for type safety, async operations, and component reusability. The modular architecture allows independent development and testing of each component.
+The project emphasizes type safety, async operations, and component reusability. The modular architecture enables independent development and testing.
 
-**Remember:** Always refer to AGENTS.md for detailed coding conventions and this file (CLAUDE.md) for AI assistant-specific guidance.
+**Remember:** Refer to AGENTS.md for detailed coding conventions and this file (CLAUDE.md) for AI assistant-specific guidance.

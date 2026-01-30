@@ -6,43 +6,80 @@
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://python.org)
-[![React](https://img.shields.io/badge/react-18+-61dafb.svg)](https://reactjs.org)
+[![React](https://img.shields.io/badge/react-19+-61dafb.svg)](https://reactjs.org)
 [![FastAPI](https://img.shields.io/badge/fastapi-0.100+-009688.svg)](https://fastapi.tiangolo.com)
+[![AI](https://img.shields.io/badge/AI-Claude-purple.svg)](https://anthropic.com)
 
 </div>
 
 ---
 
-## ✨ 特性
+## ✨ 核心特性
 
-- 🎯 **接口管理** - 可视化接口编辑器，支持实时调试
-- 🔄 **场景编排** - 基于 ReactFlow 的拖拽式工作流设计
-- 📋 **用例管理** - 多维度用例组织与追踪
-- ⚡ **核心执行器** - 独立的 api-engine，支持 YAML 驱动测试
-- 🌙 **主题切换** - 支持明/暗/系统主题
+### 🤖 AI 智能助手（新功能）
+- **智能需求分析** - 通过多轮对话自动收集测试需求
+- **AI 用例生成** - 根据需求描述自动生成测试用例
+- **智能文档生成** - 自动生成测试计划和文档
+- **测试建议** - 基于最佳实践提供测试建议
+
+### 🎯 接口自动化测试
+- **可视化编辑器** - 低代码方式创建 API 测试用例
+- **YAML 驱动** - 支持 YAML 格式配置
+- **多种步骤类型** - HTTP、数据库、等待、循环、脚本、并发、条件
+- **实时执行** - 异步执行测试并实时查看结果
+
+### 🔄 场景编排
+- **拖拽式设计** - 基于 ReactFlow 的工作流编辑
+- **可视化执行** - 图形化展示测试执行过程
+- **场景复用** - 支持场景模板和复用
+
+### 📋 测试管理
+- **用例管理** - 多维度用例组织与追踪
+- **关键字驱动** - 可复用的测试关键字
+- **批量执行** - 支持批量测试和定时任务
+- **执行报告** - 详细的测试结果和性能指标
+
+### 🌐 项目管理
+- **多项目支持** - 灵活的项目组织结构
+- **环境管理** - 开发、测试、生产环境隔离
+- **数据源管理** - 数据库连接配置
+
+### 🎨 用户体验
+- 🌙 **主题切换** - 支持明/暗主题
 - 🌍 **国际化** - 中英文自动切换
+- 📱 **响应式设计** - 适配各种设备
 
 ---
 
 ## 🏗️ 技术栈
 
 ### 前端
-- **React 18** + **TypeScript**
-- **Tailwind CSS** - 原子化 CSS
-- **shadcn/ui** - 组件库
+- **React 19** + **TypeScript** - 现代化前端框架
+- **Vite** - 极速构建工具
+- **Tailwind CSS** - 原子化 CSS 框架
+- **shadcn/ui** - 高质量组件库
 - **ReactFlow** - 流程图编辑器
 - **Monaco Editor** - 代码编辑器
-- **Recharts** - 数据可视化
-- **React Query** - 数据请求
+- **React Query** - 强大的数据同步
+- **Framer Motion** - 流畅动画效果
 
 ### 后端
-- **FastAPI** - 高性能 API 框架
-- **SQLModel** - ORM 层
-- **PostgreSQL** - 数据库
-- **Redis** - 缓存
+- **FastAPI** - 高性能异步 Web 框架
+- **SQLModel** - 现代化 ORM（基于 SQLAlchemy + Pydantic）
+- **PostgreSQL** - 关系型数据库
+- **Redis** - 缓存和消息队列
+- **Alembic** - 数据库迁移工具
+
+### AI 能力（新）
+- **LangGraph** - AI Agent 编排框架
+- **Claude API** - 大语言模型
+- **LangChain** - AI 工具链
+- **Anthropic** - AI 模型提供商
 
 ### 核心执行器
-- **api-engine** - YAML 驱动的 API 测试执行器
+- **api-engine** - YAML 驱动的 API 测试执行引擎
+- **web-engine** - Web UI 自动化测试（规划中）
+- **app-engine** - 移动端自动化测试（规划中）
 
 ---
 
@@ -53,39 +90,59 @@
 - Node.js 18+
 - Python 3.10+
 - Docker & Docker Compose
-- Conda (推荐)
+- Conda（推荐）
+- Anthropic API Key（AI 功能需要）
 
 ### 配置说明
 
 #### 后端配置
 
-后端使用 `.env` 文件管理配置。复制示例文件并根据需要修改:
+创建 `.env` 文件：
 
 ```bash
 cp .env.example .env
 ```
 
-主要配置项:
-- `DATABASE_URL`: PostgreSQL 数据库连接
-- `REDIS_URL`: Redis 连接 (可选)
-- `SECRET_KEY`: JWT 密钥
-- `FRONTEND_URL`: 前端地址 (用于 OAuth 回调)
-- `AUTH_DISABLED`: 是否禁用认证 (开发模式)
+主要配置项：
+
+```env
+# 数据库
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/sisyphus
+
+# Redis
+REDIS_URL=redis://localhost:6379/0
+
+# 认证
+SECRET_KEY=your-secret-key-here
+AUTH_DISABLED=true  # 开发模式可禁用认证
+
+# AI 功能（新）
+ANTHROPIC_API_KEY=your-anthropic-api-key  # 从 https://console.anthropic.com 获取
+
+# OAuth（可选）
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# 前端地址
+FRONTEND_URL=http://localhost:5173
+```
 
 #### 前端配置
-
-前端使用环境变量配置，位于 `frontend/.env`:
 
 ```bash
 cd frontend
 cp .env.example .env
 ```
 
-主要配置项:
-- `VITE_API_BASE_URL`: 后端 API 地址 (默认: http://localhost:8000/api/v1)
-- `VITE_AUTH_DISABLED`: 是否禁用认证
+主要配置项：
 
-所有配置项统一在 `frontend/src/config/index.ts` 中定义。
+```env
+VITE_API_BASE_URL=http://localhost:8000/api/v1
+VITE_AUTH_DISABLED=true
+VITE_DEV_MODE_SKIP_LOGIN=true  # 开发模式跳过登录
+```
 
 ---
 
@@ -108,9 +165,16 @@ cd backend
 # 安装依赖
 pip install -r requirements.txt
 
+# 数据库迁移
+alembic upgrade head
+
 # 启动服务
 uvicorn app.main:app --reload
 ```
+
+后端将运行在 http://localhost:8000
+
+API 文档：http://localhost:8000/docs
 
 ### 3. 启动前端
 
@@ -125,28 +189,114 @@ npm install
 npm run dev
 ```
 
+前端将运行在 http://localhost:5173
+
 ### 4. 访问应用
 
 | 服务 | 地址 |
 |------|------|
-| 前端 | http://localhost:5173 |
+| 前端应用 | http://localhost:5173 |
 | API 文档 | http://localhost:8000/docs |
+| ReDoc 文档 | http://localhost:8000/redoc |
+
+---
+
+## 📖 功能使用指南
+
+### 🤖 AI 需求分析（新功能）
+
+1. **启动 AI 助手**
+   ```
+   导航到 "AI 助手" → "需求分析"
+   ```
+
+2. **描述测试需求**
+   ```
+   例如："我需要测试用户登录接口，包括正常登录、密码错误、账号不存在等情况"
+   ```
+
+3. **AI 互动收集**
+   ```
+   AI 会主动提问以澄清需求：
+   - 接口地址是什么？
+   - 需要测试哪些异常场景？
+   - 有什么特殊的验证要求？
+   ```
+
+4. **生成测试用例**
+   ```
+   AI 自动生成 YAML 格式的测试用例
+   ```
+
+5. **导出文档**
+   ```
+   一键导出测试计划和用例文档
+   ```
+
+### 🎯 接口自动化测试
+
+1. **创建测试用例**
+   ```
+   导航到项目 → 测试用例 → 新建测试用例
+   ```
+
+2. **可视化编辑**
+   ```
+   - 配置基本信息（名称、Base URL、超时）
+   - 添加测试步骤（HTTP 请求、数据库查询等）
+   - 设置断言和变量提取
+   ```
+
+3. **执行测试**
+   ```
+   点击"执行"按钮，实时查看执行结果
+   ```
+
+4. **查看报告**
+   ```
+   查看详细的执行报告，包括：
+   - 响应时间
+   - 状态码
+   - 响应内容
+   - 错误信息
+   ```
+
+### 🔄 场景编排
+
+1. **创建场景**
+   ```
+   导航到场景编排 → 新建场景
+   ```
+
+2. **设计工作流**
+   ```
+   - 拖拽节点到画布
+   - 连接节点形成流程
+   - 配置每个节点的参数
+   ```
+
+3. **执行场景**
+   ```
+   点击执行，可视化展示执行过程
+   ```
 
 ---
 
 ## 🧩 可复用组件
 
-### 前端组件
+### 前端组件库
 
-项目封装了以下可复用组件,位于 `frontend/src/components/`:
+项目封装了以下可复用组件，位于 `frontend/src/components/`：
 
 | 组件 | 路径 | 用途 |
 |------|------|------|
 | EmptyState | `common/EmptyState.tsx` | 统一的空状态展示 |
 | Pagination | `common/Pagination.tsx` | 分页组件 |
-| ConfirmDialog | `common/ConfirmDialog.tsx` | 通用确认对话框 (支持文本验证) |
+| ConfirmDialog | `common/ConfirmDialog.tsx` | 确认对话框（支持文本验证） |
 | CustomSelect | `ui/CustomSelect.tsx` | 自定义下拉选择器 |
 | Toast | `ui/Toast.tsx` | 消息提示 |
+| MonacoEditor | `ui/MonacoEditor.tsx` | 代码编辑器 |
+| StatusBadge | `ui/StatusBadge.tsx` | 状态徽章 |
 
 #### 使用示例
 
@@ -158,10 +308,10 @@ import { EmptyState } from '@/components/common/EmptyState'
     title="暂无数据"
     description="这里什么都没有..."
     icon={Database}
-    action={<button>创建</button>}
+    action={<button>创建第一个项目</button>}
 />
 
-// ConfirmDialog 示例 (带文本验证)
+// ConfirmDialog 示例（带文本验证）
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 
 <ConfirmDialog
@@ -181,27 +331,44 @@ import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 
 ```
 sisyphus/
-├── frontend/           # React 前端
+├── frontend/                # React 前端
 │   ├── src/
-│   │   ├── api/        # API 客户端
-│   │   ├── components/ # 通用组件
-│   │   ├── contexts/   # React Context
-│   │   ├── i18n/       # 国际化
-│   │   ├── pages/      # 页面组件
-│   │   └── lib/        # 工具库
-│   └── public/         # 静态资源
-├── backend/            # FastAPI 后端
+│   │   ├── api/            # API 客户端
+│   │   ├── components/     # 通用组件
+│   │   │   ├── common/     # 通用组件（EmptyState、Pagination）
+│   │   │   ├── layout/     # 布局组件
+│   │   │   └── ui/         # UI 组件（Toast、Dialog）
+│   │   ├── contexts/       # React Context
+│   │   ├── i18n/           # 国际化
+│   │   ├── pages/          # 页面组件
+│   │   │   ├── api-automation/  # API 自动化
+│   │   │   ├── ai-assistant/    # AI 助手（新）
+│   │   │   ├── scenario/        # 场景编排
+│   │   │   └── ...
+│   │   └── lib/            # 工具库
+│   └── public/             # 静态资源
+├── backend/                # FastAPI 后端
 │   └── app/
-│       ├── api/        # API 路由
-│       ├── models/     # 数据模型
-│       ├── schemas/    # Pydantic schemas
-│       └── core/       # 核心配置
-├── engines/            # 核心执行器
-│   ├── api-engine/     # API 测试引擎
-│   ├── web-engine/     # Web UI 测试引擎
-│   └── app-engine/     # App 测试引擎
-├── docs/               # 文档
-└── deploy/             # 部署配置
+│       ├── api/v1/         # API 路由
+│       │   └── endpoints/  # 端点实现
+│       │       ├── ai_assistant.py  # AI 助手（新）
+│       │       ├── api_test_cases.py
+│       │       └── ...
+│       ├── core/           # 核心配置
+│       ├── models/         # 数据模型
+│       ├── schemas/        # Pydantic schemas
+│       └── services/       # 业务逻辑
+│           ├── requirement_agent.py  # AI Agent（新）
+│           ├── yaml_generator.py
+│           └── ...
+├── engines/                # 核心执行器
+│   ├── api-engine/         # API 测试引擎
+│   ├── web-engine/         # Web UI 测试引擎
+│   └── app-engine/         # App 测试引擎
+├── docs/                   # 文档
+│   ├── AI_REQUIREMENT_ANALYSIS_PLAN.md  # AI 功能规划（新）
+│   └── ...
+└── deploy/                 # 部署配置
 ```
 
 ---
@@ -210,41 +377,58 @@ sisyphus/
 
 独立的命令行工具，用于执行 YAML 定义的 API 测试用例。
 
-### 使用方法
+### 安装
 
 ```bash
 cd engines/api-engine
-
-# 安装依赖
 pip install -r requirements.txt
+python setup.py install
+```
 
+### 使用方法
+
+```bash
 # 执行测试
-python main.py run -f examples/example_case.yaml
+huace-apirun --cases=examples/ -sv
 
-# 验证 YAML 格式
-python main.py validate -f case.yaml
+# 验证 YAML
+huace-apirun --cases=case.yaml --validate
+
+# 查看帮助
+huace-apirun --help
 ```
 
 ### YAML 格式示例
 
 ```yaml
+name: "API 测试示例"
 config:
-  name: "API 测试示例"
   base_url: "https://api.example.com"
-  variables:
-    token: "xxx"
+  verify: false
+  timeout: 30
 
-teststeps:
-  - name: "获取用户信息"
-    type: "api"
+steps:
+  - name: "用户登录"
     request:
-      method: "GET"
-      url: "/user/info"
+      url: /api/auth/login
+      method: POST
+      json:
+        username: "test"
+        password: "123456"
+    validate:
+      - eq: [status_code, 200]
+      - eq: ["body.code", 0]
+
+  - name: "获取用户信息"
+    request:
+      url: /api/user/info
+      method: GET
       headers:
         Authorization: "Bearer ${token}"
+    extract:
+      user_id: body.data.id
     validate:
-      - eq: ["status_code", 200]
-      - eq: ["body.code", 0]
+      - eq: [status_code, 200]
 ```
 
 ---
@@ -253,20 +437,110 @@ teststeps:
 
 ### 代码规范
 
-- **前端**: ESLint + Prettier
-- **后端**: Black + isort
+**前端**：
+- TypeScript 严格模式
+- ESLint + Prettier
+- React Hooks 规则
+
+**后端**：
+- Black + isort
+- 类型注解（Type Hints）
+- 异步优先（async/await）
 
 ### 提交规范
 
 ```
 feat: 新功能
-fix: 修复bug
+fix: 修复 bug
 docs: 文档更新
 style: 代码格式
 refactor: 重构
+perf: 性能优化
 test: 测试相关
 chore: 构建/工具
+ai: AI 功能相关
 ```
+
+### 测试
+
+**前端测试**（待添加）：
+```bash
+npm run test
+```
+
+**后端测试**（待添加）：
+```bash
+cd backend
+pytest
+```
+
+---
+
+## 🚧 部署
+
+### Docker 部署
+
+```bash
+# 构建镜像
+docker compose build
+
+# 启动所有服务
+docker compose up -d
+
+# 查看日志
+docker compose logs -f
+```
+
+### 生产环境配置
+
+1. **修改环境变量**
+   ```env
+   AUTH_DISABLED=false
+   SECRET_KEY=强密码
+   DATABASE_URL=生产数据库地址
+   ```
+
+2. **数据库迁移**
+   ```bash
+   alembic upgrade head
+   ```
+
+3. **启动服务**
+   ```bash
+   # 使用 Gunicorn（生产环境）
+   gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker
+   ```
+
+---
+
+## 🤝 贡献指南
+
+欢迎贡献代码！请遵循以下步骤：
+
+1. Fork 本仓库
+2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交更改 (`git commit -m 'feat: 添加某个功能'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 提交 Pull Request
+
+---
+
+## 📚 文档
+
+- [开发指南](./CLAUDE.md) - Claude AI 助手开发指南
+- [Agent 指南](./AGENTS.md) - AI Agent 开发规范
+- [AI 功能规划](./AI_REQUIREMENT_ANALYSIS_PLAN.md) - AI 需求分析功能设计
+- [API 引擎集成](./API_ENGINE_INTEGRATION_PLAN.md) - API 测试引擎集成方案
+
+---
+
+## 🔐 安全
+
+- 敏感信息使用环境变量
+- JWT Token 认证
+- CORS 保护
+- SQL 注入防护
+- XSS 防护
 
 ---
 
@@ -276,8 +550,20 @@ chore: 构建/工具
 
 ---
 
+## 🙏 致谢
+
+- [FastAPI](https://fastapi.tiangolo.com/)
+- [React](https://react.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [Anthropic Claude](https://www.anthropic.com/)
+- [LangGraph](https://github.com/langchain-ai/langgraph)
+
+---
+
 <div align="center">
 
 **Made with ❤️ by SisyphusX Team**
+
+[⭐ Star](../../stargazers) | [🐛 报告问题](../../issues) | [💡 提建议](../../issues/new)
 
 </div>

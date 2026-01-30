@@ -5,13 +5,14 @@ from typing import AsyncGenerator
 from app.core.config import settings
 # 导入所有模型，确保 SQLModel.metadata 包含所有表定义
 from app.models import (
-    User, Project, Interface, InterfaceFolder, 
+    User, Project, Interface, InterfaceFolder,
     TestScenario, TestCase, Keyword,
-    TestReport, TestReportDetail, TestPlan
+    TestReport, TestReportDetail, TestPlan,
+    # 功能测试模块模型
+    AIProviderConfig, Requirement, AIConversation,
+    TestPoint, FunctionalTestCase, TestCaseKnowledge,
+    TestCaseTemplate, FileAttachment
 )
-from app.models.settings import GlobalConfig, NotificationChannel, Role, UserRole
-from app.models.functional import Requirement, FunctionalTestCase, AIGenerationTask
-from app.models.document import Document, DocumentVersion
 
 
 # 判断是否使用 SQLite（本地开发）或 PostgreSQL（生产）

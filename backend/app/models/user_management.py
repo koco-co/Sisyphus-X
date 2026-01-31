@@ -7,67 +7,14 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, T
 from sqlalchemy.orm import relationship
 from sqlmodel import SQLModel, Field, Relationship
 
-from app.core.db import Base
-
-
-# 用户-角色关联表
-user_role_table = Table(
-    "user_roles",
-    Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE")),
-    Column("role_id", Integer, ForeignKey("roles.id", ondelete="CASCADE"))
-)
 
 # 角色-权限关联表
 role_permission_table = Table(
     "role_permissions",
-    Base.metadata,
+    SQLModel.metadata,
     Column("role_id", Integer, ForeignKey("roles.id", ondelete="CASCADE")),
     Column("permission_id", Integer, ForeignKey("permissions.id", ondelete="CASCADE"))
 )
-
-# 项目-用户关联表（项目成员）
-project_user_table = Table(
-    "project_users",
-    Base.metadata,
-    Column("project_id", Integer, ForeignKey("projects.id", ondelete="CASCADE")),
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE")),
-    Column("role", String(50), default="member")  # owner, admin, member, viewer
-)
-
-
-class User(SQLModel, table=True):
-    """用户模型"""
-    __tablename__ = "users"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    username: str = Field(index=True, unique=True, max_length=50)
-    email: str = Field(index=True, unique=True, max_length=100)
-    full_name: Optional[str] = Field(default=None, max_length=100)
-    hashed_password: str = Field(max_length=255)
-    is_active: bool = Field(default=True)
-    is_superuser: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: Optional[datetime] = None
-
-    # 关系
-    roles: List["Role"] = Relationship(back_populates="users", link_table=user_role_table)
-    projects: List["Project"] = Relationship(back_populates="members", link_table=project_user_table)
-
-
-class Role(SQLModel, table=True):
-    """角色模型"""
-    __tablename__ = "roles"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(unique=True, max_length=50, description="角色名称，如 admin, tester, viewer")
-    description: Optional[str] = Field(default=None, max_length=200)
-    is_system: bool = Field(default=False, description="是否为系统角色（不可删除）")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-    # 关系
-    users: List["User"] = Relationship(back_populates="roles", link_table=user_role_table)
-    permissions: List["Permission"] = Relationship(back_populates="roles", link_table=role_permission_table)
 
 
 class Permission(SQLModel, table=True):
@@ -81,23 +28,10 @@ class Permission(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     # 关系
-    roles: List["Role"] = Relationship(back_populates="permissions", link_table=role_permission_table)
-
-
-class Project(SQLModel, table=True):
-    """项目模型（扩展）"""
-    __tablename__ = "projects"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(max_length=100)
-    key: str = Field(max_length=50, unique=True)
-    owner: str = Field(max_length=100)
-    description: Optional[str] = Field(default=None)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: Optional[datetime] = None
-
-    # 关系
-    members: List["User"] = Relationship(back_populates="projects", link_table=project_user_table)
+    roles: List["Role"] = Relationship(
+        back_populates="permission_list",
+        sa_relationship_kwargs={"secondary": role_permission_table}
+    )
 
 
 class AuditLog(SQLModel, table=True):

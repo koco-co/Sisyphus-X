@@ -2,8 +2,11 @@ from fastapi import APIRouter, Depends
 from app.api.v1.endpoints import (
     projects, interfaces, testcases, scenarios, engine, auth,
     dashboard, reports, plans, keywords, swagger, upload, curl_parser,
-    settings, functional, documents, execution, api_test_cases, ai_config, ai_clarification, test_point_generation, test_case_generation
+    settings, functional, documents, execution, api_test_cases, ai_config, ai_clarification,
+    test_point_generation, test_case_generation
 )
+# TODO: user_management - 需要修复导入问题后重新启用
+# from app.api.v1.endpoints import user_management
 from app.api import deps
 
 api_router = APIRouter()
@@ -29,4 +32,6 @@ api_router.include_router(ai_config.router, prefix="/ai/configs", tags=["AI配�
 api_router.include_router(ai_clarification.router, prefix="/ai", tags=["AI需求澄清"], dependencies=[Depends(deps.get_current_user)])
 api_router.include_router(test_point_generation.router, prefix="/test-points", tags=["测试点生成"], dependencies=[Depends(deps.get_current_user)])
 api_router.include_router(test_case_generation.router, prefix="/test-cases/generate", tags=["测试用例生成"], dependencies=[Depends(deps.get_current_user)])
+# TODO: user_management - 需要修复导入问题后重新启用
+# api_router.include_router(user_management.router, prefix="/admin", tags=["用户权限管理"], dependencies=[Depends(deps.get_current_user)])
 

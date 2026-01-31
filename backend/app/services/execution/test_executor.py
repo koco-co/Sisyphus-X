@@ -29,11 +29,11 @@ class TestExecutionContext:
 
             # 替换用户定义的变量
             for var_name, var_value in self.variables.items():
-                value = value.replace(f"{{{{{var_name}}}}", str(var_value))
+                value = value.replace(f"{{{{{var_name}}}}}", str(var_value))
 
             # 替换提取的数据
             for key, val in self.extracted_data.items():
-                value = value.replace(f"{{{{{key}}}}", str(val))
+                value = value.replace(f"{{{{{key}}}}}", str(val))
 
         return value
 

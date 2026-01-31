@@ -1,7 +1,7 @@
 # 用户模型
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 
 
 class User(SQLModel, table=True):
@@ -19,3 +19,6 @@ class User(SQLModel, table=True):
     oauth_id: Optional[str] = Field(default=None, max_length=100)  # 第三方用户 ID
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # 关系
+    audit_logs: List["AuditLog"] = Relationship(back_populates="user")

@@ -1,9 +1,9 @@
 """
 系统设置模块 - 全局配置模型
 """
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from datetime import datetime
-from sqlmodel import SQLModel, Field, Column, JSON
+from sqlmodel import SQLModel, Field, Column, JSON, Relationship
 
 
 class GlobalConfig(SQLModel, table=True):
@@ -36,14 +36,20 @@ class NotificationChannel(SQLModel, table=True):
 
 class Role(SQLModel, table=True):
     """角色表"""
-    __tablename__ = "role"
-    
+    __tablename__ = "roles"
+
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str = Field(unique=True)  # 角色名称
     code: str = Field(unique=True)  # 角色代码: admin, tester, viewer
     permissions: Dict = Field(default={}, sa_column=Column(JSON))  # 权限配置
     description: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # 关系
+    permission_list: List["Permission"] = Relationship(
+        back_populates="roles",
+        sa_relationship_kwargs={"secondary": "role_permissions"}
+    )
 
 
 class UserRole(SQLModel, table=True):

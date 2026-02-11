@@ -6,17 +6,19 @@ import { FormDataEditor } from '@/pages/interface/components/FormDataEditor'
 import { cn } from '@/lib/utils'
 import type { KeyValueTypePair } from '@/pages/interface/components/FormDataEditor'
 
+export type BodyType = 'none' | 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw'
+
 interface BodyTabProps {
-  bodyType: 'none' | 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw'
-  onBodyTypeChange: (type: 'none' | 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw') => void
+  bodyType: BodyType
+  onBodyTypeChange: (type: BodyType) => void
   body: string
   onBodyChange: (body: string) => void
   formData?: KeyValueTypePair[]
   onFormDataChange?: (data: KeyValueTypePair[]) => void
 }
 
-const BODY_TYPES = [
-  { id: 'none' as const, label: 'none' },
+const BODY_TYPES: { id: BodyType; label: string }[] = [
+  { id: 'none', label: 'none' },
   { id: 'json' as const, label: 'JSON' },
   { id: 'form-data' as const, label: 'form-data' },
   { id: 'x-www-form-urlencoded' as const, label: 'x-www-form-urlencoded' },

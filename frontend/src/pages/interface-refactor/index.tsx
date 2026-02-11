@@ -12,13 +12,16 @@ import { interfacesApi, projectsApi } from '@/api/client'
 import { cn } from '@/lib/utils'
 import { InterfaceTree } from './components/InterfaceTree'
 import { WelcomeCards } from './components/WelcomeCards'
-import { RequestEditor, RequestData } from './components/RequestEditor/RequestEditor'
-import { ResponseViewer, ResponseData } from './components/ResponseViewer/ResponseViewer'
+import { RequestEditor } from './components/RequestEditor/RequestEditor'
+import type { RequestData } from './components/RequestEditor/RequestEditor'
+import { ResponseViewer } from './components/ResponseViewer/ResponseViewer'
+import type { ResponseData } from './components/ResponseViewer/ResponseViewer'
 import { EnvironmentDialog } from './dialogs/EnvironmentDialog'
 import { CurlImportDialog } from './dialogs/CurlImportDialog'
 import type { CurlImportData } from './dialogs/CurlImportDialog'
 import type { KeyValuePair } from './components/RequestEditor/KeyValueEditor'
-import type { AuthConfig, BodyType } from './components/RequestEditor/AuthTab'
+import type { AuthConfig } from './components/RequestEditor/AuthTab'
+import type { BodyType } from './components/RequestEditor/BodyTab'
 import type { Environment } from './dialogs/EnvironmentDialog'
 
 // 工具函数
@@ -57,7 +60,7 @@ export default function InterfaceManagementPage() {
     method: 'GET',
     params: [],
     headers: [],
-    auth: { type: 'none' },
+    auth: { type: 'no_auth' },
     body: '',
     bodyType: 'none',
     formDataPairs: [],
@@ -105,7 +108,7 @@ export default function InterfaceManagementPage() {
         method: interfaceData.method || 'GET',
         params: objectToKeyValueArray(interfaceData.params || {}),
         headers: objectToKeyValueArray(interfaceData.headers || {}),
-        auth: { type: 'none' }, // TODO: 从接口数据加载认证配置
+        auth: { type: 'no_auth' }, // TODO: 从接口数据加载认证配置
         body: typeof interfaceData.body === 'string'
           ? interfaceData.body
           : JSON.stringify(interfaceData.body || {}, null, 2),
@@ -291,7 +294,7 @@ export default function InterfaceManagementPage() {
       method: data.method,
       params: objectToKeyValueArray(data.params),
       headers: objectToKeyValueArray(data.headers),
-      auth: data.auth || { type: 'none' },
+      auth: data.auth || { type: 'no_auth' },
       body: typeof data.body === 'string' ? data.body : JSON.stringify(data.body || {}, null, 2),
       bodyType: data.body_type,
       formDataPairs: data.body_type === 'form-data'

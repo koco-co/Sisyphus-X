@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Loader2, FileText, Check } from 'lucide-react'
-import { parseCurlCommand, ParsedCurlRequest } from '../utils/curlParser'
+import { parseCurlCommand } from '../utils/curlParser'
+import type { ParsedCurlRequest } from '../utils/curlParser'
 
 export interface CurlImportData {
   method: string

@@ -6,12 +6,15 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, func, select
 
-from app.api.deps import get_current_user
 from app.core.db import get_session, sync_session_maker
 from app.core.storage import MINIO_BUCKET, get_minio_client
-from app.models.interface_history import InterfaceHistory
 from app.models.project import Interface, InterfaceFolder
-from app.schemas.interface import InterfaceSendRequest, InterfaceSendResponse
+from app.schemas.interface import (
+    EngineExecuteRequest,
+    EngineExecuteResponse,
+    InterfaceSendRequest,
+    InterfaceSendResponse,
+)
 from app.schemas.interface_test_case import (
     GenerateTestCaseRequest,
     GenerateTestCaseResponse,
@@ -174,74 +177,157 @@ async def delete_interface(interface_id: int, session: AsyncSession = Depends(ge
     return {"deleted": interface_id}
 
 
+
 @router.post("/debug/send", response_model=InterfaceSendResponse)
 async def send_interface_request(request: InterfaceSendRequest):
-    async with httpx.AsyncClient(trust_env=False) as client:
+    """Send interface request using sisyphus-api-engine.
+
+    This endpoint now uses YAML engine for all requests to ensure:
+    - YAML files are generated for audit/trail
+    - Requests can be replayed via engine
+    - Consistent with sisyphus-api-engine integration
+    """
+    from app.services.engine_executor import EngineExecutor
+    from app.services.variable_replacer import VariableReplacer
+    from app.services.yaml_generator import YAMLGenerator
+    from app.models.project import ProjectEnvironment
+
+    # Get interface from database
+    async with get_session() as session:
+        interface = await session.get(Interface, request.interface_id)
+        if not interface:
+            raise HTTPException(status_code=404, detail="Interface not found")
+
+        # Get environment if specified
+        environment = None
+        if request.environment_id:
+            environment = await session.get(ProjectEnvironment, request.environment_id)
+            if not environment:
+                raise HTTPException(status_code=404, detail="Environment not found")
+
+        # Generate YAML from interface
+        generator = YAMLGenerator()
+
+        # Build step config
+        step_config = {
+            "name": interface.name or "API Request",
+            "type": "request",
+            "method": interface.method,
+            "url": interface.url,
+        }
+
+        # Add headers
+        if interface.headers:
+            step_config["headers"] = interface.headers
+        if environment and environment.headers:
+            merged_headers = {**(environment.headers or {}), **step_config.get("headers", {})}
+            step_config["headers"] = merged_headers
+
+        # Add params
+        if interface.params:
+            step_config["params"] = interface.params
+
+        # Add body
+        if interface.body and interface.body_type != "none":
+            if interface.body_type == "json":
+                step_config["json"] = interface.body
+            elif interface.body_type == "x-www-form-urlencoded":
+                step_config["data"] = interface.body
+            else:
+                step_config["body"] = interface.body
+
+        # Add cookies
+        if interface.cookies:
+            step_config["cookies"] = interface.cookies
+
+        # Add auth config if exists
+        if interface.auth_config:
+            step_config["auth"] = interface.auth_config
+
+        # Replace variables if environment provided
+        if (request.variables or (environment and environment.variables)):
+            all_vars = {**(request.variables or {}), **(environment.variables or {})}
+            replacer = VariableReplacer()
+
+            # Replace in URL
+            if step_config.get("url"):
+                step_config["url"], _ = replacer.replace(
+                    step_config["url"],
+                    all_vars,
+                )
+
+            # Replace in headers
+            if step_config.get("headers"):
+                step_config["headers"], _ = replacer.replace_dict(
+                    step_config["headers"],
+                    all_vars,
+                )
+
+            # Replace in params
+            if step_config.get("params"):
+                step_config["params"], _ = replacer.replace_dict(
+                    step_config["params"],
+                    all_vars,
+                )
+
+            # Replace in body
+            if step_config.get("json"):
+                import json as json_lib
+                body_str = json_lib.dumps(step_config["json"])
+                replaced, _ = replacer.replace(body_str, all_vars)
+                step_config["json"] = json_lib.loads(replaced)
+            elif step_config.get("data"):
+                step_config["data"], _ = replacer.replace_dict(
+                    step_config["data"],
+                    all_vars,
+                )
+
+        # Add environment base_url if available
+        base_url = None
+        if environment and environment.domain:
+            base_url = environment.domain
+
+        # Build test case config
+        test_case_config = {
+            "name": interface.name or "API Request",
+            "description": interface.description or "",
+            "config": {
+                "timeout": request.timeout,
+            },
+            "steps": [step_config],
+        }
+
+        if base_url:
+            test_case_config["config"]["base_url"] = base_url
+
+        # Generate YAML
+        yaml_content = generator.generate_yaml(test_case_config)
+
+        # Execute with engine
+        executor = EngineExecutor()
+
         start_time = time.time()
-        try:
-            # 处理文件
-            files = None
-            data = None
-            json_body = None
+        result = executor.execute(
+            yaml_content=yaml_content,
+            base_url=base_url,
+            timeout=request.timeout,
+        )
+        elapsed = time.time() - start_time
 
-            if request.files:
-                minio_client = get_minio_client()
-                files = {}
-                for field_name, object_name in request.files.items():
-                    try:
-                        # 从 MinIO 获取文件流
-                        response = minio_client.get_object(MINIO_BUCKET, object_name)
-                        file_content = response.read()
-                        response.close()
-                        response.release_conn()
-
-                        # 获取文件名 (假设 object_name 包含扩展名，或者需要从元数据获取)
-                        filename = object_name.split("/")[-1]
-                        files[field_name] = (filename, file_content)
-                    except Exception as e:
-                        raise HTTPException(
-                            status_code=400,
-                            detail=f"Failed to retrieve file {object_name}: {str(e)}",
-                        )
-
-            # 处理 Body
-            if request.body:
-                if files:
-                    # 如果有文件，Body 通常作为 form data 发送
-                    # 假设 request.body 是字典
-                    if isinstance(request.body, dict):
-                        data = {k: str(v) for k, v in request.body.items()}
-                    else:
-                        # 这里的逻辑可能需要根据具体需求调整，如果 body 不是 dict 且有 files，可能不兼容
-                        data = {"data": str(request.body)}
-                else:
-                    json_body = request.body
-
-            response = await client.request(
-                method=request.method,
-                url=request.url,
-                headers=request.headers,
-                params=request.params,
-                json=json_body,
-                data=data,
-                files=files,
-                timeout=request.timeout,
-            )
-            elapsed = time.time() - start_time
-
-            try:
-                body = response.json()
-            except Exception:  # noqa: BLE001 (ignore bare except warning)
-                body = response.text
-
+        # Return result in same format as before
+        if result["success"]:
             return InterfaceSendResponse(
-                status_code=response.status_code,
-                headers=dict(response.headers),
-                body=body,
+                status_code=result.get("status_code", 200),
+                headers=result.get("headers", {}),
+                body=result.get("body", {}),
                 elapsed=elapsed,
             )
-        except Exception as e:
-            raise HTTPException(status_code=400, detail=str(e))
+        else:
+            # If execution failed, return error response
+            raise HTTPException(
+                status_code=500,
+                detail=f"Engine execution failed: {result.get('error', 'Unknown error')}",
+            )
 
 
 @router.post("/parse-curl")
@@ -470,3 +556,149 @@ async def search_interfaces(
     pages = (total + size - 1) // size
 
     return PageResponse(items=interfaces, total=total, page=page, size=size, pages=pages)
+
+
+@router.post("/debug/execute-engine", response_model=EngineExecuteResponse)
+async def execute_with_engine(
+    request: EngineExecuteRequest,
+    session: AsyncSession = Depends(get_session),
+) -> EngineExecuteResponse:
+    """Execute interface using sisyphus-api-engine.
+
+    Args:
+        request: Execute request with interface_id or yaml_content
+        session: Database session
+
+    Returns:
+        Execution result with success status
+
+    Raises:
+        HTTPException: If interface/environment not found or execution fails
+    """
+    from app.services.engine_executor import EngineExecutor
+    from app.services.variable_replacer import VariableReplacer
+    from app.services.yaml_generator import YAMLGenerator
+
+    # Get YAML content
+    yaml_content = request.yaml_content
+
+    # If interface_id and environment_id provided, generate YAML from database
+    if request.interface_id and not yaml_content:
+        interface = await session.get(Interface, request.interface_id)
+        if not interface:
+            raise HTTPException(status_code=404, detail="Interface not found")
+
+        # Get environment if specified
+        environment = None
+        if request.environment_id:
+            from app.models.project import ProjectEnvironment
+            environment = await session.get(ProjectEnvironment, request.environment_id)
+            if not environment:
+                raise HTTPException(status_code=404, detail="Environment not found")
+
+        # Generate YAML from interface
+        generator = YAMLGenerator()
+
+        # Build step config
+        step_config = {
+            "name": interface.name or "API Request",
+            "type": "request",
+            "method": interface.method,
+            "url": interface.url,
+        }
+
+        # Add headers
+        if interface.headers:
+            step_config["headers"] = interface.headers
+        if environment and environment.headers:
+            merged_headers = {**(environment.headers or {}), **step_config.get("headers", {})}
+            step_config["headers"] = merged_headers
+
+        # Add params
+        if interface.params:
+            step_config["params"] = interface.params
+
+        # Add body
+        if interface.body and interface.body_type != "none":
+            if interface.body_type == "json":
+                step_config["json"] = interface.body
+            elif interface.body_type == "x-www-form-urlencoded":
+                step_config["data"] = interface.body
+            else:
+                step_config["body"] = interface.body
+
+        # Add cookies
+        if interface.cookies:
+            step_config["cookies"] = interface.cookies
+
+        # Replace variables if environment provided
+        if request.variables or (environment and environment.variables):
+            all_vars = {**(request.variables or {}), **(environment.variables or {})}
+            replacer = VariableReplacer()
+
+            # Replace in URL
+            if step_config.get("url"):
+                step_config["url"], _ = replacer.replace(
+                    step_config["url"], all_vars
+                )
+
+            # Replace in headers
+            if step_config.get("headers"):
+                for key, value in step_config["headers"].items():
+                    replaced, _ = replacer.replace(str(value), all_vars)
+                    step_config["headers"][key] = replaced
+
+            # Replace in params
+            if step_config.get("params"):
+                for key, value in step_config["params"].items():
+                    replaced, _ = replacer.replace(str(value), all_vars)
+                    step_config["params"][key] = replaced
+
+            # Replace in body
+            if step_config.get("json"):
+                import json as json_lib
+                body_str = json_lib.dumps(step_config["json"])
+                replaced, _ = replacer.replace(body_str, all_vars)
+                step_config["json"] = json_lib.loads(replaced)
+
+        # Build test case config
+        test_case_config = {
+            "name": interface.name or "API Test",
+            "description": interface.description or "",
+            "config": {
+                "timeout": request.timeout,
+            },
+            "steps": [step_config],
+        }
+
+        # Add environment base_url if available
+        if environment and environment.domain:
+            test_case_config["config"]["base_url"] = environment.domain
+
+        # Generate YAML
+        yaml_content = generator.generate_yaml(test_case_config)
+
+    if not yaml_content:
+        raise HTTPException(
+            status_code=400,
+            detail="Must provide either interface_id or yaml_content"
+        )
+
+    # Execute with engine
+    executor = EngineExecutor()
+
+    # Get base URL from environment if provided
+    base_url = None
+    if request.environment_id:
+        from app.models.project import ProjectEnvironment
+        environment = await session.get(ProjectEnvironment, request.environment_id)
+        if environment:
+            base_url = environment.domain
+
+    result = executor.execute(
+        yaml_content=yaml_content,
+        base_url=base_url,
+        timeout=request.timeout,
+    )
+
+    return EngineExecuteResponse(**result)

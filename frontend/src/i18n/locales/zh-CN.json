@@ -275,6 +275,7 @@
             "providerTypes": {
                 "openai": "OpenAI",
                 "anthropic": "Anthropic",
+                "glm": "智谱AI",
                 "qwen": "阿里云通义千问",
                 "qianfan": "百度文心一言"
             },

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { ScenarioEditorProvider } from './ScenarioEditorContext';
 import ScenarioEditorLayout from './ScenarioEditorLayout';
 

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useTranslation } from 'react-i18next';
 import { Play, Save, Layout, Share2, MousePointer2 } from 'lucide-react';
 import { motion } from 'framer-motion';

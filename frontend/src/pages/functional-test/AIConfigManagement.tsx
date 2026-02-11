@@ -293,6 +293,7 @@ function AIConfigDialog({
     provider_name: config?.provider_name || '',
     provider_type: config?.provider_type || 'openai',
     api_key: '',
+    api_endpoint: config?.api_endpoint || '',
     model_name: config?.model_name || 'gpt-3.5-turbo',
     temperature: config?.temperature || 0.7,
     is_enabled: config?.is_enabled ?? true,
@@ -335,6 +336,7 @@ function AIConfigDialog({
             >
               <option value="openai">{t('functionalTest.aiConfig.providerTypes.openai')}</option>
               <option value="anthropic">{t('functionalTest.aiConfig.providerTypes.anthropic')}</option>
+              <option value="glm">{t('functionalTest.aiConfig.providerTypes.glm')}</option>
               <option value="qwen">{t('functionalTest.aiConfig.providerTypes.qwen')}</option>
               <option value="qianfan">{t('functionalTest.aiConfig.providerTypes.qianfan')}</option>
             </select>
@@ -352,6 +354,20 @@ function AIConfigDialog({
               placeholder={config ? "留空保持不变" : ""}
               className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              API Endpoint
+            </label>
+            <input
+              type="text"
+              value={formData.api_endpoint}
+              onChange={(e) => setFormData({ ...formData, api_endpoint: e.target.value })}
+              placeholder="https://api.openai.com/v1 (可选)"
+              className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">自定义API端点，留空使用默认值</p>
           </div>
 
           <div>

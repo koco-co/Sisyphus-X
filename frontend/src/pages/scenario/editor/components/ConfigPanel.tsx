@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useTranslation } from 'react-i18next';
 import { useScenarioEditor } from '../ScenarioEditorContext';
 import { X, Settings2, Trash2, Save } from 'lucide-react';

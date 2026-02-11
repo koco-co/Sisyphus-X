@@ -8,7 +8,6 @@
  */
 
 import { useState } from 'react'
-import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { CheckCircle, XCircle, ChevronDown, ChevronRight } from 'lucide-react'
 
@@ -20,6 +19,8 @@ interface StepResultCardProps {
     error?: string
     performance?: {
       total_time: number
+      dns_time?: number
+      tcp_time?: number
     }
   }
   index: number

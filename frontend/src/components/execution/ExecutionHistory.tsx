@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge'
 import { CheckCircle, XCircle, Clock } from 'lucide-react'
 
 interface ExecutionHistoryProps {
-  testCaseId: number
   executions?: Array<{
     id: number
     status: string
@@ -26,7 +25,6 @@ interface ExecutionHistoryProps {
 }
 
 export function ExecutionHistory({
-  testCaseId,
   executions = [],
   onViewResult
 }: ExecutionHistoryProps) {
@@ -92,7 +90,7 @@ export function ExecutionHistory({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent) => {
                       e.stopPropagation()
                       onViewResult?.(execution.id)
                     }}

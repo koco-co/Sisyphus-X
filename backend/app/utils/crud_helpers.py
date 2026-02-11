@@ -4,13 +4,14 @@ CRUD 工具函数 - 消除重复的数据库操作代码
 提供通用的 CRUD 操作辅助函数，减少代码重复，提高一致性。
 """
 
-from typing import Generic, TypeVar, Type, Optional, Any, Sequence
+from collections.abc import Sequence
 from datetime import datetime
+from typing import Any, Generic, TypeVar, cast
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import SQLModel, select
 from sqlalchemy.orm import selectinload
+from sqlmodel import SQLModel, select
 
 from app.schemas.pagination import PageResponse
 
@@ -22,9 +23,9 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", bound=SQLModel)
 
 async def get_or_404(
     session: AsyncSession,
-    model: Type[ModelType],
+    model: type[ModelType],
     item_id: int,
-    resource_name: Optional[str] = None,
+    resource_name: str | None = None,
 ) -> ModelType:
     """
     获取对象或抛出 404 错误
@@ -78,7 +79,7 @@ async def update_item(
     session: AsyncSession,
     item: ModelType,
     update_data: dict[str, Any],
-    exclude_fields: Optional[Sequence[str]] = None,
+    exclude_fields: Sequence[str] | None = None,
     auto_commit: bool = True,
 ) -> ModelType:
     """
@@ -94,7 +95,7 @@ async def update_item(
     Returns:
         更新后的对象
     """
-    exclude = exclude_fields or []
+    exclude = list(exclude_fields or [])
     exclude.extend(["id", "created_at"])
 
     for key, value in update_data.items():
@@ -115,7 +116,7 @@ async def update_item(
 
 async def delete_item(
     session: AsyncSession,
-    item: ModelType,
+    item: SQLModel,
 ) -> None:
     """
     删除对象并提交
@@ -130,7 +131,7 @@ async def delete_item(
 
 async def delete_by_id(
     session: AsyncSession,
-    model: Type[ModelType],
+    model: type[ModelType],
     item_id: int,
 ) -> None:
     """
@@ -230,12 +231,12 @@ async def paginated_response(
 
 async def list_items(
     session: AsyncSession,
-    model: Type[ModelType],
+    model: type[ModelType],
     page: int = 1,
     size: int = 10,
-    filters: Optional[dict[str, Any]] = None,
-    order_by: Optional[Any] = None,
-    load_relations: Optional[Sequence[str]] = None,
+    filters: dict[str, Any] | None = None,
+    order_by: Any | None = None,
+    load_relations: Sequence[str] | None = None,
 ) -> PageResponse[ModelType]:
     """
     通用列表查询（带分页）
@@ -296,7 +297,7 @@ class CRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
                 super().__init__(Project)
         """
 
-    def __init__(self, model: Type[ModelType]):
+    def __init__(self, model: type[ModelType]):
         self.model = model
 
     async def get(
@@ -325,7 +326,8 @@ class CRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             创建的对象
         """
         item_data = data.model_dump() if hasattr(data, "model_dump") else data
-        item = self.model(**item_data, **kwargs)
+        item_payload = cast(dict[str, Any], item_data)
+        item = self.model(**item_payload, **kwargs)
         return await create_item(session, item)
 
     async def update(
@@ -351,7 +353,8 @@ class CRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
             if hasattr(data, "model_dump")
             else data
         )
-        return await update_item(session, item, update_data)
+        update_payload = cast(dict[str, Any], update_data)
+        return await update_item(session, item, update_payload)
 
     async def delete(
         self,
@@ -366,8 +369,8 @@ class CRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         session: AsyncSession,
         page: int = 1,
         size: int = 10,
-        filters: Optional[dict[str, Any]] = None,
-        order_by: Optional[Any] = None,
+        filters: dict[str, Any] | None = None,
+        order_by: Any | None = None,
     ) -> PageResponse[ModelType]:
         """列表查询（带分页）"""
         return await list_items(session, self.model, page, size, filters, order_by)

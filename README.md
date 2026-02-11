@@ -365,3 +365,56 @@ uv run alembic upgrade head
 Made with ❤️ by Sisyphus-X Team
 
 </div>
+
+
+
+
+
+1、先删除当前项目中的两个接口管理模块相关的代码、文档等等，
+2、新增「接口管理」模块, 直接抄apifox就可以了, 只需要抄接口调试部分, 左侧的目录树部分就可以了。默认情况下，左侧展示接口目录树，右侧展示「新建HTTP请求」（默认引用环境中的baseurl），「导入cURL」等卡片，点击左侧的接口后，右侧展示接口调试功能，覆盖掉之前的卡片，可以进行调试，请求方式枚举值支持requests库所有支持的值，右上角有环境管理按钮，点击可以进入弹窗设置多个环境，支持新建环境，需要填写环境名称、baseURL、环境变量名和值，保存后，新建的HTTP请求前置url自动取这个环境设置的url，支持发送、保存。下方支持Params、Body、headers、Cookies等，各处都可以通过{{}}进行参数值引用,引用当前环境中设置的变量名。发送请求后，下方展示响应内容：body、header。这部分的模块要跟sisyphus-api-engien这个模块打通，通过将这些参数转换为临时且唯一的yaml文件，然后通过sisyphus --cases examples/01_HTTP请求方法.yaml --format json -v 命令去执行yaml文件，将得到的json输出到body中。
+
+
+
+
+
+
+
+1、重新整理.claude目录下的skill和command，在teams.md中, 将这6个子角色各自指定或更新对应skill: 产品、架构师、前端、后端、黑盒测试、白盒测试.
+
+2、team-lead: 任务调度者, 分配任务的主角色, 没有skill.
+
+3、@pm: 产品. 对应skill: pm. 该角色主要负责开始的产品设计, 将碎片化需求转化为可交付的需求文档. 以及后续部分文档(如: README.md、CHANGELOG.md等)更新.
+
+4、@architect: 架构师. 对应skill: architect. 该角色主要负责理解需求并调研市场上最成熟, 可在生产环境使用的, 最新最稳定最合适的技术栈、项目架构, 同时规划任务清单, 产出接口设计文档, 数据库表结构等等. 后续的code-review工作也交给这个角色, 在对应步骤时, 要通知该角色使用code-review这个skill. 还有可能产出的设计规范相关文档也由这个角色来维护.
+
+5、@frontend-dev: 前端开发. skill: frontend-design. 这个角色没什么好说的, 就照着架构师给出的技术栈就行了, 之前的skill.
+
+6、@backend-dev: 后端开发. skill: backend-design. 这个同上, 也是沿用之前的skill.
+
+7、@blackbox-qa: 黑盒测试. skill: blackbox-design. 该角色主要负责功能测试, 就把一些多余内容抽取出来放在这个skill中. 这个角色应该主动调用mcp(chrome-devtools)去打开浏览器测试. 根据产出的测试用例去执行.
+
+8、@whitebox-qa: 白盒测试. skill: whitebox-design: 负责单元测试、接口测试等. 以及代码的原子化提交, 这是必须要在测试把所有功能测试完成并通过之后才能进行的操作, 这时候要由team-lead角色在确认黑盒白盒测试都通过之后, 通知给@whitebox-qa 调用code-committer这个skill, 去进行代码的原子化提交.
+
+
+
+以上几个skill中的内容、规范等等尽量保持一致
+
+
+
+流程:
+
+1、team-lead -> @pm 产出: 01_需求文档.md
+
+2、team-lead -> @architect、@blackbox-qa. 架构师角色产出: 02_任务清单.md, 03_接口定义.md, 04_数据库设计.md. 黑盒测试角色产出: 05_黑盒测试用例.md
+
+3、team-lead -> @frontend-dev、@backend-dev. 产出实际代码
+
+4、team-lead -> @architect 代码审查
+
+5、team-lead -> @blackbox-qa、@whitebox-qa. 产出:06_Bug清单.md(如果有, 那么要及时反馈给team-lead, 指派给开发修复, 修复后再指派给提出bug的测试去验证)
+
+6、team-lead -> @pm、@architect. 产品要更新README.md、CHANGELOG.md等文档, 架构师要更新设计规范文档(如果存在变更)
+
+7、team-lead -> @whitebox-qa. 代码提交
+
+8、team-lead -> me. 通知验收

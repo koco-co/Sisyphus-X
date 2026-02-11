@@ -11,9 +11,8 @@ from sqlmodel import JSON, Column, Field, SQLModel
 class FunctionalTestCase(SQLModel, table=True):
     """测试用例表 (功能测试模块)"""
 
-    __tablename__ = "test_cases"
-
-    id: int = Field(primary_key=True)
+    __tablename__ = "test_cases"  # pyright: ignore[reportAssignmentType]
+    id: int | None = Field(default=None, primary_key=True)
     case_id: str = Field(unique=True, index=True)  # TC-2025-001-001
 
     # 关联

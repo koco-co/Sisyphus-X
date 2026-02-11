@@ -3,8 +3,8 @@ API 依赖注入模块
 """
 
 from fastapi import Depends, Header, HTTPException, status
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col, select
 
 from app.core.config import settings
 from app.core.db import get_session
@@ -32,7 +32,7 @@ async def get_current_user(
         default_user = User(
             username="admin",
             email="admin@sisyphus.dev",
-            hashed_password=get_password_hash("admin123"),
+            password_hash=get_password_hash("admin123"),
             is_active=True,
         )
         session.add(default_user)
@@ -51,7 +51,7 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="令牌无效或已过期")
 
     user_id = int(payload["sub"])
-    result = await session.execute(select(User).where(User.id == user_id))
+    result = await session.execute(select(User).where(col(User.id) == user_id))
     user = result.scalar_one_or_none()
 
     if not user or not user.is_active:
@@ -75,3 +75,18 @@ async def get_current_user_optional(
         return await get_current_user(authorization, session)
     except HTTPException:
         return None
+
+
+def require_user_id(user: User) -> int:
+    """确保用户对象包含可用 ID。"""
+    if user.id is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效用户上下文")
+    return user.id
+
+
+async def get_current_superuser(current_user: User = Depends(get_current_user)) -> User:
+    """获取当前超级用户。
+
+    当前版本用户模型未提供角色/超级用户标识，先复用 get_current_user。
+    """
+    return current_user

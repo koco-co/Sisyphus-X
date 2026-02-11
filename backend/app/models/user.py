@@ -7,8 +7,7 @@ from sqlmodel import Field, SQLModel
 class User(SQLModel, table=True):
     """用户表 - 存储用户认证和基本信息"""
 
-    __tablename__ = "users"
-
+    __tablename__ = "users"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True, max_length=50)
     email: str = Field(index=True, unique=True, max_length=100)

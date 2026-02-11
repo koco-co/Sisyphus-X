@@ -6,8 +6,7 @@ from sqlmodel import Field, SQLModel
 class TestPlan(SQLModel, table=True):
     """测试计划表 - 用于定时任务调度"""
 
-    __tablename__ = "testplan"
-
+    __tablename__ = "testplan"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     name: str  # 计划名称
     scenario_id: int = Field(foreign_key="testscenario.id")  # 关联的测试场景

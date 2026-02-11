@@ -11,9 +11,9 @@ from sqlmodel import Field, SQLModel
 class AIProviderConfig(SQLModel, table=True):
     """AI厂商配置表"""
 
-    __tablename__ = "ai_provider_configs"
+    __tablename__ = "ai_provider_configs"  # pyright: ignore[reportAssignmentType]
 
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     provider_name: str = Field(index=True)  # OpenAI/Anthropic/通义千问/文心一言
     provider_type: str = Field(index=True)  # openai/anthropic/qwen/qianfan
     api_key_encrypted: str  # AES加密存储

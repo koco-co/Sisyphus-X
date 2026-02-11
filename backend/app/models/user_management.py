@@ -19,7 +19,7 @@ role_permission_table = Table(
 class Permission(SQLModel, table=True):
     """权限模型"""
 
-    __tablename__ = "permissions"
+    __tablename__ = "permissions"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     resource: str = Field(max_length=50, description="资源名称，如 projects, testcases")
@@ -37,7 +37,7 @@ class Permission(SQLModel, table=True):
 class AuditLog(SQLModel, table=True):
     """审计日志模型"""
 
-    __tablename__ = "audit_logs"
+    __tablename__ = "audit_logs"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id")

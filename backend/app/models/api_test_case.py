@@ -12,8 +12,7 @@ from sqlmodel import JSON, Column, Field, SQLModel
 class ApiTestCase(SQLModel, table=True):
     """API 测试用例"""
 
-    __tablename__ = "apitestcase"
-
+    __tablename__ = "apitestcase"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     project_id: int = Field(foreign_key="project.id", index=True)
 
@@ -48,8 +47,7 @@ class ApiTestCase(SQLModel, table=True):
 class ApiTestStep(SQLModel, table=True):
     """API 测试步骤（可选，如果需要单独管理步骤）"""
 
-    __tablename__ = "apiteststep"
-
+    __tablename__ = "apiteststep"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     test_case_id: int = Field(foreign_key="apitestcase.id", index=True)
 
@@ -70,8 +68,7 @@ class ApiTestStep(SQLModel, table=True):
 class ApiTestExecution(SQLModel, table=True):
     """API 测试执行记录"""
 
-    __tablename__ = "apitestexecution"
-
+    __tablename__ = "apitestexecution"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     test_case_id: int = Field(foreign_key="apitestcase.id", index=True)
     environment_id: int | None = Field(
@@ -111,8 +108,7 @@ class ApiTestExecution(SQLModel, table=True):
 class ApiTestStepResult(SQLModel, table=True):
     """API 测试步骤执行结果（可选，用于详细分析）"""
 
-    __tablename__ = "apiteststepresult"
-
+    __tablename__ = "apiteststepresult"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     execution_id: int = Field(foreign_key="apitestexecution.id", index=True)
 

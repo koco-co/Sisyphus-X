@@ -11,8 +11,7 @@ from sqlmodel import JSON, Column, Field, SQLModel
 class TestExecution(SQLModel, table=True):
     """测试执行记录"""
 
-    __tablename__ = "test_executions"
-
+    __tablename__ = "test_executions"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     test_case_id: int = Field(foreign_key="testcase.id", index=True)
     environment_id: int | None = Field(

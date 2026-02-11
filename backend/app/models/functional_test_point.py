@@ -11,9 +11,9 @@ from sqlmodel import Field, SQLModel
 class TestPoint(SQLModel, table=True):
     """测试点表"""
 
-    __tablename__ = "test_points"
+    __tablename__ = "test_points"  # pyright: ignore[reportAssignmentType]
 
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     requirement_id: int = Field(index=True)  # 关联需求
     category: str  # functional/performance/security/compatibility/usability
     sub_category: str | None = None  # 正常流程/异常流程/边界值

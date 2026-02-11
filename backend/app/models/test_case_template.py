@@ -12,8 +12,7 @@ from sqlmodel import JSON, Column, Field, SQLModel
 class TestCaseTemplate(SQLModel, table=True):
     """测试用例模板表"""
 
-    __tablename__ = "test_case_templates"
-
+    __tablename__ = "test_case_templates"  # pyright: ignore[reportAssignmentType]
     id: int = Field(primary_key=True)
     name: str
     description: str | None = None

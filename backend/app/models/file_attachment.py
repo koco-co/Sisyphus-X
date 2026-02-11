@@ -11,8 +11,7 @@ from sqlmodel import Field, SQLModel
 class FileAttachment(SQLModel, table=True):
     """文件存储记录表"""
 
-    __tablename__ = "file_attachments"
-
+    __tablename__ = "file_attachments"  # pyright: ignore[reportAssignmentType]
     id: int = Field(primary_key=True)
     file_id: str = Field(unique=True, index=True)  # UUID
 

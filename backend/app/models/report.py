@@ -6,8 +6,7 @@ from sqlmodel import JSON, Column, Field, SQLModel
 class TestReport(SQLModel, table=True):
     """测试报告主表 - 存储测试执行的总体信息"""
 
-    __tablename__ = "testreport"
-
+    __tablename__ = "testreport"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     scenario_id: int | None = Field(default=None, foreign_key="testscenario.id")  # 关联的测试场景
     name: str  # 报告名称
@@ -24,8 +23,7 @@ class TestReport(SQLModel, table=True):
 class TestReportDetail(SQLModel, table=True):
     """测试报告详情表 - 存储每个节点的执行详情"""
 
-    __tablename__ = "testreportdetail"
-
+    __tablename__ = "testreportdetail"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     report_id: int = Field(foreign_key="testreport.id")  # 关联的报告ID
     node_id: str  # 节点ID

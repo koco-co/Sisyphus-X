@@ -16,8 +16,7 @@ class Project(SQLModel, table=True):
 class InterfaceFolder(SQLModel, table=True):
     """接口文件夹 - 支持树形组织结构"""
 
-    __tablename__ = "interfacefolder"
-
+    __tablename__ = "interfacefolder"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     project_id: int = Field(foreign_key="project.id")
     name: str  # 文件夹名称
@@ -50,8 +49,7 @@ class Interface(SQLModel, table=True):
 class ProjectEnvironment(SQLModel, table=True):
     """项目环境配置 - 存储不同环境的URL、变量、请求头"""
 
-    __tablename__ = "projectenvironment"
-
+    __tablename__ = "projectenvironment"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     project_id: int = Field(foreign_key="project.id")
     name: str  # 环境名称 (如: Dev, Test, Prod)
@@ -65,8 +63,7 @@ class ProjectEnvironment(SQLModel, table=True):
 class ProjectDataSource(SQLModel, table=True):
     """项目数据源配置 - 存储数据库连接信息"""
 
-    __tablename__ = "projectdatasource"
-
+    __tablename__ = "projectdatasource"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     project_id: int = Field(foreign_key="project.id")
     name: str  # 数据源名称 (如: 主库, 从库)

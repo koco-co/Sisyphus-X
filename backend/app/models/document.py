@@ -10,8 +10,7 @@ from sqlmodel import Column, Field, SQLModel, Text
 class Document(SQLModel, table=True):
     """文档表"""
 
-    __tablename__ = "document"
-
+    __tablename__ = "document"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     project_id: int = Field(foreign_key="project.id")
     title: str  # 文档标题
@@ -28,8 +27,7 @@ class Document(SQLModel, table=True):
 class DocumentVersion(SQLModel, table=True):
     """文档版本历史"""
 
-    __tablename__ = "documentversion"
-
+    __tablename__ = "documentversion"  # pyright: ignore[reportAssignmentType]
     id: int | None = Field(default=None, primary_key=True)
     document_id: int = Field(foreign_key="document.id")
     version: int = 1

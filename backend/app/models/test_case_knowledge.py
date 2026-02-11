@@ -5,15 +5,15 @@
 
 from datetime import datetime
 
-from sqlmodel import JSON, Column, Field, Float, SQLModel
+from sqlmodel import JSON, Column, Field, SQLModel
 
 
 class TestCaseKnowledge(SQLModel, table=True):
     """测试用例知识库表（向量存储）"""
 
-    __tablename__ = "test_case_knowledge"
+    __tablename__ = "test_case_knowledge"  # pyright: ignore[reportAssignmentType]
 
-    id: int = Field(primary_key=True)
+    id: int | None = Field(default=None, primary_key=True)
     test_case_id: int = Field(unique=True, index=True)  # 关联test_cases
 
     # 向量化数据（SQLite不支持ARRAY，使用JSON存储）

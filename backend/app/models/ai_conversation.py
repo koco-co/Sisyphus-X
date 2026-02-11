@@ -12,8 +12,7 @@ from sqlmodel import JSON, Column, Field, SQLModel
 class AIConversation(SQLModel, table=True):
     """AI对话历史表"""
 
-    __tablename__ = "ai_conversations"
-
+    __tablename__ = "ai_conversations"  # pyright: ignore[reportAssignmentType]
     id: int = Field(primary_key=True)
     conversation_id: str = Field(unique=True, index=True)  # 对话唯一标识 (LangGraph thread_id)
     requirement_id: int | None = None

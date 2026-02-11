@@ -10,7 +10,7 @@ from sqlmodel import JSON, Column, Field, SQLModel
 class GlobalConfig(SQLModel, table=True):
     """全局配置表"""
 
-    __tablename__ = "globalconfig"
+    __tablename__ = "globalconfig"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     key: str = Field(unique=True, index=True)  # 配置键
@@ -25,7 +25,7 @@ class GlobalConfig(SQLModel, table=True):
 class NotificationChannel(SQLModel, table=True):
     """消息通知渠道配置"""
 
-    __tablename__ = "notificationchannel"
+    __tablename__ = "notificationchannel"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     name: str  # 渠道名称
@@ -40,7 +40,7 @@ class NotificationChannel(SQLModel, table=True):
 class Role(SQLModel, table=True):
     """角色表"""
 
-    __tablename__ = "roles"
+    __tablename__ = "roles"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     name: str = Field(unique=True)  # 角色名称
@@ -59,7 +59,7 @@ class Role(SQLModel, table=True):
 class UserRole(SQLModel, table=True):
     """用户角色关联表"""
 
-    __tablename__ = "userrole"
+    __tablename__ = "userrole"  # pyright: ignore[reportAssignmentType]
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id")

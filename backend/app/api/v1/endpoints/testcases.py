@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from app.core.db import get_session
 from app.models.test_case import TestCase
@@ -24,20 +24,20 @@ class TestCaseCreate(BaseModel):
 async def list_testcases(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    interface_id: int = Query(None),
+    interface_id: int | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     skip = (page - 1) * size
     statement = select(TestCase)
     count_statement = select(func.count()).select_from(TestCase)
 
-    if interface_id:
-        statement = statement.where(TestCase.interface_id == interface_id)
-        count_statement = count_statement.where(TestCase.interface_id == interface_id)
+    if interface_id is not None:
+        statement = statement.where(col(TestCase.interface_id) == interface_id)
+        count_statement = count_statement.where(col(TestCase.interface_id) == interface_id)
 
-    total = (await session.execute(count_statement)).scalar()
+    total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(statement.offset(skip).limit(size))
-    testcases = result.scalars().all()
+    testcases = list(result.scalars().all())
 
     pages = (total + size - 1) // size
 

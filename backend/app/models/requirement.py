@@ -11,9 +11,8 @@ from sqlmodel import JSON, Column, Field, SQLModel
 class Requirement(SQLModel, table=True):
     """需求表"""
 
-    __tablename__ = "requirements"
-
-    id: int = Field(primary_key=True)
+    __tablename__ = "requirements"  # pyright: ignore[reportAssignmentType]
+    id: int | None = Field(default=None, primary_key=True)
     requirement_id: str = Field(unique=True, index=True)  # REQ-2025-001
     name: str
     module_id: str | None = None  # 禅道模块ID

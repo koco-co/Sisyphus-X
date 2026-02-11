@@ -22,7 +22,6 @@ import ApiTestCaseList from '@/pages/api-automation/ApiTestCaseList'
 import ApiTestCaseEditor from '@/pages/api-automation/ApiTestCaseEditor'
 import VisualTestCaseEditor from '@/pages/api-automation/VisualTestCaseEditor'
 import ExecutionResultPage from '@/pages/api-automation/ExecutionResultPage'
-import InterfaceEditor from '@/pages/interface/InterfaceEditor'
 import TestReport from '@/pages/reports/TestReport'
 import TestPlan from '@/pages/plans/TestPlan'
 // 功能测试模块导入
@@ -86,8 +85,8 @@ function AppRoutes() {
         <Route path="/api/keywords/new" element={<KeywordEditor />} />
         <Route path="/api/keywords/:id" element={<KeywordEditor />} />
         <Route path="/api/interfaces" element={<ApiManagement />} />
-        <Route path="/api/interfaces/new" element={<InterfaceEditor />} />
-        <Route path="/api/interfaces/:id" element={<InterfaceEditor />} />
+        <Route path="/api/interfaces/new" element={<ApiManagement />} />
+        <Route path="/api/interfaces/:id" element={<ApiManagement />} />
         <Route path="/api/projects/:projectId/test-cases" element={<ApiTestCaseList />} />
         <Route path="/api/projects/:projectId/test-cases/new" element={<ApiTestCaseEditor />} />
         <Route path="/api/test-cases/:testCaseId" element={<ApiTestCaseEditor />} />

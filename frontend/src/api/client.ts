@@ -82,9 +82,22 @@ export const projectsApi = {
 
 // 接口相关 API
 export const interfacesApi = {
-    list: (params?: { page?: number; size?: number; folder_id?: number }) => api.get('/interfaces/', { params }),
+    list: (params?: { page?: number; size?: number; folder_id?: number; project_id?: number }) => api.get('/interfaces/', { params }),
     get: (id: number) => api.get(`/interfaces/${id}`),
-    create: (data: { project_id: number; name: string; url: string; method: string; status?: string }) =>
+    create: (data: {
+        project_id: number
+        name: string
+        url: string
+        method: string
+        status?: string
+        description?: string
+        folder_id?: number | null
+        headers?: Record<string, string>
+        params?: Record<string, unknown>
+        cookies?: Record<string, string>
+        body?: unknown
+        body_type?: string
+    }) =>
         api.post('/interfaces/', data),
     update: (id: number, data: any) => api.put(`/interfaces/${id}`, data),
     delete: (id: number) => api.delete(`/interfaces/${id}`),

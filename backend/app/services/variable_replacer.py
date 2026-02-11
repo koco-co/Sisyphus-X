@@ -145,12 +145,14 @@ class VariableReplacer:
         # Try to parse as comma-separated values
         args = [arg.strip() for arg in args_str.split(",")]
 
-        # Convert numeric strings to numbers
+        # Convert numeric strings to numbers (including negative numbers)
         parsed_args: list[Any] = []
         for arg in args:
-            if arg.isdigit():
+            # Check for integer (including negative)
+            if arg.lstrip('-').isdigit():
                 parsed_args.append(int(arg))
             else:
+                # Try to parse as float
                 try:
                     parsed_args.append(float(arg))
                 except ValueError:

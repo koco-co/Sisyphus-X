@@ -1,4 +1,4 @@
-import { KeyValuePair } from './KeyValueEditor'
+import type { KeyValuePair } from './KeyValueEditor'
 import { KeyValueEditor } from './KeyValueEditor'
 
 interface ParamsTabProps {

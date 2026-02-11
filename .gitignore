@@ -80,3 +80,14 @@ ehthumbs.db
 .mcp.json
 .mcp-memory.json
 AGENTS.md
+
+# UV
+.uv/
+uv.lock
+
+# Ruff
+.ruff_cache/
+
+# Pyright
+.pyright_cache/
+report.json

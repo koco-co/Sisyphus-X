@@ -39,7 +39,7 @@ const RESPONSE_TABS = [
 
 export function ResponseViewer({ response, isLoading = false }: ResponseViewerProps) {
   const [activeTab, setActiveTab] = useState<typeof RESPONSE_TABS[number]['id']>('body')
-  const [bodyFormat, setBodyFormat] =<'pretty' | 'raw'>('pretty')
+  const [bodyFormat, setBodyFormat] = useState<'pretty' | 'raw'>('pretty')
   const [showLog, setShowLog] = useState(false)
 
   // 当收到新响应时，自动显示日志（如果有错误日志）

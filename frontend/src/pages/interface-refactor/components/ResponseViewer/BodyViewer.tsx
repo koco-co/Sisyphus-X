@@ -127,16 +127,16 @@ function JsonView({ data, depth = 0 }: JsonViewProps) {
   if (typeof data === 'object') {
     const keys = Object.keys(data)
     if (keys.length === 0) {
-      return <span className="text-slate-400">{{'{'}{'}}'}</span>
+      return <span className="text-slate-400">{`{}`}</span>
     }
 
     if (depth > 10) {
-      return <span className="text-slate-500">{{'{'}Object (too deep){'}'}}</span>
+      return <span className="text-slate-500">{`{Object (too deep)}`}</span>
     }
 
     return (
       <div>
-        <span className="text-slate-400">{{'{'}}</span>
+        <span className="text-slate-400">{`{`}</span>
         {expanded && (
           <div className="pl-4">
             {keys.map((key, index) => (
@@ -149,7 +149,7 @@ function JsonView({ data, depth = 0 }: JsonViewProps) {
             ))}
           </div>
         )}
-        <span className="text-slate-400">{{'}'}}</span>
+        <span className="text-slate-400">{`}`}</span>
       </div>
     )
   }

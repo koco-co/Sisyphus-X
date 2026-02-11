@@ -1,53 +1,45 @@
-import { useState } from 'react'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/Label'
+import { Input } from '@/components/ui/Input'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 import { cn } from '@/lib/utils'
-import type { KeyValueEditorProps } from './KeyValueEditor'
-
-export type AuthType = 'none' | 'bearer' | 'api_key' | 'basic'
 
 export interface AuthConfig {
-  type: AuthType
-  // Bearer
-  token?: string
-  // API Key
-  key?: string
-  value?: string
-  addTo?: 'header' | 'query'
-  // Basic
-  username?: string
-  password?: string
+  type: 'no_auth' | 'bearer' | 'api_key' | 'basic'
+  bearer?: { token: string }
+  api_key?: { key: string; value: string; addTo: 'header' | 'query' }
+  basic?: { username: string; password: string }
 }
 
 interface AuthTabProps {
   auth: AuthConfig
-  onChange: (auth: AuthConfig) => void
+  onAuthChange: (auth: AuthConfig) => void
 }
 
-const AUTH_TYPES: { label: string; value: AuthType }[] = [
-  { label: '无认证', value: 'none' },
-  { label: 'Bearer Token', value: 'bearer' },
-  { label: 'API Key', value: 'api_key' },
-  { label: 'Basic Auth', value: 'basic' },
-]
+const AUTH_TYPES = [
+  { id: 'no_auth' as const, label: 'No Auth' },
+  { id: 'bearer' as const, label: 'Bearer Token' },
+  { id: 'api_key' as const, label: 'API Key' },
+  { id: 'basic' as const, label: 'Basic Auth' },
+] as const
 
-export function AuthTab({ auth, onChange }: AuthTabProps) {
+export function AuthTab({ auth, onAuthChange }: AuthTabProps) {
   const updateAuth = (updates: Partial<AuthConfig>) => {
-    onChange({ ...auth, ...updates })
+    onAuthChange({ ...auth, ...updates })
   }
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="space-y-6">
       {/* 认证类型选择 */}
       <div className="space-y-2">
         <Label>认证类型</Label>
-        <CustomSelect
-          value={auth.type}
-          onChange={(val) => updateAuth({ type: val as AuthType })}
-          options={AUTH_TYPES}
-          placeholder="选择认证类型"
-        />
+        <div className="w-48">
+          <CustomSelect
+            value={auth.type}
+            onChange={(val) => updateAuth({ type: val as AuthConfig['type'] })}
+            options={AUTH_TYPES.map((t) => ({ label: t.label, value: t.id }))}
+            placeholder="选择认证类型"
+          />
+        </div>
       </div>
 
       {/* Bearer Token */}
@@ -56,13 +48,13 @@ export function AuthTab({ auth, onChange }: AuthTabProps) {
           <Label>Token</Label>
           <Input
             type="password"
-            value={auth.token || ''}
-            onChange={(e) => updateAuth({ token: e.target.value })}
+            value={auth.bearer?.token || ''}
+            onChange={(e) => updateAuth({ bearer: { ...auth.bearer, token: e.target.value } })}
             placeholder="输入 Bearer Token"
             className="bg-slate-800 border-slate-700 font-mono"
           />
           <p className="text-sm text-slate-500">
-            请求会自动添加 <code className="text-cyan-400">Authorization: Bearer {'{{'}token{'}'}}</code>
+            请求会自动添加 <code className="text-cyan-400">Authorization: Bearer {'{'}{token}{'}'}</code>
           </p>
         </div>
       )}
@@ -73,32 +65,35 @@ export function AuthTab({ auth, onChange }: AuthTabProps) {
           <div className="space-y-2">
             <Label>Key 名称</Label>
             <Input
-              value={auth.key || ''}
-              onChange={(e) => updateAuth({ key: e.target.value })}
+              value={auth.api_key?.key || ''}
+              onChange={(e) => updateAuth({ api_key: { ...auth.api_key, key: e.target.value, value: auth.api_key?.value || '', addTo: auth.api_key?.addTo || 'header' } })}
               placeholder="例如：X-API-Key"
-              className="bg-slate-800 border-slate-700 font-mono"
+              className="bg-slate-800 border-slate-700"
             />
           </div>
           <div className="space-y-2">
-            <Label>Key 值</Label>
+            <Label>Value</Label>
             <Input
               type="password"
-              value={auth.value || ''}
-              onChange={(e) => updateAuth({ value: e.target.value })}
+              value={auth.api_key?.value || ''}
+              onChange={(e) => updateAuth({ api_key: { ...auth.api_key, key: auth.api_key?.key || '', value: e.target.value, addTo: auth.api_key?.addTo || 'header' } })}
               placeholder="输入 API Key 值"
               className="bg-slate-800 border-slate-700 font-mono"
             />
           </div>
           <div className="space-y-2">
             <Label>添加到</Label>
-            <CustomSelect
-              value={auth.addTo || 'header'}
-              onChange={(val) => updateAuth({ addTo: val as 'header' | 'query' })}
-              options={[
-                { label: 'Header', value: 'header' },
-                { label: 'Query 参数', value: 'query' }
-              ]}
-            />
+            <div className="w-48">
+              <CustomSelect
+                value={auth.api_key?.addTo || 'header'}
+                onChange={(val) => updateAuth({ api_key: { ...auth.api_key, key: auth.api_key?.key || '', value: auth.api_key?.value || '', addTo: val as 'header' | 'query' } })}
+                options={[
+                  { label: 'Header', value: 'header' },
+                  { label: 'Query', value: 'query' },
+                ]}
+                placeholder="选择位置"
+              />
+            </div>
           </div>
         </div>
       )}
@@ -109,8 +104,8 @@ export function AuthTab({ auth, onChange }: AuthTabProps) {
           <div className="space-y-2">
             <Label>用户名</Label>
             <Input
-              value={auth.username || ''}
-              onChange={(e) => updateAuth({ username: e.target.value })}
+              value={auth.basic?.username || ''}
+              onChange={(e) => updateAuth({ basic: { ...auth.basic, username: e.target.value, password: auth.basic?.password || '' } })}
               placeholder="输入用户名"
               className="bg-slate-800 border-slate-700"
             />
@@ -119,19 +114,22 @@ export function AuthTab({ auth, onChange }: AuthTabProps) {
             <Label>密码</Label>
             <Input
               type="password"
-              value={auth.password || ''}
-              onChange={(e) => updateAuth({ password: e.target.value })}
+              value={auth.basic?.password || ''}
+              onChange={(e) => updateAuth({ basic: { ...auth.basic, username: auth.basic?.username || '', password: e.target.value } })}
               placeholder="输入密码"
               className="bg-slate-800 border-slate-700"
             />
           </div>
+          <p className="text-sm text-slate-500">
+            请求会自动添加 <code className="text-cyan-400">Authorization: Basic {'{base64(username:password)}'}</code>
+          </p>
         </div>
       )}
 
-      {/* 无认证 */}
-      {auth.type === 'none' && (
+      {/* No Auth */}
+      {auth.type === 'no_auth' && (
         <div className="text-center py-8 text-slate-500">
-          当前请求不使用认证
+          <p>此接口不需要认证</p>
         </div>
       )}
     </div>

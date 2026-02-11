@@ -21,7 +21,7 @@ class InterfaceTestCase(SQLModel, table=True):
 
     scenario_id: int | None = Field(
         default=None,
-        foreign_key="scenario.id",
+        foreign_key="testscenario.id",
         description="Scenario ID"
     )
 

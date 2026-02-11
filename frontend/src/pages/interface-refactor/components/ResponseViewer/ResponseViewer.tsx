@@ -6,7 +6,8 @@ import { BodyViewer } from './BodyViewer'
 import { HeadersViewer } from './HeadersViewer'
 import { CookiesViewer } from './CookiesViewer'
 import { TimelineViewer } from './TimelineViewer'
-import { ExecutionLog, LogEntry } from './ExecutionLog'
+import { ExecutionLog } from './ExecutionLog'
+import type { LogEntry } from './ExecutionLog'
 
 export interface ResponseData {
   status_code: number

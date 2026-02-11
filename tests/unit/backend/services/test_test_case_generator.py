@@ -3,13 +3,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 import yaml
 
-from app.models.interface import Interface
-from app.models.project import ProjectEnvironment
+from app.models.project import Interface, ProjectEnvironment
 from app.services.test_case_generator import TestCaseGenerator
 
 

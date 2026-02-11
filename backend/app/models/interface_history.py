@@ -13,7 +13,7 @@ class InterfaceHistory(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     interface_id: int = Field(foreign_key="interface.id", index=True, description="Interface ID")
-    user_id: int = Field(foreign_key="user.id", index=True, description="User ID")
+    user_id: int = Field(foreign_key="users.id", index=True, description="User ID")
 
     # Request snapshot
     url: str = Field(description="Request URL")

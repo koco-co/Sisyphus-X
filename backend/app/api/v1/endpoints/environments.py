@@ -1,6 +1,6 @@
 """Environment management API endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, func, select
 
@@ -22,7 +22,7 @@ router = APIRouter()
 
 @router.get("/", response_model=list[EnvironmentResponse])
 async def list_environments(
-    project_id: int = Query(..., description="Project ID"),
+    project_id: int = Path(..., description="Project ID"),
     session: AsyncSession = Depends(get_session),
 ) -> list[ProjectEnvironment]:
     """List all environments for a project.
@@ -43,7 +43,7 @@ async def list_environments(
 
 @router.post("/", response_model=EnvironmentResponse)
 async def create_environment(
-    project_id: int = Query(..., description="Project ID"),
+    project_id: int = Path(..., description="Project ID"),
     data: EnvironmentCreate | None = None,
     session: AsyncSession = Depends(get_session),
 ) -> ProjectEnvironment:

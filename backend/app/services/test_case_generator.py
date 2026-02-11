@@ -6,9 +6,8 @@ from typing import Any
 import yaml
 from sqlmodel import Session
 
-from app.models.interface import Interface
+from app.models.project import Interface, ProjectEnvironment
 from app.models.interface_test_case import InterfaceTestCase
-from app.models.project import ProjectEnvironment
 
 
 class TestCaseGenerator:

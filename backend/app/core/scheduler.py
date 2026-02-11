@@ -2,9 +2,8 @@ import asyncio
 import logging
 from datetime import datetime
 
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlmodel import select
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from sqlmodel import col, select
 
 from app.core.db import engine
 from app.core.network import test_tcp_connection
@@ -19,12 +18,12 @@ async def check_datasources():
     """
     logger.info("Starting background datasource check...")
 
-    async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    async_session = async_sessionmaker(engine, expire_on_commit=False)
 
     try:
         async with async_session() as session:
             # Get all enabled datasources
-            statement = select(ProjectDataSource).where(ProjectDataSource.is_enabled)
+            statement = select(ProjectDataSource).where(col(ProjectDataSource.is_enabled).is_(True))
             result = await session.execute(statement)
             datasources = result.scalars().all()
 

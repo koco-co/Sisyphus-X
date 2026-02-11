@@ -147,7 +147,7 @@ def upgrade() -> None:
     op.create_table('test_case_knowledge',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('test_case_id', sa.Integer(), nullable=False),
-    sa.Column('embedding', sa.ARRAY(sa.Float(), as_tuple=True), nullable=True),
+    sa.Column('embedding', sa.JSON(), nullable=True),  # JSON type for SQLite compatibility
     sa.Column('embedding_model', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('module_name', sqlmodel.sql.sqltypes.AutoString(), nullable=False),
     sa.Column('priority', sqlmodel.sql.sqltypes.AutoString(), nullable=False),

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     AUTH_DISABLED: bool = False
 
     # Database
-    DATABASE_URL: str
+    DATABASE_URL: str = "sqlite+aiosqlite:///./sisyphus.db"
 
     # Redis
     REDIS_URL: str | None = "redis://localhost:6379/0"

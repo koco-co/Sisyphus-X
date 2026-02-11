@@ -104,9 +104,9 @@ def get_audit_logger() -> logging.Logger:
 def log_operation(
     operation: str,
     resource_type: str,
-    resource_id: int = None,
-    user_id: int = None,
-    details: dict = None,
+    resource_id: int | None = None,
+    user_id: int | None = None,
+    details: dict[str, object] | None = None,
     success: bool = True,
 ):
     """

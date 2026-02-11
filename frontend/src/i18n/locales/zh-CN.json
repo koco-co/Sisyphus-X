@@ -73,6 +73,7 @@
         "projectManagement": "项目管理",
         "keywordManagement": "关键字管理",
         "apiManagement": "接口管理",
+        "apiManagementNew": "接口调试(新版)",
         "testScenarios": "场景编排",
         "testReports": "测试报告",
         "testPlans": "定时任务",

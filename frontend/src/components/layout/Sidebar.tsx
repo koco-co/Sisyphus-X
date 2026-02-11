@@ -64,6 +64,7 @@ const navItems: NavItem[] = [
             { icon: FolderKanban, labelKey: 'nav.projectManagement', href: '/api/projects' },
             { icon: Key, labelKey: 'nav.keywordManagement', href: '/api/keywords' },
             { icon: Network, labelKey: 'nav.apiManagement', href: '/api/interfaces' },
+            { icon: Globe, labelKey: 'nav.apiManagementNew', href: '/api/interfaces-refactor', badge: 'New' },
         ]
     },
     { icon: Workflow, labelKey: 'nav.testScenarios', href: '/scenarios' },

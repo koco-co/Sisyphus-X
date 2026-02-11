@@ -70,6 +70,7 @@
         "projectManagement": "Project Management",
         "keywordManagement": "Keyword Management",
         "apiManagement": "API Management",
+        "apiManagementNew": "API Debug(New)",
         "testScenarios": "Scenario Orchestration",
         "testReports": "Test Reports",
         "testPlans": "Scheduled Tasks",

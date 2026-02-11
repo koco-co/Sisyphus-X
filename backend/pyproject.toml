@@ -3,7 +3,7 @@ name = "sisyphus-backend"
 version = "0.1.0"
 description = "SisyphusX - AI驱动的企业级自动化测试平台"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
@@ -32,6 +32,7 @@ dependencies = [
     "greenlet>=3.3.1",
     "redis>=7.1.1",
     "aiomysql>=0.3.2",
+    "sisyphus-api-engine>=2.1.0",
 ]
 
 [project.optional-dependencies]
@@ -62,7 +63,7 @@ dev = [
 # Ruff配置
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py312"
 src = ["app"]
 
 [tool.ruff.lint]
@@ -85,5 +86,5 @@ reportMissingTypeStubs = false
 # Pytest配置
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["../tests"]
 python_files = ["test_*.py"]

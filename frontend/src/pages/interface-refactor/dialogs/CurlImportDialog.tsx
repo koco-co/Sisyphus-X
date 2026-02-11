@@ -108,7 +108,7 @@ export function CurlImportDialog({ open, onClose, onImport }: CurlImportDialogPr
                 setParsedData(null)
                 setError('')
               }}
-              placeholder="粘贴 cURL 命令，例如：&#10;curl -X POST https://api.example.com/users &#10;  -H 'Content-Type: application/json' &#10;  -H 'Authorization: Bearer {{token}}' &#10;  -d '{\"name\":\"Alice\"}'"
+              placeholder={`粘贴 cURL 命令，例如：\ncurl -X POST https://api.example.com/users \n  -H 'Content-Type: application/json' \n  -H 'Authorization: Bearer {{token}}' \n  -d '{"name":"Alice"}'`}
               className="min-h-[120px] bg-slate-800 border-slate-700 font-mono text-sm"
             />
             <div className="flex justify-between items-center">

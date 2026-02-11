@@ -570,8 +570,3 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
     </div>
   )
 }
-        </div>
-      )}
-    </div>
-  )
-}

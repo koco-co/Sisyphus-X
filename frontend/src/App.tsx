@@ -7,6 +7,7 @@ import { ToastProvider } from '@/components/ui/Toast'
 import AppLayout from '@/components/layout/AppLayout'
 import Dashboard from '@/pages/Dashboard'
 import InterfacePage from '@/pages/interface'
+import InterfaceManagementPage from '@/pages/interface-refactor'
 import ScenarioListPage from '@/pages/scenario'
 import ScenarioEditor from '@/pages/scenario/editor'
 import TestCasesPage from '@/pages/cases'
@@ -104,6 +105,16 @@ function AppRoutes() {
 
         {/* 定时任务 (原测试计划) */}
         <Route path="/plans" element={<TestPlan />} />
+
+        {/* 接口管理模块 */}
+        <Route path="/api/interfaces" element={<InterfacePage />} />
+        <Route path="/api/interfaces/new" element={<InterfacePage />} />
+        <Route path="/api/interfaces/:id" element={<InterfacePage />} />
+
+        {/* 接口管理模块重构版 */}
+        <Route path="/api/interfaces-refactor" element={<InterfaceManagementPage />} />
+        <Route path="/api/interfaces-refactor/:id" element={<InterfaceManagementPage />} />
+        <Route path="/api/interfaces-refactor/new" element={<InterfaceManagementPage />} />
 
         {/* 旧模块保留 */}
         <Route path="/interfaces" element={<InterfacePage />} />

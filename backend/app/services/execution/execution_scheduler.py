@@ -63,7 +63,7 @@ class ExecutionScheduler:
 
             # 5. 更新执行记录
             execution.status = "success" if result.success else "failed"
-            execution.result_data = result.dict()
+            execution.result_data = result.model_dump()
             execution.duration = result.duration
             execution.completed_at = datetime.utcnow()
 

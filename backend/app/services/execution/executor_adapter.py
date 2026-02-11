@@ -121,10 +121,11 @@ class ExecutorAdapter:
             )
 
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+            return_code = proc.returncode if proc.returncode is not None else 1
 
             return subprocess.CompletedProcess(
                 args=cmd,
-                returncode=proc.returncode,
+                returncode=return_code,
                 stdout=stdout.decode("utf-8"),
                 stderr=stderr.decode("utf-8"),
             )

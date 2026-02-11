@@ -149,7 +149,7 @@ class ResultParser:
             test_case_id=test_case_id,
             environment_id=environment_id,
             status="success" if result.success else "failed",
-            result_data=result.dict(),
+            result_data=result.model_dump(),
             duration=result.duration,
             started_at=datetime.fromisoformat(result.test_case.start_time)
             if result.test_case.start_time
@@ -163,6 +163,8 @@ class ResultParser:
         await session.commit()
         await session.refresh(execution)
 
+        if execution.id is None:
+            raise ResultParseException("Execution ID not generated after persistence")
         return execution.id
 
     def _extract_error(self, steps: list[StepResult]) -> str:

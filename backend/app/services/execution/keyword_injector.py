@@ -31,7 +31,7 @@ class KeywordInjector:
             query = query.where(Keyword.category == category)
 
         result = await session.execute(query)
-        return result.scalars().all()
+        return list(result.scalars().all())
 
     def validate_keyword_code(self, code: str) -> dict:
         """

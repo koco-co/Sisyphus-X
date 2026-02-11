@@ -3,13 +3,13 @@
 支持OpenAI、Anthropic、通义千问、文心一言
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_models import QianfanChatEndpoint
 from langchain_openai import ChatOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col, select
 
 from app.models.ai_config import AIProviderConfig
 from app.services.ai_config_service import AIConfigService
@@ -46,36 +46,46 @@ class MultiVendorLLMService:
 
         # 根据厂商类型创建对应的LLM实例
         if provider_type == "openai":
-            return ChatOpenAI(
-                model=self.config.model_name,
-                openai_api_key=self._decrypted_api_key,
-                base_url=self.config.api_endpoint,
+            chat_cls: Any = ChatOpenAI
+            openai_kwargs: dict[str, Any] = {
+                "model": self.config.model_name,
+                "api_key": self._decrypted_api_key,
+                "base_url": self.config.api_endpoint,
                 **kwargs,
-            )
+            }
+            return chat_cls(**openai_kwargs)
 
         elif provider_type == "anthropic":
-            return ChatAnthropic(
-                model=self.config.model_name,
-                anthropic_api_key=self._decrypted_api_key,
-                base_url=self.config.api_endpoint,
+            chat_cls: Any = ChatAnthropic
+            anthropic_kwargs: dict[str, Any] = {
+                "model_name": self.config.model_name,
+                "api_key": self._decrypted_api_key,
+                "base_url": self.config.api_endpoint,
                 **kwargs,
-            )
+            }
+            return chat_cls(**anthropic_kwargs)
 
         elif provider_type == "qwen":
             # 阿里云通义千问
             from langchain_community.chat_models.tongyi import ChatTongyi
 
-            return ChatTongyi(
-                dashscope_api_key=self._decrypted_api_key,
-                model_name=self.config.model_name,
+            chat_cls: Any = ChatTongyi
+            qwen_kwargs: dict[str, Any] = {
+                "api_key": self._decrypted_api_key,
+                "model_name": self.config.model_name,
                 **kwargs,
-            )
+            }
+            return chat_cls(**qwen_kwargs)
 
         elif provider_type == "qianfan":
             # 百度文心一言
-            return QianfanChatEndpoint(
-                qianfan_api_key=self._decrypted_api_key, model=self.config.model_name, **kwargs
-            )
+            chat_cls: Any = QianfanChatEndpoint
+            qianfan_kwargs: dict[str, Any] = {
+                "api_key": self._decrypted_api_key,
+                "model": self.config.model_name,
+                **kwargs,
+            }
+            return chat_cls(**qianfan_kwargs)
 
         elif provider_type == "glm":
             # 智谱AI (GLM) - 使用专用实现
@@ -91,7 +101,7 @@ class MultiVendorLLMService:
     @staticmethod
     async def get_default_llm_service(
         session: AsyncSession, user_id: int
-    ) -> Optional["MultiVendorLLMService"]:
+    ) -> "MultiVendorLLMService | None":
         """
         获取用户的默认LLM服务实例
 
@@ -109,9 +119,9 @@ class MultiVendorLLMService:
         # 获取默认配置
         result = await session.execute(
             select(AIProviderConfig)
-            .where(AIProviderConfig.user_id == user_id)
-            .where(AIProviderConfig.is_default)
-            .where(AIProviderConfig.is_enabled)
+            .where(col(AIProviderConfig.user_id) == user_id)
+            .where(col(AIProviderConfig.is_default).is_(True))
+            .where(col(AIProviderConfig.is_enabled).is_(True))
         )
         config = result.scalar_one_or_none()
 
@@ -160,10 +170,10 @@ class MultiVendorLLMService:
         # 获取指定厂商的配置
         result = await session.execute(
             select(AIProviderConfig)
-            .where(AIProviderConfig.user_id == user_id)
-            .where(AIProviderConfig.provider_type == provider_type)
-            .where(AIProviderConfig.is_enabled)
-            .order_by(AIProviderConfig.is_default.desc())
+            .where(col(AIProviderConfig.user_id) == user_id)
+            .where(col(AIProviderConfig.provider_type) == provider_type)
+            .where(col(AIProviderConfig.is_enabled).is_(True))
+            .order_by(col(AIProviderConfig.is_default).desc())
         )
         config = result.scalar_one_or_none()
 
@@ -245,7 +255,7 @@ class MultiVendorLLMService:
         llm = self.get_llm()
 
         # 转换消息格式
-        from langchain.schema import AIMessage, HumanMessage, SystemMessage
+        from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 
         lc_messages = []
         for msg in messages:
@@ -274,6 +284,13 @@ class MultiVendorLLMService:
             "temperature": self.config.temperature,
             "max_tokens": self.config.max_tokens,
         }
+
+    @staticmethod
+    async def get_default_llm(
+        session: AsyncSession, user_id: int
+    ) -> "MultiVendorLLMService | None":
+        """兼容旧调用名。"""
+        return await MultiVendorLLMService.get_default_llm_service(session, user_id)
 
 
 # 使用示例

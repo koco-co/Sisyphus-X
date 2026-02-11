@@ -30,7 +30,7 @@ class YAMLGenerator:
         """
         try:
             # 构建基础结构
-            yaml_dict = {
+            yaml_dict: dict[str, Any] = {
                 "name": form_data.name,
                 "description": form_data.description or "",
             }

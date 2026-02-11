@@ -304,6 +304,7 @@ class TestCaseGenerationService:
                 is_ai_generated=True,
                 ai_model="default",
                 status="draft",  # 草稿状态，待审核
+                created_by=self.user_id,
             )
 
             self.session.add(test_case)

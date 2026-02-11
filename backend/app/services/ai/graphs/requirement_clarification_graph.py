@@ -4,7 +4,7 @@
 """
 
 from collections.abc import Sequence
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
@@ -251,6 +251,8 @@ class RequirementClarificationGraph:
 
         # 获取LLM
         llm = await MultiVendorLLMService.get_default_llm(self.session, self.user_id)
+        if llm is None:
+            raise ValueError("用户未配置AI服务，请先在AI配置中添加")
 
         # 构建prompt
         chat_history = self._format_chat_history(state.get("messages", []))
@@ -357,7 +359,7 @@ class RequirementClarificationGraph:
         else:
             return "continue"
 
-    def _format_chat_history(self, messages: list[dict[str, str]]) -> str:
+    def _format_chat_history(self, messages: Sequence[dict[str, str]]) -> str:
         """格式化聊天历史"""
         if not messages:
             return "（无历史对话）"
@@ -427,7 +429,7 @@ class RequirementClarificationGraph:
             config = {"configurable": {"thread_id": requirement_id}}
 
         # 初始状态
-        initial_state = {
+        initial_state: RequirementClarificationState = {
             "user_input": user_input,
             "requirement_document": "",
             "requirement_name": "",
@@ -446,7 +448,8 @@ class RequirementClarificationGraph:
 
         # 运行状态图
         event_count = 0
-        async for event in self.graph.astream(initial_state, config):
+        graph_runner = cast(Any, self.graph)
+        async for event in graph_runner.astream(initial_state, config):
             event_count += 1
             print(f"📦 Event #{event_count}: {event}")
             node_name = list(event.keys())[0]

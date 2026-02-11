@@ -9,7 +9,7 @@ import os
 import httpx
 from cryptography.fernet import Fernet
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col, select
 
 from app.models.ai_config import AIProviderConfig
 from app.schemas.ai_config import (
@@ -74,8 +74,8 @@ class AIConfigService:
         """获取用户的所有AI配置"""
         result = await session.execute(
             select(AIProviderConfig)
-            .where(AIProviderConfig.user_id == user_id)
-            .order_by(AIProviderConfig.is_default.desc(), AIProviderConfig.created_at)
+            .where(col(AIProviderConfig.user_id) == user_id)
+            .order_by(col(AIProviderConfig.is_default).desc(), col(AIProviderConfig.created_at))
         )
         configs = result.scalars().all()
 
@@ -118,10 +118,10 @@ class AIConfigService:
         """获取用户的默认AI配置"""
         result = await session.execute(
             select(AIProviderConfig)
-            .where(AIProviderConfig.user_id == user_id)
-            .where(AIProviderConfig.is_default)
-            .where(AIProviderConfig.is_enabled)
-            .order_by(AIProviderConfig.created_at.desc())  # 按创建时间降序，获取最新的
+            .where(col(AIProviderConfig.user_id) == user_id)
+            .where(col(AIProviderConfig.is_default).is_(True))
+            .where(col(AIProviderConfig.is_enabled).is_(True))
+            .order_by(col(AIProviderConfig.created_at).desc())  # 按创建时间降序，获取最新的
             .limit(1)  # 只获取一条记录
         )
         config = result.scalar_one_or_none()
@@ -275,9 +275,9 @@ class AIConfigService:
         """清除用户指定厂商类型的默认标记"""
         result = await session.execute(
             select(AIProviderConfig)
-            .where(AIProviderConfig.user_id == user_id)
-            .where(AIProviderConfig.provider_type == provider_type)
-            .where(AIProviderConfig.is_default)
+            .where(col(AIProviderConfig.user_id) == user_id)
+            .where(col(AIProviderConfig.provider_type) == provider_type)
+            .where(col(AIProviderConfig.is_default).is_(True))
         )
         configs = result.scalars().all()
 

@@ -2,6 +2,8 @@
 参数解析器 - 组装完整的执行参数
 """
 
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.project import Environment
@@ -24,19 +26,9 @@ class ParameterParser:
     ) -> ExecutionRequest:
         """
         解析执行请求，组装完整的执行参数
-
-        Args:
-            session: 数据库会话
-            test_case: 测试用例实例
-            environment_id: 环境ID（可选）
-
-        Returns:
-            ExecutionRequest
         """
-        # 1. 加载环境配置
-        environment = None
-        base_url = None
-        env_variables = {}
+        base_url: str | None = None
+        env_variables: dict[str, Any] = {}
 
         if environment_id:
             environment = await session.get(Environment, environment_id)
@@ -44,38 +36,70 @@ class ParameterParser:
                 base_url = environment.domain
                 env_variables = environment.variables or {}
 
-        # 2. 生成YAML（注意：这里假设 TestCase 有 form_data 字段）
-        # 如果实际模型不同，需要调整
-        if hasattr(test_case, "form_data") and test_case.form_data:
-            form_data_dict = test_case.form_data if isinstance(test_case.form_data, dict) else {}
-            form_data = TestCaseForm(**form_data_dict)
-        else:
-            # 如果没有 form_data，使用基本信息创建
-            form_data = TestCaseForm(
-                name=test_case.name or "Test Case",
-                project_id=test_case.project_id,
-                steps=[],
-                variables={},
-            )
+        # 优先使用模型中已有的 YAML 内容
+        yaml_content = getattr(test_case, "yaml_content", "") or ""
 
-        yaml_content = self.yaml_generator.generate_from_form(form_data)
+        # 如果没有 YAML，则尝试从 form_data 动态生成
+        if not yaml_content:
+            form_data = self._build_form_data(test_case)
+            yaml_content = self.yaml_generator.generate_from_form(form_data)
 
-        # 3. 合并变量
-        variables = {**env_variables}
-        if form_data.variables:
-            variables.update(form_data.variables)
-
-        # 4. 收集关键字
-        dynamic_keywords = await self.keyword_injector.prepare_keywords_for_execution(
-            session, test_case.project_id
+        project_id = getattr(test_case, "project_id", None)
+        dynamic_keywords = (
+            await self.keyword_injector.prepare_keywords_for_execution(session, project_id)
+            if project_id
+            else []
         )
 
-        # 5. 构建请求
         return ExecutionRequest(
             yaml_content=yaml_content,
             base_url=base_url,
-            variables=variables,
+            variables=env_variables,
             dynamic_keywords=dynamic_keywords,
             timeout=300,
-            environment=environment.name if environment else None,
         )
+
+    def _build_form_data(self, test_case: TestCase) -> TestCaseForm:
+        """从测试用例对象构造 YAML 生成所需表单。"""
+        raw_form_data = getattr(test_case, "form_data", None)
+        if isinstance(raw_form_data, dict):
+            return TestCaseForm(**raw_form_data)
+
+        steps_data = getattr(test_case, "steps_data", None)
+        steps = self._normalize_steps(steps_data)
+
+        return TestCaseForm(
+            id=getattr(test_case, "id", None),
+            name=getattr(test_case, "title", None) or getattr(test_case, "name", None) or "Test Case",
+            project_id=getattr(test_case, "project_id", None),
+            steps=steps,
+        )
+
+    def _normalize_steps(self, steps_data: Any) -> list[dict[str, Any]]:
+        """
+        规整历史 steps_data，保证 YAML 生成器至少能消费。
+        """
+        if not isinstance(steps_data, list):
+            return []
+
+        normalized: list[dict[str, Any]] = []
+        for index, step in enumerate(steps_data, start=1):
+            if not isinstance(step, dict):
+                continue
+
+            name = step.get("name") or step.get("step") or f"step_{index}"
+            step_type = step.get("type", "wait")
+            if step_type == "wait":
+                params = step.get("params")
+                if not isinstance(params, dict):
+                    params = {"wait_type": "fixed", "seconds": 1}
+                normalized.append({"name": str(name), "type": "wait", "params": params})
+                continue
+
+            params = step.get("params")
+            if not isinstance(params, dict):
+                params = {}
+
+            normalized.append({"name": str(name), "type": str(step_type), "params": params})
+
+        return normalized

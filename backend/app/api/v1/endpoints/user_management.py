@@ -4,17 +4,16 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlmodel import col, select
 
 from app.api import deps
 from app.core.db import get_session
+from app.models.settings import Role
 from app.models.user import User
 from app.models.user_management import (
     AuditLog,
     Permission,
-    Role,
 )
-from app.models.user_management import User as UserModel
 from app.schemas.user_management import (
     AuditLogResponse,
     PermissionCreate,
@@ -27,6 +26,34 @@ from app.schemas.user_management import (
 )
 
 router = APIRouter(tags=["用户和权限管理"])
+
+
+def _to_user_response(user: User) -> UserResponse:
+    if user.id is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="用户数据异常")
+    return UserResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        full_name=None,
+        is_active=user.is_active,
+        created_at=user.created_at,
+        updated_at=user.updated_at,
+        roles=[],
+    )
+
+
+def _to_role_response(role: Role) -> RoleResponse:
+    if role.id is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="角色数据异常")
+    return RoleResponse(
+        id=role.id,
+        name=role.name,
+        description=role.description,
+        is_system=False,
+        created_at=role.created_at,
+        permissions=[],
+    )
 
 
 # ============================================================================
@@ -43,10 +70,10 @@ async def list_users(
 ):
     """获取用户列表（需要超级用户权限）"""
     skip = (page - 1) * size
-    statement = select(UserModel).order_by(UserModel.created_at.desc()).offset(skip).limit(size)
+    statement = select(User).order_by(col(User.created_at).desc()).offset(skip).limit(size)
     result = await session.execute(statement)
     users = result.scalars().all()
-    return users
+    return [_to_user_response(user) for user in users]
 
 
 @router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -58,8 +85,8 @@ async def create_user(
     """创建用户（需要超级用户权限）"""
     # 检查用户名和邮箱是否已存在
     existing = await session.execute(
-        select(UserModel).where(
-            (UserModel.username == user_data.username) | (UserModel.email == user_data.email)
+        select(User).where(
+            (col(User.username) == user_data.username) | (col(User.email) == user_data.email)
         )
     )
     if existing.first():
@@ -68,11 +95,10 @@ async def create_user(
     # 创建用户
     from app.core.security import get_password_hash
 
-    user = UserModel(
+    user = User(
         username=user_data.username,
         email=user_data.email,
-        full_name=user_data.full_name,
-        hashed_password=get_password_hash(user_data.password),
+        password_hash=get_password_hash(user_data.password),
         is_active=user_data.is_active,
     )
 
@@ -80,17 +106,7 @@ async def create_user(
     await session.commit()
     await session.refresh(user)
 
-    # 分配角色
-    if user_data.role_ids:
-        for role_id in user_data.role_ids:
-            role = await session.get(Role, role_id)
-            if role:
-                user.roles.append(role)
-
-    await session.commit()
-    await session.refresh(user)
-
-    return user
+    return _to_user_response(user)
 
 
 @router.get("/users/{user_id}", response_model=UserResponse)
@@ -100,10 +116,10 @@ async def get_user(
     current_user: User = Depends(deps.get_current_user),
 ):
     """获取用户详情"""
-    user = await session.get(UserModel, user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
-    return user
+    return _to_user_response(user)
 
 
 @router.put("/users/{user_id}", response_model=UserResponse)
@@ -114,7 +130,7 @@ async def update_user(
     current_user: User = Depends(deps.get_current_superuser),
 ):
     """更新用户（需要超级用户权限）"""
-    user = await session.get(UserModel, user_id)
+    user = await session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="用户不存在")
 
@@ -124,20 +140,19 @@ async def update_user(
         if field == "password" and value:
             from app.core.security import get_password_hash
 
-            user.hashed_password = get_password_hash(value)
+            user.password_hash = get_password_hash(value)
         elif field == "role_ids":
-            # 更新角色
-            user.roles.clear()
-            for role_id in value:
-                role = await session.get(Role, role_id)
-                if role:
-                    user.roles.append(role)
+            # 当前 User 模型未建立角色关系，暂不在此处直接更新。
+            continue
         else:
+            if field == "full_name":
+                # 当前 User 模型未包含 full_name 字段。
+                continue
             setattr(user, field, value)
 
     await session.commit()
     await session.refresh(user)
-    return user
+    return _to_user_response(user)
 
 
 # ============================================================================
@@ -151,9 +166,9 @@ async def list_roles(
     current_user: User = Depends(deps.get_current_user),
 ):
     """获取角色列表"""
-    result = await session.execute(select(Role).order_by(Role.name))
+    result = await session.execute(select(Role).order_by(col(Role.name)))
     roles = result.scalars().all()
-    return roles
+    return [_to_role_response(role) for role in roles]
 
 
 @router.post("/roles", response_model=RoleResponse, status_code=status.HTTP_201_CREATED)
@@ -169,23 +184,18 @@ async def create_role(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="角色名已存在")
 
     # 创建角色
-    role = Role(name=role_data.name, description=role_data.description)
+    role = Role(
+        name=role_data.name,
+        code=role_data.name.lower().replace(" ", "_"),
+        description=role_data.description,
+        permissions={"permission_ids": role_data.permission_ids},
+    )
 
     session.add(role)
     await session.commit()
     await session.refresh(role)
 
-    # 分配权限
-    if role_data.permission_ids:
-        for perm_id in role_data.permission_ids:
-            perm = await session.get(Permission, perm_id)
-            if perm:
-                role.permissions.append(perm)
-
-    await session.commit()
-    await session.refresh(role)
-
-    return role
+    return _to_role_response(role)
 
 
 @router.get("/roles/{role_id}", response_model=RoleResponse)
@@ -198,7 +208,7 @@ async def get_role(
     role = await session.get(Role, role_id)
     if not role:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="角色不存在")
-    return role
+    return _to_role_response(role)
 
 
 # ============================================================================
@@ -249,12 +259,12 @@ async def list_audit_logs(
 ):
     """获取审计日志（需要超级用户权限）"""
     skip = (page - 1) * size
-    statement = select(AuditLog).order_by(AuditLog.created_at.desc())
+    statement = select(AuditLog).order_by(col(AuditLog.created_at).desc())
 
-    if user_id:
-        statement = statement.where(AuditLog.user_id == user_id)
+    if user_id is not None:
+        statement = statement.where(col(AuditLog.user_id) == user_id)
     if resource_type:
-        statement = statement.where(AuditLog.resource_type == resource_type)
+        statement = statement.where(col(AuditLog.resource_type) == resource_type)
 
     statement = statement.offset(skip).limit(size)
     result = await session.execute(statement)

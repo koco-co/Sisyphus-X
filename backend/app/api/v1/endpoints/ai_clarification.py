@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_user_id
 from app.core.db import get_session
 from app.models.user import User
 from app.services.ai.graphs.requirement_clarification_graph import RequirementClarificationGraph
@@ -80,7 +80,7 @@ async def clarify_requirement(
     """
     # 创建需求澄清图实例
     try:
-        graph = RequirementClarificationGraph(session, current_user.id)
+        graph = RequirementClarificationGraph(session, require_user_id(current_user))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

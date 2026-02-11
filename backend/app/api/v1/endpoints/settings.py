@@ -75,6 +75,8 @@ async def batch_update_configs(
     updated = []
     for item in configs:
         key = item.get("key")
+        if not isinstance(key, str) or not key:
+            continue
         value = item.get("value", "")
         category = item.get("category", "general")
         description = item.get("description")

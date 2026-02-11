@@ -5,7 +5,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from app.core.db import get_session
 from app.models.report import TestReport, TestReportDetail
@@ -28,20 +28,20 @@ class ScenarioCreate(BaseModel):
 async def list_scenarios(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    project_id: int = Query(None),
+    project_id: int | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     skip = (page - 1) * size
     statement = select(TestScenario)
     count_statement = select(func.count()).select_from(TestScenario)
 
-    if project_id:
-        statement = statement.where(TestScenario.project_id == project_id)
-        count_statement = count_statement.where(TestScenario.project_id == project_id)
+    if project_id is not None:
+        statement = statement.where(col(TestScenario.project_id) == project_id)
+        count_statement = count_statement.where(col(TestScenario.project_id) == project_id)
 
-    total = (await session.execute(count_statement)).scalar()
+    total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(statement.offset(skip).limit(size))
-    scenarios = result.scalars().all()
+    scenarios = list(result.scalars().all())
 
     pages = (total + size - 1) // size
 
@@ -112,7 +112,7 @@ class ScenarioRunResponse(BaseModel):
 
 async def execute_node(node: dict, context: dict) -> NodeResult:
     """Execute a single node in the scenario graph."""
-    node_id = node.get("id")
+    node_id = str(node.get("id", ""))
     node_type = node.get("type", "default")
     data = node.get("data", {})
 
@@ -252,6 +252,8 @@ async def run_scenario(request: ScenarioRunRequest, session: AsyncSession = Depe
     session.add(report)
     await session.commit()
     await session.refresh(report)
+    if report.id is None:
+        raise HTTPException(status_code=500, detail="创建测试报告失败")
 
     # 创建报告详情
     for result in results:

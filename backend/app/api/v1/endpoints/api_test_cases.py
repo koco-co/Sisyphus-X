@@ -5,8 +5,9 @@ API 测试用例相关的 API 端点
 from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col, select
 
 from app.api import deps
 from app.core.db import get_session
@@ -135,39 +136,43 @@ async def list_api_test_cases(
 
     # 构建查询
     query = select(ApiTestCase).where(
-        ApiTestCase.project_id == project_id, not ApiTestCase.is_deleted
+        col(ApiTestCase.project_id) == project_id, col(ApiTestCase.is_deleted).is_(False)
     )
 
     # 搜索过滤
     if search:
         search_pattern = f"%{search}%"
         query = query.where(
-            (ApiTestCase.name.like(search_pattern)) | (ApiTestCase.description.like(search_pattern))
+            (col(ApiTestCase.name).like(search_pattern))
+            | (col(ApiTestCase.description).like(search_pattern))
         )
 
     # 标签过滤
     if tags:
         tag_list = tags.split(",")
-        query = query.where(ApiTestCase.tags.contains(tag_list))
+        query = query.where(col(ApiTestCase.tags).contains(tag_list))
 
     # 仅显示启用的
     if enabled_only:
-        query = query.where(ApiTestCase.enabled)
+        query = query.where(col(ApiTestCase.enabled).is_(True))
 
     # 获取总数
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await session.execute(count_query)
-    total = total_result.scalar()
+    total = int(total_result.scalar_one() or 0)
 
     # 分页
     query = query.offset((page - 1) * size).limit(size)
-    query = query.order_by(ApiTestCase.created_at.desc())
+    query = query.order_by(col(ApiTestCase.created_at).desc())
 
     # 执行查询
     result = await session.execute(query)
     test_cases = result.scalars().all()
 
-    return ApiTestCaseListResponse(total=total, items=test_cases)
+    return ApiTestCaseListResponse(
+        total=total,
+        items=[ApiTestCaseResponse.model_validate(test_case) for test_case in test_cases],
+    )
 
 
 @router.get("/api-test-cases/{test_case_id}", response_model=ApiTestCaseResponse)
@@ -290,6 +295,8 @@ async def execute_test_case_background(
 
         # 处理结果
         processor = TestResultProcessor()
+        if execution.id is None:
+            raise ValueError("执行记录 ID 不存在")
         await processor.process_result(execution.id, result, session)
 
     except Exception as e:
@@ -358,8 +365,8 @@ async def list_test_executions(
     # 查询执行记录
     query = (
         select(ApiTestExecution)
-        .where(ApiTestExecution.test_case_id == test_case_id)
-        .order_by(ApiTestExecution.created_at.desc())
+        .where(col(ApiTestExecution.test_case_id) == test_case_id)
+        .order_by(col(ApiTestExecution.created_at).desc())
         .limit(limit)
     )
 
@@ -413,8 +420,8 @@ async def get_execution_step_results(
     # 查询步骤结果
     query = (
         select(ApiTestStepResult)
-        .where(ApiTestStepResult.execution_id == execution_id)
-        .order_by(ApiTestStepResult.step_order)
+        .where(col(ApiTestStepResult.execution_id) == execution_id)
+        .order_by(col(ApiTestStepResult.step_order))
     )
 
     result = await session.execute(query)

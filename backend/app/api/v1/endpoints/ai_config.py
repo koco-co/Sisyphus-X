@@ -6,7 +6,7 @@ AI配置管理API - 功能测试模块
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_user_id
 from app.core.db import get_session
 from app.models.user import User
 from app.schemas.ai_config import (
@@ -31,7 +31,7 @@ async def list_ai_configs(
 
     返回用户的AI配置列表，API Key已脱敏
     """
-    configs = await AIConfigService.get_user_configs(session, current_user.id)
+    configs = await AIConfigService.get_user_configs(session, require_user_id(current_user))
     return configs
 
 
@@ -44,7 +44,7 @@ async def get_default_config(
 
     返回用户标记为默认的AI配置
     """
-    config = await AIConfigService.get_default_config(session, current_user.id)
+    config = await AIConfigService.get_default_config(session, require_user_id(current_user))
 
     if not config:
         raise HTTPException(
@@ -65,7 +65,7 @@ async def get_ai_config(
 
     只能访问自己创建的配置
     """
-    config = await AIConfigService.get_config_by_id(session, config_id, current_user.id)
+    config = await AIConfigService.get_config_by_id(session, config_id, require_user_id(current_user))
 
     if not config:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="配置不存在或无权访问")
@@ -91,7 +91,7 @@ async def create_ai_config(
     - **is_default**: 是否设为默认配置
     """
     try:
-        config = await AIConfigService.create_config(session, current_user.id, data)
+        config = await AIConfigService.create_config(session, require_user_id(current_user), data)
         return config
     except Exception as e:
         raise HTTPException(
@@ -111,7 +111,9 @@ async def update_ai_config(
 
     可以部分更新配置字段，API Key如果提供则更新
     """
-    config = await AIConfigService.update_config(session, config_id, current_user.id, data)
+    config = await AIConfigService.update_config(
+        session, config_id, require_user_id(current_user), data
+    )
 
     if not config:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="配置不存在或无权访问")
@@ -130,7 +132,7 @@ async def delete_ai_config(
 
     只能删除自己创建的配置
     """
-    success = await AIConfigService.delete_config(session, config_id, current_user.id)
+    success = await AIConfigService.delete_config(session, config_id, require_user_id(current_user))
 
     if not success:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="配置不存在或无权访问")

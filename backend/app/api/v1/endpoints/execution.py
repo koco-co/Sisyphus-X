@@ -50,9 +50,9 @@ async def execute_test_case(
 
         return ExecutionResponse(
             success=result.success,
-            test_case=result.test_case.dict(),
-            steps=[step.dict() for step in result.steps],
-            statistics=result.statistics.dict(),
+            test_case=result.test_case.model_dump(),
+            steps=[step.model_dump() for step in result.steps],
+            statistics=result.statistics.model_dump(),
             duration=result.duration,
             error=result.error,
         )

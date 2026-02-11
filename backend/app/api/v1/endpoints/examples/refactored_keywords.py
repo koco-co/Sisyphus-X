@@ -11,6 +11,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col
 
 from app.core.db import get_session
 from app.models import Keyword
@@ -21,7 +22,6 @@ from app.utils.crud_helpers import (
     delete_by_id,
     get_or_404,
     list_items,
-    paginated_response,
     update_item,
 )
 
@@ -54,7 +54,7 @@ async def list_keywords(
         page=page,
         size=size,
         filters=filters,
-        order_by=Keyword.created_at.desc(),
+        order_by=col(Keyword.created_at).desc(),
     )
 
 

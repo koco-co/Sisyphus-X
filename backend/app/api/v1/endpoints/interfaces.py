@@ -3,7 +3,7 @@ import time
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from app.core.db import get_session
 from app.core.storage import MINIO_BUCKET, get_minio_client
@@ -18,8 +18,8 @@ router = APIRouter()
 async def read_interfaces(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    project_id: int = Query(None),
-    folder_id: int = Query(None),
+    project_id: int | None = Query(None),
+    folder_id: int | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     skip = (page - 1) * size
@@ -27,17 +27,17 @@ async def read_interfaces(
     statement = select(Interface)
     count_statement = select(func.count()).select_from(Interface)
 
-    if project_id:
-        statement = statement.where(Interface.project_id == project_id)
-        count_statement = count_statement.where(Interface.project_id == project_id)
+    if project_id is not None:
+        statement = statement.where(col(Interface.project_id) == project_id)
+        count_statement = count_statement.where(col(Interface.project_id) == project_id)
 
-    if folder_id:
-        statement = statement.where(Interface.folder_id == folder_id)
-        count_statement = count_statement.where(Interface.folder_id == folder_id)
+    if folder_id is not None:
+        statement = statement.where(col(Interface.folder_id) == folder_id)
+        count_statement = count_statement.where(col(Interface.folder_id) == folder_id)
 
-    total = (await session.execute(count_statement)).scalar()
+    total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(statement.offset(skip).limit(size))
-    interfaces = result.scalars().all()
+    interfaces = list(result.scalars().all())
 
     pages = (total + size - 1) // size
 
@@ -56,11 +56,13 @@ async def create_interface(interface: Interface, session: AsyncSession = Depends
 
 
 @router.get("/folders", response_model=list[InterfaceFolder])
-async def list_folders(project_id: int = Query(None), session: AsyncSession = Depends(get_session)):
+async def list_folders(
+    project_id: int | None = Query(None), session: AsyncSession = Depends(get_session)
+):
     """获取接口文件夹树"""
     statement = select(InterfaceFolder)
-    if project_id:
-        statement = statement.where(InterfaceFolder.project_id == project_id)
+    if project_id is not None:
+        statement = statement.where(col(InterfaceFolder.project_id) == project_id)
 
     result = await session.execute(statement)
     folders = result.scalars().all()
@@ -87,14 +89,14 @@ async def delete_folder(folder_id: int, session: AsyncSession = Depends(get_sess
     child_folders_stmt = (
         select(func.count())
         .select_from(InterfaceFolder)
-        .where(InterfaceFolder.parent_id == folder_id)
+        .where(col(InterfaceFolder.parent_id) == folder_id)
     )
-    child_count = (await session.execute(child_folders_stmt)).scalar()
+    child_count = int((await session.execute(child_folders_stmt)).scalar_one() or 0)
 
     interfaces_stmt = (
-        select(func.count()).select_from(Interface).where(Interface.folder_id == folder_id)
+        select(func.count()).select_from(Interface).where(col(Interface.folder_id) == folder_id)
     )
-    interface_count = (await session.execute(interfaces_stmt)).scalar()
+    interface_count = int((await session.execute(interfaces_stmt)).scalar_one() or 0)
 
     if child_count > 0 or interface_count > 0:
         raise HTTPException(

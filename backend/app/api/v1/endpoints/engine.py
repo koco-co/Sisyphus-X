@@ -6,15 +6,12 @@ import json
 import os
 import subprocess
 import tempfile
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 router = APIRouter()
-
-# Sisyphus-api-engine 路径
-ENGINE_PATH = Path(__file__).parent.parent.parent.parent.parent / "engines" / "Sisyphus-api-engine"
+ENGINE_CMD = "sisyphus-api-engine"
 
 
 class RunRequest(BaseModel):
@@ -50,7 +47,7 @@ async def run_engine(request: RunRequest):
 
         try:
             # 构建命令
-            cmd = ["python", str(ENGINE_PATH / "main.py"), "run", "-f", yaml_path]
+            cmd = [ENGINE_CMD, "run", "-f", yaml_path]
 
             if request.base_url:
                 cmd.extend(["--base-url", request.base_url])
@@ -63,7 +60,6 @@ async def run_engine(request: RunRequest):
                 capture_output=True,
                 text=True,
                 timeout=300,  # 5 分钟超时
-                cwd=str(ENGINE_PATH),
             )
 
             # 解析输出
@@ -86,6 +82,8 @@ async def run_engine(request: RunRequest):
 
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=504, detail="执行超时")
+    except FileNotFoundError:
+        raise HTTPException(status_code=503, detail="sisyphus-api-engine 未安装")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -103,11 +101,8 @@ async def validate_yaml(request: RunRequest):
             yaml_path = f.name
 
         try:
-            cmd = ["python", str(ENGINE_PATH / "main.py"), "validate", "-f", yaml_path]
-
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=30, cwd=str(ENGINE_PATH)
-            )
+            cmd = [ENGINE_CMD, "validate", "-f", yaml_path]
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             return {
                 "valid": result.returncode == 0,
@@ -119,5 +114,7 @@ async def validate_yaml(request: RunRequest):
         finally:
             os.unlink(yaml_path)
 
+    except FileNotFoundError:
+        raise HTTPException(status_code=503, detail="sisyphus-api-engine 未安装")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

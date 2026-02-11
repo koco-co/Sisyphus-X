@@ -1,12 +1,12 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from passlib.hash import bcrypt
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from app.api import deps
 from app.core.db import get_session
+from app.core.security import get_password_hash
 from app.models.project import Project, ProjectDataSource, ProjectEnvironment
 from app.schemas.environment import (
     DataSourceCreate,
@@ -31,23 +31,23 @@ router = APIRouter()
 async def read_projects(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    name: str = Query(None, description="Project name search term"),
+    name: str | None = Query(None, description="Project name search term"),
     session: AsyncSession = Depends(get_session),
 ):
     # Base query
     query = select(Project)
     if name:
-        query = query.where(Project.name.contains(name))
+        query = query.where(col(Project.name).contains(name))
 
     # Count
     count_statement = select(func.count()).select_from(query.subquery())
-    total = (await session.execute(count_statement)).scalar()
+    total = int((await session.execute(count_statement)).scalar_one() or 0)
 
     # Pagination
     skip = (page - 1) * size
-    statement = query.order_by(Project.updated_at.desc()).offset(skip).limit(size)
+    statement = query.order_by(col(Project.updated_at).desc()).offset(skip).limit(size)
     result = await session.execute(statement)
-    projects = result.scalars().all()
+    projects = list(result.scalars().all())
 
     # Calculate pages
     pages = (total + size - 1) // size
@@ -255,7 +255,7 @@ async def create_datasource(
         raise HTTPException(status_code=404, detail="Project not found")
 
     # 加密密码
-    password_hash = bcrypt.hash(ds.password) if ds.password else ""
+    password_hash = get_password_hash(ds.password) if ds.password else ""
 
     # 尝试测试连接以确定初始状态
     status = "unchecked"
@@ -308,13 +308,14 @@ async def update_datasource(
         raise HTTPException(status_code=404, detail="DataSource not found")
 
     update_data = ds_update.model_dump(exclude_unset=True)
+    has_new_password = ds_update.password is not None
 
     # 特殊处理密码字段
     password_updated = False
     if "password" in update_data:
         password = update_data.pop("password")
         if password:
-            ds.password_hash = bcrypt.hash(password)
+            ds.password_hash = get_password_hash(password)
             password_updated = True
 
     # 检查是否需要重新测试连接（配置发生变化）
@@ -331,7 +332,7 @@ async def update_datasource(
     if should_retest and ds.username and ds.password_hash:
         # 注意：这里需要使用原始密码，但update时密码已经被加密了
         # 所以我们只在password字段有值时才测试
-        if "password" in ds_update or any(
+        if has_new_password or any(
             key in update_data for key in ["host", "port", "username", "db_name"]
         ):
             # 如果没有提供新密码，使用现有密码哈希（但无法解密，所以无法测试）

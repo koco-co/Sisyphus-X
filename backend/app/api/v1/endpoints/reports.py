@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from app.core.db import get_session
 from app.models import TestReport, TestReportDetail
@@ -14,7 +14,7 @@ router = APIRouter()
 async def list_reports(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    scenario_id: int = Query(None),
+    scenario_id: int | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """获取测试报告列表 (分页)"""
@@ -22,16 +22,16 @@ async def list_reports(
     statement = select(TestReport)
     count_statement = select(func.count()).select_from(TestReport)
 
-    if scenario_id:
-        statement = statement.where(TestReport.scenario_id == scenario_id)
-        count_statement = count_statement.where(TestReport.scenario_id == scenario_id)
+    if scenario_id is not None:
+        statement = statement.where(col(TestReport.scenario_id) == scenario_id)
+        count_statement = count_statement.where(col(TestReport.scenario_id) == scenario_id)
 
     # 按创建时间倒序
-    statement = statement.order_by(TestReport.created_at.desc())
+    statement = statement.order_by(col(TestReport.created_at).desc())
 
-    total = (await session.execute(count_statement)).scalar()
+    total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(statement.offset(skip).limit(size))
-    reports = result.scalars().all()
+    reports = list(result.scalars().all())
 
     pages = (total + size - 1) // size
 
@@ -56,7 +56,7 @@ async def get_report_details(report_id: int, session: AsyncSession = Depends(get
         raise HTTPException(status_code=404, detail="Report not found")
 
     # 获取详情
-    stmt = select(TestReportDetail).where(TestReportDetail.report_id == report_id)
+    stmt = select(TestReportDetail).where(col(TestReportDetail.report_id) == report_id)
     result = await session.execute(stmt)
     details = result.scalars().all()
 
@@ -71,7 +71,7 @@ async def delete_report(report_id: int, session: AsyncSession = Depends(get_sess
         raise HTTPException(status_code=404, detail="Report not found")
 
     # 先删除关联的详情记录
-    details_stmt = select(TestReportDetail).where(TestReportDetail.report_id == report_id)
+    details_stmt = select(TestReportDetail).where(col(TestReportDetail.report_id) == report_id)
     details_result = await session.execute(details_stmt)
     details = details_result.scalars().all()
     for detail in details:

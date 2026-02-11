@@ -102,7 +102,7 @@ async def import_swagger(
     if file:
         content = await file.read()
         try:
-            if file.filename.endswith((".yaml", ".yml")):
+            if (file.filename or "").endswith((".yaml", ".yml")):
                 spec = yaml.safe_load(content)
             else:
                 spec = json.loads(content)

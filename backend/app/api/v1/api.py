@@ -8,6 +8,7 @@ from app.api.v1.endpoints import (
     ai_config,
     api_test_cases,
     auth,
+    case_generation,
     curl_parser,
     dashboard,
     documents,
@@ -17,13 +18,12 @@ from app.api.v1.endpoints import (
     interfaces,
     keywords,
     plans,
+    point_generation,
     projects,
     reports,
     scenarios,
     settings,
     swagger,
-    test_case_generation,
-    test_point_generation,
     testcases,
     upload,
 )
@@ -133,13 +133,13 @@ api_router.include_router(
     dependencies=[Depends(deps.get_current_user)],
 )
 api_router.include_router(
-    test_point_generation.router,
+    point_generation.router,
     prefix="/test-points",
     tags=["测试点生成"],
     dependencies=[Depends(deps.get_current_user)],
 )
 api_router.include_router(
-    test_case_generation.router,
+    case_generation.router,
     prefix="/test-cases/generate",
     tags=["测试用例生成"],
     dependencies=[Depends(deps.get_current_user)],

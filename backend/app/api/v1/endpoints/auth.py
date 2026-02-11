@@ -3,8 +3,8 @@
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col, select
 
 from app.api import deps
 from app.core.config import settings
@@ -20,6 +20,12 @@ from app.schemas.auth import TokenResponse, UserLogin, UserRegister, UserRespons
 router = APIRouter()
 
 
+def _user_id_or_raise(user: User) -> int:
+    if user.id is None:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="用户ID缺失")
+    return user.id
+
+
 # ========== 邮箱+密码认证 ==========
 
 
@@ -27,13 +33,13 @@ router = APIRouter()
 async def register(data: UserRegister, session: AsyncSession = Depends(get_session)):
     """用户注册"""
     # 检查邮箱是否已存在
-    result = await session.execute(select(User).where(User.email == data.email))
+    result = await session.execute(select(User).where(col(User.email) == data.email))
     existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="该邮箱已被注册")
 
     # 检查用户名是否已存在
-    result = await session.execute(select(User).where(User.username == data.username))
+    result = await session.execute(select(User).where(col(User.username) == data.username))
     existing_username = result.scalar_one_or_none()
     if existing_username:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="该用户名已被使用")
@@ -52,7 +58,7 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_sessi
     return TokenResponse(
         token=token,
         user=UserResponse(
-            id=user.id,
+            id=_user_id_or_raise(user),
             username=user.username,
             email=user.email,
             avatar=user.avatar,
@@ -64,7 +70,7 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_sessi
 @router.post("/login", response_model=TokenResponse)
 async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
     """用户登录"""
-    result = await session.execute(select(User).where(User.email == data.email))
+    result = await session.execute(select(User).where(col(User.email) == data.email))
     user = result.scalar_one_or_none()
 
     if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
@@ -79,7 +85,7 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
     return TokenResponse(
         token=token,
         user=UserResponse(
-            id=user.id,
+            id=_user_id_or_raise(user),
             username=user.username,
             email=user.email,
             avatar=user.avatar,
@@ -92,7 +98,7 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
 async def get_me(current_user: User = Depends(deps.get_current_user)):
     """获取当前登录用户信息"""
     return UserResponse(
-        id=current_user.id,
+        id=_user_id_or_raise(current_user),
         username=current_user.username,
         email=current_user.email,
         avatar=current_user.avatar,
@@ -182,13 +188,13 @@ async def github_callback(code: str, session: AsyncSession = Depends(get_session
 
     # 4. 查找或创建用户
     result = await session.execute(
-        select(User).where(User.oauth_provider == "github", User.oauth_id == github_id)
+        select(User).where(col(User.oauth_provider) == "github", col(User.oauth_id) == github_id)
     )
     user = result.scalar_one_or_none()
 
     if not user:
         # 检查邮箱是否已被使用
-        result = await session.execute(select(User).where(User.email == email))
+        result = await session.execute(select(User).where(col(User.email) == email))
         existing_user = result.scalar_one_or_none()
 
         if existing_user:
@@ -204,7 +210,7 @@ async def github_callback(code: str, session: AsyncSession = Depends(get_session
             base_username = username
             counter = 1
             while True:
-                result = await session.execute(select(User).where(User.username == username))
+                result = await session.execute(select(User).where(col(User.username) == username))
                 if not result.scalar_one_or_none():
                     break
                 username = f"{base_username}_{counter}"
@@ -298,13 +304,13 @@ async def google_callback(code: str, session: AsyncSession = Depends(get_session
 
     # 3. 查找或创建用户
     result = await session.execute(
-        select(User).where(User.oauth_provider == "google", User.oauth_id == google_id)
+        select(User).where(col(User.oauth_provider) == "google", col(User.oauth_id) == google_id)
     )
     user = result.scalar_one_or_none()
 
     if not user:
         # 检查邮箱是否已被使用
-        result = await session.execute(select(User).where(User.email == email))
+        result = await session.execute(select(User).where(col(User.email) == email))
         existing_user = result.scalar_one_or_none()
 
         if existing_user:
@@ -320,7 +326,7 @@ async def google_callback(code: str, session: AsyncSession = Depends(get_session
             base_username = username
             counter = 1
             while True:
-                result = await session.execute(select(User).where(User.username == username))
+                result = await session.execute(select(User).where(col(User.username) == username))
                 if not result.scalar_one_or_none():
                     break
                 username = f"{base_username}_{counter}"

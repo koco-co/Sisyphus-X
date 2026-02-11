@@ -1,8 +1,9 @@
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from app.core.db import get_session
 from app.models import Keyword
@@ -16,7 +17,7 @@ router = APIRouter()
 async def list_keywords(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    project_id: int = Query(None),
+    project_id: int | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """获取关键字列表 (分页)"""
@@ -24,13 +25,13 @@ async def list_keywords(
     statement = select(Keyword)
     count_statement = select(func.count()).select_from(Keyword)
 
-    if project_id:
-        statement = statement.where(Keyword.project_id == project_id)
-        count_statement = count_statement.where(Keyword.project_id == project_id)
+    if project_id is not None:
+        statement = statement.where(col(Keyword.project_id) == project_id)
+        count_statement = count_statement.where(col(Keyword.project_id) == project_id)
 
-    total = (await session.execute(count_statement)).scalar()
+    total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(statement.offset(skip).limit(size))
-    keywords = result.scalars().all()
+    keywords = list(result.scalars().all())
 
     pages = (total + size - 1) // size
 
@@ -105,22 +106,16 @@ async def toggle_keyword_status(keyword_id: int, session: AsyncSession = Depends
 @router.post("/{keyword_id}/generate-file")
 async def generate_keyword_file(keyword_id: int, session: AsyncSession = Depends(get_session)):
     """将关键字代码写入到 api-engine/keywords/ 目录"""
-    import os
-
     keyword = await session.get(Keyword, keyword_id)
     if not keyword:
         raise HTTPException(status_code=404, detail="Keyword not found")
 
     # 确定文件路径
-    base_dir = os.path.dirname(
-        os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        )
-    )
-    keywords_dir = os.path.join(base_dir, "engines", "Sisyphus-api-engine", "keywords")
+    project_root = Path(__file__).resolve().parents[5]
+    keywords_dir = project_root / "engines" / "sisyphus_api_engine" / "keywords"
 
     # 创建目录
-    os.makedirs(keywords_dir, exist_ok=True)
+    keywords_dir.mkdir(parents=True, exist_ok=True)
 
     # 生成文件内容
     file_content = f'''# -*- coding: utf-8 -*-
@@ -131,16 +126,16 @@ async def generate_keyword_file(keyword_id: int, session: AsyncSession = Depends
 自动生成，请勿手动修改
 """
 
-{keyword.function_code}
+    {keyword.function_code}
 '''
 
     # 写入文件
-    file_path = os.path.join(keywords_dir, f"{keyword.func_name}.py")
-    with open(file_path, "w", encoding="utf-8") as f:
+    file_path = keywords_dir / f"{keyword.func_name}.py"
+    with file_path.open("w", encoding="utf-8") as f:
         f.write(file_content)
 
     return {
         "success": True,
         "message": f"已生成文件: keywords/{keyword.func_name}.py",
-        "file_path": file_path,
+        "file_path": str(file_path),
     }

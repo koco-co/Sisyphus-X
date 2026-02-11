@@ -2,7 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from app.core.db import get_session
 from app.models import TestPlan, TestScenario
@@ -20,12 +20,12 @@ async def list_plans(
 ):
     """获取测试计划列表 (分页)"""
     skip = (page - 1) * size
-    statement = select(TestPlan).order_by(TestPlan.created_at.desc())
+    statement = select(TestPlan).order_by(col(TestPlan.created_at).desc())
     count_statement = select(func.count()).select_from(TestPlan)
 
-    total = (await session.execute(count_statement)).scalar()
+    total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(statement.offset(skip).limit(size))
-    plans = result.scalars().all()
+    plans = list(result.scalars().all())
 
     pages = (total + size - 1) // size
 

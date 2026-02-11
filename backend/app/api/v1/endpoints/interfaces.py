@@ -1,15 +1,26 @@
 import time
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, func, select
 
-from app.core.db import get_session
+from app.api.deps import get_current_user
+from app.core.db import get_session, sync_session_maker
 from app.core.storage import MINIO_BUCKET, get_minio_client
+from app.models.interface_history import InterfaceHistory
 from app.models.project import Interface, InterfaceFolder
 from app.schemas.interface import InterfaceSendRequest, InterfaceSendResponse
+from app.schemas.interface_test_case import (
+    GenerateTestCaseRequest,
+    GenerateTestCaseResponse,
+    PreviewYamlRequest,
+    PreviewYamlResponse,
+)
 from app.schemas.pagination import PageResponse
+from app.services.curl_parser import parse_curl_command
+from app.services.test_case_generator import TestCaseGenerator
 
 router = APIRouter()
 
@@ -231,3 +242,231 @@ async def send_interface_request(request: InterfaceSendRequest):
             )
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/parse-curl")
+async def parse_curl(data: dict[str, str]) -> dict[str, Any]:
+    """Parse cURL command into structured request data.
+
+    Args:
+        data: Dictionary with curl_command key
+
+    Returns:
+        Parsed request data
+
+    Raises:
+        HTTPException: If cURL command is invalid
+    """
+    curl_command = data.get("curl_command", "")
+    if not curl_command:
+        raise HTTPException(status_code=400, detail="curl_command is required")
+
+    try:
+        return parse_curl_command(curl_command)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{interface_id}/generate-test-case", response_model=GenerateTestCaseResponse)
+async def generate_test_case(
+    interface_id: int,
+    data: GenerateTestCaseRequest,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, Any]:
+    """Generate test case from interface.
+
+    Args:
+        interface_id: Interface ID
+        data: Test case generation request
+        session: Database session
+
+    Returns:
+        Generated test case with YAML content
+
+    Raises:
+        HTTPException: If interface or environment not found
+    """
+    with sync_session_maker() as sync_session:
+        generator = TestCaseGenerator(sync_session)
+        try:
+            return generator.generate(
+                interface_id=interface_id,
+                case_name=data.case_name,
+                keyword_name=data.keyword_name,
+                environment_id=data.environment_id,
+                scenario_id=data.scenario_id,
+                auto_assertion=data.auto_assertion,
+            )
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/{interface_id}/preview-yaml", response_model=PreviewYamlResponse)
+async def preview_yaml(
+    interface_id: int,
+    data: PreviewYamlRequest,
+    session: AsyncSession = Depends(get_session),
+) -> dict[str, str]:
+    """Preview generated YAML without saving.
+
+    Args:
+        interface_id: Interface ID
+        data: Preview request
+        session: Database session
+
+    Returns:
+        YAML content string
+
+    Raises:
+        HTTPException: If interface or environment not found
+    """
+    with sync_session_maker() as sync_session:
+        generator = TestCaseGenerator(sync_session)
+        try:
+            yaml_content = generator.preview(
+                interface_id=interface_id,
+                environment_id=data.environment_id,
+                auto_assertion=data.auto_assertion,
+            )
+            return PreviewYamlResponse(yaml_content=yaml_content)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{interface_id}/move")
+async def move_interface(
+    interface_id: int,
+    data: dict[str, int],
+    session: AsyncSession = Depends(get_session),
+) -> Interface:
+    """Move interface to another folder.
+
+    Args:
+        interface_id: Interface ID
+        data: Dictionary with target_folder_id
+        session: Database session
+
+    Returns:
+        Updated interface
+
+    Raises:
+        HTTPException: If interface not found
+    """
+    interface = await session.get(Interface, interface_id)
+    if not interface:
+        raise HTTPException(status_code=404, detail="Interface not found")
+
+    target_folder_id = data.get("target_folder_id")
+    interface.folder_id = target_folder_id
+
+    await session.commit()
+    await session.refresh(interface)
+
+    return interface
+
+
+@router.post("/{interface_id}/copy", response_model=Interface)
+async def copy_interface(
+    interface_id: int,
+    data: dict[str, str],
+    session: AsyncSession = Depends(get_session),
+) -> Interface:
+    """Copy interface.
+
+    Args:
+        interface_id: Source interface ID
+        data: Dictionary with name and optional target_folder_id
+        session: Database session
+
+    Returns:
+        New interface
+
+    Raises:
+        HTTPException: If interface not found
+    """
+    source = await session.get(Interface, interface_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Interface not found")
+
+    # Create copy
+    new_interface = Interface(
+        project_id=source.project_id,
+        folder_id=data.get("target_folder_id", source.folder_id),
+        name=data.get("name", f"{source.name} - 副本"),
+        url=source.url,
+        method=source.method,
+        status=source.status,
+        description=source.description,
+        headers=source.headers.copy() if source.headers else {},
+        params=source.params.copy() if source.params else {},
+        body=source.body.copy() if source.body else {},
+        body_type=source.body_type,
+        cookies=source.cookies.copy() if source.cookies else {},
+        order=source.order,
+        auth_config=source.auth_config.copy() if source.auth_config else {},
+    )
+
+    session.add(new_interface)
+    await session.commit()
+    await session.refresh(new_interface)
+
+    return new_interface
+
+
+@router.get("/search", response_model=PageResponse[Interface])
+async def search_interfaces(
+    project_id: int,
+    q: str | None = Query(None, description="Search query"),
+    method: str | None = Query(None, description="Filter by method"),
+    folder_id: int | None = Query(None, description="Filter by folder"),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    session: AsyncSession = Depends(get_session),
+) -> PageResponse[Interface]:
+    """Search and filter interfaces.
+
+    Args:
+        project_id: Project ID
+        q: Search query (name/URL)
+        method: Filter by HTTP method
+        folder_id: Filter by folder ID
+        page: Page number
+        size: Page size
+        session: Database session
+
+    Returns:
+        Paginated interface list
+    """
+    skip = (page - 1) * size
+
+    statement = select(Interface).where(col(Interface.project_id) == project_id)
+    count_statement = select(func.count()).select_from(Interface).where(
+        col(Interface.project_id) == project_id
+    )
+
+    if q:
+        search_pattern = f"%{q}%"
+        statement = statement.where(
+            (col(Interface.name).ilike(search_pattern))
+            | (col(Interface.url).ilike(search_pattern))
+        )
+        count_statement = count_statement.where(
+            (col(Interface.name).ilike(search_pattern))
+            | (col(Interface.url).ilike(search_pattern))
+        )
+
+    if method:
+        statement = statement.where(col(Interface.method) == method.upper())
+        count_statement = count_statement.where(col(Interface.method) == method.upper())
+
+    if folder_id is not None:
+        statement = statement.where(col(Interface.folder_id) == folder_id)
+        count_statement = count_statement.where(col(Interface.folder_id) == folder_id)
+
+    total = int((await session.execute(count_statement)).scalar_one() or 0)
+    result = await session.execute(statement.offset(skip).limit(size))
+    interfaces = list(result.scalars().all())
+
+    pages = (total + size - 1) // size
+
+    return PageResponse(items=interfaces, total=total, page=page, size=size, pages=pages)

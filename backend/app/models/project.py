@@ -23,6 +23,7 @@ class InterfaceFolder(SQLModel, table=True):
     parent_id: int | None = Field(
         default=None, foreign_key="interfacefolder.id"
     )  # 父文件夹ID (支持树形结构)
+    order: int = Field(default=0, description="同级排序序号")
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -40,6 +41,8 @@ class Interface(SQLModel, table=True):
     body: dict = Field(default={}, sa_column=Column(JSON))  # 请求体
     body_type: str = "json"  # none/json/form-data/x-www-form-urlencoded/raw
     cookies: dict = Field(default={}, sa_column=Column(JSON))  # Cookies
+    order: int = Field(default=0, description="同级排序序号")
+    auth_config: dict = Field(default={}, sa_column=Column(JSON), description="认证配置")
     # 存储 Swagger 解析后的原始结构
     schema_snapshot: dict = Field(default={}, sa_column=Column(JSON))
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -56,6 +59,7 @@ class ProjectEnvironment(SQLModel, table=True):
     domain: str = ""  # Base URL (如: https://api-dev.example.com)
     variables: dict = Field(default={}, sa_column=Column(JSON))  # 全局变量
     headers: dict = Field(default={}, sa_column=Column(JSON))  # 全局请求头
+    is_preupload: bool = Field(default=False, description="是否预上传")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

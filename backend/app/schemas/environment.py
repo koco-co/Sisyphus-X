@@ -6,22 +6,29 @@ from pydantic import BaseModel
 # ============================================
 # Environment Schemas
 # ============================================
+from typing import Any
+
+from pydantic import Field
+
+
 class EnvironmentCreate(BaseModel):
     """创建环境配置"""
 
-    name: str
-    domain: str = ""
-    variables: dict = {}
-    headers: dict = {}
+    name: str = Field(..., min_length=1, max_length=50)
+    domain: str = Field(..., min_length=1)
+    variables: dict[str, Any] = {}
+    headers: dict[str, Any] = {}
+    is_preupload: bool = False
 
 
 class EnvironmentUpdate(BaseModel):
     """更新环境配置"""
 
-    name: str | None = None
-    domain: str | None = None
-    variables: dict | None = None
-    headers: dict | None = None
+    name: str | None = Field(None, min_length=1, max_length=50)
+    domain: str | None = Field(None, min_length=1)
+    variables: dict[str, Any] | None = None
+    headers: dict[str, Any] | None = None
+    is_preupload: bool | None = None
 
 
 class EnvironmentResponse(BaseModel):
@@ -31,13 +38,35 @@ class EnvironmentResponse(BaseModel):
     project_id: int
     name: str
     domain: str
-    variables: dict
-    headers: dict
+    variables: dict[str, Any]
+    headers: dict[str, Any]
+    is_preupload: bool
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class EnvironmentCopyRequest(BaseModel):
+    """Copy environment request."""
+
+    name: str = Field(..., min_length=1, max_length=50)
+
+
+class VariableReplaceRequest(BaseModel):
+    """Variable replace request."""
+
+    text: str
+    additional_vars: dict[str, Any] = {}
+
+
+class VariableReplaceResponse(BaseModel):
+    """Variable replace response."""
+
+    original: str
+    replaced: str
+    variables_used: list[str]
 
 
 # ============================================

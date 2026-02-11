@@ -13,8 +13,10 @@ from app.api.v1.endpoints import (
     dashboard,
     documents,
     engine,
+    environments,
     execution,
     functional,
+    history,
     interfaces,
     keywords,
     plans,
@@ -142,6 +144,20 @@ api_router.include_router(
     case_generation.router,
     prefix="/test-cases/generate",
     tags=["测试用例生成"],
+    dependencies=[Depends(deps.get_current_user)],
+)
+# Environment management
+api_router.include_router(
+    environments.router,
+    prefix="/projects/{project_id}/environments",
+    tags=["environments"],
+    dependencies=[Depends(deps.get_current_user)],
+)
+# Interface history
+api_router.include_router(
+    history.router,
+    prefix="/interfaces",
+    tags=["history"],
     dependencies=[Depends(deps.get_current_user)],
 )
 # TODO: user_management - 需要修复导入问题后重新启用

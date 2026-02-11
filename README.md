@@ -87,11 +87,11 @@
 
 ### 环境要求
 
-- Node.js 18+
-- Python 3.10+
-- Docker & Docker Compose
-- Conda（推荐）
-- Anthropic API Key（AI 功能需要）
+- Node.js 20+
+- Python 3.11+
+- Docker & Docker Compose（用于基础服务）
+- UV（推荐）或 pip - Python 包管理器
+- Anthropic API Key（AI 功能需要，可选）
 
 ### 配置说明
 
@@ -156,19 +156,24 @@ docker compose up -d
 ### 2. 启动后端
 
 ```bash
-# 激活 conda 环境
-conda activate platform-auto
-
 # 进入后端目录
 cd backend
 
-# 安装依赖
+# 使用 UV 安装依赖（推荐）
+uv sync
+
+# 或使用 pip
 pip install -r requirements.txt
 
 # 数据库迁移
-alembic upgrade head
+uv run alembic upgrade head
 
 # 启动服务
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# 或激活虚拟环境后启动
+source .venv/bin/activate  # Linux/Mac
+.venv\Scripts\activate     # Windows
 uvicorn app.main:app --reload
 ```
 
@@ -443,9 +448,15 @@ steps:
 - React Hooks 规则
 
 **后端**：
-- Black + isort
+- Ruff（代码检查和格式化）
+- Pyright（类型检查）
 - 类型注解（Type Hints）
 - 异步优先（async/await）
+
+详细开发指南请参考：
+- [开发指南](./docs/DEVELOPMENT.md) - 通用开发指南
+- [后端开发指南](./docs/backend/DEVELOPMENT.md) - 后端专项指南
+- [后端 README](./backend/README.md) - 后端快速参考
 
 ### 提交规范
 
@@ -527,10 +538,18 @@ docker compose logs -f
 
 ## 📚 文档
 
+### 开发文档
+- [开发指南](./docs/DEVELOPMENT.md) - 通用开发指南
+- [后端开发指南](./docs/backend/DEVELOPMENT.md) - 后端专项指南
+- [部署指南](./docs/DEPLOYMENT.md) - 生产部署指南
+- [故障排查](./docs/TROUBLESHOOTING.md) - 常见问题解决
+- [API 文档](./docs/API.md) - RESTful API 完整文档
+
+### 项目文档
 - [开发指南](./CLAUDE.md) - Claude AI 助手开发指南
-- [Agent 指南](./AGENTS.md) - AI Agent 开发规范
-- [AI 功能规划](./AI_REQUIREMENT_ANALYSIS_PLAN.md) - AI 需求分析功能设计
-- [API 引擎集成](./API_ENGINE_INTEGRATION_PLAN.md) - API 测试引擎集成方案
+- [后端 README](./backend/README.md) - 后端快速参考
+- [前端 README](./frontend/README.md) - 前端快速参考
+- [变更日志](./CHANGELOG.md) - 版本更新记录
 
 ---
 

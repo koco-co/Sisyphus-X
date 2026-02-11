@@ -41,11 +41,10 @@ Enable teams to create, manage, and execute automated tests through a visual int
 # 1. Start infrastructure services (PostgreSQL, Redis, MinIO)
 docker compose up -d
 
-# 2. Start backend (requires conda environment)
-conda activate platform-auto
+# 2. Start backend (using UV package manager)
 cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload  # Runs on http://localhost:8000
+uv sync  # Install dependencies (first time only)
+uv run uvicorn app.main:app --reload  # Runs on http://localhost:8000
 
 # 3. Start frontend (new terminal)
 cd frontend
@@ -62,16 +61,16 @@ open http://localhost:8000/docs  # Auto-generated OpenAPI docs
 cd backend
 
 # Create migration after model changes
-alembic revision --autogenerate -m "Describe your changes"
+uv run alembic revision --autogenerate -m "Describe your changes"
 
 # Apply migrations
-alembic upgrade head
+uv run alembic upgrade head
 
 # Rollback one migration
-alembic downgrade -1
+uv run alembic downgrade -1
 
 # View migration history
-alembic history
+uv run alembic history
 ```
 
 ### Frontend Commands
@@ -91,7 +90,18 @@ npm run lint      # Run ESLint to check code quality
 cd backend
 
 # Run with auto-reload during development
-uvicorn app.main:app --reload
+uv run uvicorn app.main:app --reload
+
+# Code quality and testing
+uv run ruff check app/          # Code linting
+uv run ruff format app/         # Code formatting
+uv run pyright app/             # Type checking
+uv run pytest tests/ -v         # Run tests
+
+# Dependency management
+uv add fastapi                  # Add dependency
+uv add --dev pytest             # Add dev dependency
+uv sync                         # Sync dependencies
 
 # Run with specific host/port
 uvicorn app.main:app --host 0.0.0.0 --port 8000

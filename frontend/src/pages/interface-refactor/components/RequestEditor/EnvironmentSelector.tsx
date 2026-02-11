@@ -1,6 +1,6 @@
 import { CustomSelect } from '@/components/ui/CustomSelect'
 import { Globe } from 'lucide-react'
-import { useEnvironment } from '../hooks/useEnvironment'
+import { useEnvironment } from '../../hooks/useEnvironment'
 
 interface EnvironmentSelectorProps {
   projectId: number

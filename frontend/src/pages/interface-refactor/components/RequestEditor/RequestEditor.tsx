@@ -7,7 +7,8 @@ import { ParamsTab } from './ParamsTab'
 import { AuthTab } from './AuthTab'
 import type { AuthConfig } from './AuthTab'
 import { HeadersTab } from './HeadersTab'
-import { BodyTab, BodyType } from './BodyTab'
+import { BodyTab } from './BodyTab'
+import type { BodyType } from './BodyTab'
 import type { KeyValuePair } from './KeyValueEditor'
 
 export interface RequestData {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Send, Clock, FileText, Database, Cookie, Timeline } from 'lucide-react'
+import { Send, FileText, Cookie, History } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ResponseHeader } from './ResponseHeader'
 import { BodyViewer } from './BodyViewer'
@@ -34,7 +34,7 @@ const RESPONSE_TABS = [
   { id: 'body' as const, label: 'Body', icon: FileText },
   { id: 'headers' as const, label: 'Headers', icon: FileText },
   { id: 'cookies' as const, label: 'Cookies', icon: Cookie },
-  { id: 'timeline' as const, label: 'Timeline', icon: Timeline },
+  { id: 'timeline' as const, label: 'Timeline', icon: History },
   { id: 'logs' as const, label: 'Logs', icon: FileText },
 ]
 

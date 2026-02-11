@@ -6,23 +6,11 @@ import { SidebarProvider } from '@/contexts/SidebarContext'
 import { ToastProvider } from '@/components/ui/Toast'
 import AppLayout from '@/components/layout/AppLayout'
 import Dashboard from '@/pages/Dashboard'
-import InterfacePage from '@/pages/interface'
-import InterfaceManagementPage from '@/pages/interface-refactor'
+import InterfaceManagementPage from '@/pages/interface-management'
 import ScenarioListPage from '@/pages/scenario'
 import ScenarioEditor from '@/pages/scenario/editor'
 import TestCasesPage from '@/pages/cases'
 import LoginPage from '@/pages/auth/LoginPage'
-// 新增模块导入
-import ProjectManagement from '@/pages/api-automation/ProjectManagement'
-import DatabaseConfigList from '@/pages/api-automation/DatabaseConfigList'
-import ProjectSettings from '@/pages/api-automation/ProjectSettings'
-import KeywordManagement from '@/pages/api-automation/KeywordManagement'
-import KeywordEditor from '@/pages/api-automation/KeywordEditor'
-import ApiManagement from '@/pages/api-automation/ApiManagement'
-import ApiTestCaseList from '@/pages/api-automation/ApiTestCaseList'
-import ApiTestCaseEditor from '@/pages/api-automation/ApiTestCaseEditor'
-import VisualTestCaseEditor from '@/pages/api-automation/VisualTestCaseEditor'
-import ExecutionResultPage from '@/pages/api-automation/ExecutionResultPage'
 import TestReport from '@/pages/reports/TestReport'
 import TestPlan from '@/pages/plans/TestPlan'
 // 功能测试模块导入
@@ -78,22 +66,10 @@ function AppRoutes() {
         {/* 仪表盘 */}
         <Route path="/" element={<Dashboard />} />
 
-        {/* 接口自动化模块 */}
-        <Route path="/api/projects" element={<ProjectManagement />} />
-        <Route path="/api/projects/:id/datasources" element={<DatabaseConfigList />} />
-        <Route path="/api/projects/:id/settings" element={<ProjectSettings />} />
-        <Route path="/api/keywords" element={<KeywordManagement />} />
-        <Route path="/api/keywords/new" element={<KeywordEditor />} />
-        <Route path="/api/keywords/:id" element={<KeywordEditor />} />
-        <Route path="/api/interfaces" element={<ApiManagement />} />
-        <Route path="/api/interfaces/new" element={<ApiManagement />} />
-        <Route path="/api/interfaces/:id" element={<ApiManagement />} />
-        <Route path="/api/projects/:projectId/test-cases" element={<ApiTestCaseList />} />
-        <Route path="/api/projects/:projectId/test-cases/new" element={<ApiTestCaseEditor />} />
-        <Route path="/api/test-cases/:testCaseId" element={<ApiTestCaseEditor />} />
-        <Route path="/api/projects/:projectId/test-cases/visual/new" element={<VisualTestCaseEditor />} />
-        <Route path="/api/test-cases/visual/:testCaseId" element={<VisualTestCaseEditor />} />
-        <Route path="/api/executions/:executionId" element={<ExecutionResultPage />} />
+        {/* 接口管理模块 */}
+        <Route path="/api/interfaces" element={<InterfaceManagementPage />} />
+        <Route path="/api/interfaces/new" element={<InterfaceManagementPage />} />
+        <Route path="/api/interfaces/:id" element={<InterfaceManagementPage />} />
 
         {/* 场景编排 */}
         <Route path="/scenarios" element={<ScenarioListPage />} />
@@ -106,18 +82,7 @@ function AppRoutes() {
         {/* 定时任务 (原测试计划) */}
         <Route path="/plans" element={<TestPlan />} />
 
-        {/* 接口管理模块 */}
-        <Route path="/api/interfaces" element={<InterfacePage />} />
-        <Route path="/api/interfaces/new" element={<InterfacePage />} />
-        <Route path="/api/interfaces/:id" element={<InterfacePage />} />
-
-        {/* 接口管理模块重构版 */}
-        <Route path="/api/interfaces-refactor" element={<InterfaceManagementPage />} />
-        <Route path="/api/interfaces-refactor/:id" element={<InterfaceManagementPage />} />
-        <Route path="/api/interfaces-refactor/new" element={<InterfaceManagementPage />} />
-
         {/* 旧模块保留 */}
-        <Route path="/interfaces" element={<InterfacePage />} />
         <Route path="/cases" element={<TestCasesPage />} />
         <Route path="/data" element={<div className="p-8 text-white">数据中心 - 开发中</div>} />
 

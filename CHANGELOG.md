@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🎉 重大变更 - UV 迁移与代码质量提升
 
 #### 🚀 包管理器现代化
+
 - **从 Conda 迁移到 UV**
   - ⚡ 依赖安装速度提升 10-100 倍
   - 🔒 使用 uv.lock 实现精确的版本锁定
@@ -19,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 🛠️ 统一的开发工具链
 
 #### 🏗️ 开发工具链重构
+
 - **代码质量工具**
   - ✨ Ruff 0.15+ - 替代 Flake8 + Black + isort
   - 🎯 100x 更快的代码检查和格式化
@@ -41,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🔧 项目结构优化
 
 #### 目录重构
+
 ```
 sisyphus-x/
 ├── backend/          # 后端服务
@@ -58,6 +61,7 @@ sisyphus-x/
 ```
 
 #### 文档优化
+
 - **docs/backend/** - 后端专题文档
   - 开发指南
   - 迁移笔记
@@ -66,6 +70,7 @@ sisyphus-x/
 ### ✨ 新增功能
 
 #### AI 功能增强
+
 - **AI 配置管理系统**
   - 支持多 AI 提供商配置
   - 动态切换默认模型
@@ -77,6 +82,7 @@ sisyphus-x/
   - 需求澄清和用例生成
 
 #### 开发体验
+
 - **验证脚本**
   - `verify_migration.sh` - 完整的迁移验证
   - `scripts/test_env.sh` - 环境测试
@@ -87,6 +93,7 @@ sisyphus-x/
 ### 🔧 改进
 
 #### 代码质量
+
 - 修复 38 个 Ruff 代码质量问题：
   - 12 个布尔比较（E712）
   - 5 个导入问题（F401, F821）
@@ -98,6 +105,7 @@ sisyphus-x/
   - 其他代码规范问题
 
 #### 测试结构
+
 - **统一测试目录**
   - `tests/unit/` - 单元测试
   - `tests/integration/` - 集成测试
@@ -107,18 +115,21 @@ sisyphus-x/
 ### 🐛 Bug 修复
 
 #### 依赖问题
+
 - 修复缺失的 minio 依赖
 - 修复缺失的 greenlet 依赖
 - 修复缺失的 redis 依赖
 - 修复缺失的 aiomysql 依赖
 
 #### 类型注解
+
 - 添加缺失的 `typing.Optional` 导入
 - 修复 Pydantic validator 方法参数类型
 
 ### 📝 配置变更
 
 #### 新增配置文件
+
 - `backend/pyproject.toml` - UV 项目配置
 - `backend/uv.lock` - 依赖版本锁定
 - `backend/.python-version` - Python 版本锁定
@@ -126,27 +137,31 @@ sisyphus-x/
 - `.pre-commit-config.yaml` - Pre-commit 钩子
 
 #### 更新配置文件
+
 - `.gitignore` - 添加 UV、Ruff、Pyright 相关忽略规则
 
 ### 📚 文档变更
 
 #### 新增文档
+
 - `docs/backend/DEVELOPMENT.md` - 开发指南
 - `docs/backend/MIGRATION_NOTES.md` - 迁移笔记
 - `docs/backend/01_MIGRATION_PLAN.md` - 迁移计划
 - `CHANGELOG.md` - 变更日志（本文件）
 
 #### 更新文档
+
 - `README.md` - 重组和更新项目说明
 - `CLAUDE.md` - 更新启动命令为 UV
 
 ---
 
-## [0.1.0] - 2025-01-XX
+## [0.1.0] - 2026-01-15
 
 ### ✨ 初始版本
 
 #### 核心功能
+
 - **项目管理**
   - 项目 CRUD 操作
   - 多环境配置
@@ -169,6 +184,7 @@ sisyphus-x/
   - 多模型支持（OpenAI、Anthropic）
 
 #### 技术栈
+
 - **前端**: React 19 + TypeScript + Vite + Tailwind CSS
 - **后端**: FastAPI + SQLModel + PostgreSQL
 - **AI**: LangChain + LangGraph
@@ -176,6 +192,7 @@ sisyphus-x/
 - **测试**: Pytest
 
 #### 文档
+
 - 基础 README.md
 - CLAUDE.md - AI 助手指南
 - AGENTS.md - Agent 开发规范

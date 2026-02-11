@@ -2,20 +2,22 @@
 AI配置模型 - 功能测试模块
 支持多AI厂商配置管理
 """
-from sqlmodel import SQLModel, Field, Column
-from typing import Optional
+
 from datetime import datetime
+
+from sqlmodel import Field, SQLModel
 
 
 class AIProviderConfig(SQLModel, table=True):
     """AI厂商配置表"""
+
     __tablename__ = "ai_provider_configs"
 
     id: int = Field(primary_key=True)
     provider_name: str = Field(index=True)  # OpenAI/Anthropic/通义千问/文心一言
     provider_type: str = Field(index=True)  # openai/anthropic/qwen/qianfan
     api_key_encrypted: str  # AES加密存储
-    api_endpoint: Optional[str] = None  # 自定义endpoint
+    api_endpoint: str | None = None  # 自定义endpoint
     model_name: str
     temperature: float = Field(default=0.7)
     max_tokens: int = Field(default=4000)

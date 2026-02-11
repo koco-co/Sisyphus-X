@@ -2,21 +2,21 @@
 测试用例生成API - 功能测试模块
 提供AI生成测试用例的接口
 """
-from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
-from app.core.db import get_session
 from app.api.deps import get_current_user
-from app.models.user import User
+from app.core.db import get_session
 from app.models.functional_test_case import FunctionalTestCase
+from app.models.user import User
 from app.schemas.test_case_generation import (
+    GeneratedTestCase,
     TestCaseGenerate,
     TestCaseGenerationResult,
-    GeneratedTestCase
 )
 from app.services.test_case_generation_service import TestCaseGenerationService
-from sqlmodel import select
 
 router = APIRouter(tags=["测试用例生成"])
 
@@ -25,7 +25,7 @@ router = APIRouter(tags=["测试用例生成"])
 async def generate_test_cases(
     data: TestCaseGenerate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     AI生成测试用例
@@ -49,28 +49,22 @@ async def generate_test_cases(
         result = await service.generate_test_cases(data)
 
         return TestCaseGenerationResult(
-            success=True,
-            message=f"成功生成{result.total_count}个测试用例",
-            data=result
+            success=True, message=f"成功生成{result.total_count}个测试用例", data=result
         )
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"生成测试用例失败: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"生成测试用例失败: {str(e)}"
         )
 
 
-@router.get("/requirement/{requirement_id}", response_model=List[GeneratedTestCase])
+@router.get("/requirement/{requirement_id}", response_model=list[GeneratedTestCase])
 async def get_test_cases_by_requirement(
     requirement_id: int,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取指定需求的所有测试用例
@@ -96,13 +90,13 @@ async def get_test_cases_by_requirement(
                 {
                     "step_number": step["step_number"],
                     "action": step["action"],
-                    "expected_result": step["expected_result"]
+                    "expected_result": step["expected_result"],
                 }
                 for step in case.steps
             ],
             tags=case.tags or [],
             estimated_time=case.estimated_time,
-            complexity=case.complexity
+            complexity=case.complexity,
         )
         for case in test_cases
     ]
@@ -112,7 +106,7 @@ async def get_test_cases_by_requirement(
 async def get_test_case(
     case_id: str,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取指定测试用例的详情
@@ -120,16 +114,12 @@ async def get_test_case(
     返回用例的完整信息，包括所有步骤
     """
     result = await session.execute(
-        select(FunctionalTestCase)
-        .where(FunctionalTestCase.case_id == case_id)
+        select(FunctionalTestCase).where(FunctionalTestCase.case_id == case_id)
     )
     test_case = result.scalar_one_or_none()
 
     if not test_case:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="测试用例不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="测试用例不存在")
 
     return {
         "id": test_case.id,
@@ -156,7 +146,7 @@ async def get_test_case(
 async def delete_test_case(
     case_id: str,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     删除测试用例
@@ -164,16 +154,12 @@ async def delete_test_case(
     删除指定的测试用例
     """
     result = await session.execute(
-        select(FunctionalTestCase)
-        .where(FunctionalTestCase.case_id == case_id)
+        select(FunctionalTestCase).where(FunctionalTestCase.case_id == case_id)
     )
     test_case = result.scalar_one_or_none()
 
     if not test_case:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="测试用例不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="测试用例不存在")
 
     await session.delete(test_case)
     await session.commit()
@@ -185,7 +171,7 @@ async def delete_test_case(
 async def approve_test_case(
     case_id: str,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     审核通过测试用例
@@ -193,24 +179,16 @@ async def approve_test_case(
     将测试用例状态从draft改为approved
     """
     result = await session.execute(
-        select(FunctionalTestCase)
-        .where(FunctionalTestCase.case_id == case_id)
+        select(FunctionalTestCase).where(FunctionalTestCase.case_id == case_id)
     )
     test_case = result.scalar_one_or_none()
 
     if not test_case:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="测试用例不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="测试用例不存在")
 
     # 更新状态
     test_case.status = "approved"
     await session.commit()
     await session.refresh(test_case)
 
-    return {
-        "message": "测试用例已审核通过",
-        "case_id": case_id,
-        "status": test_case.status
-    }
+    return {"message": "测试用例已审核通过", "case_id": case_id, "status": test_case.status}

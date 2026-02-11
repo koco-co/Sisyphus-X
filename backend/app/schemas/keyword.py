@@ -1,39 +1,43 @@
-from typing import Optional, List, Dict
 from pydantic import BaseModel
 
 # === 关键字相关 Schema ===
 
+
 class KeywordCreate(BaseModel):
     """创建关键字请求"""
+
     project_id: int
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     func_name: str
     category: str = "custom"
-    input_params: List[Dict] = []
-    output_params: List[Dict] = []
+    input_params: list[dict] = []
+    output_params: list[dict] = []
     function_code: str
+
 
 class KeywordUpdate(BaseModel):
     """更新关键字请求"""
-    name: Optional[str] = None
-    description: Optional[str] = None
-    func_name: Optional[str] = None
-    category: Optional[str] = None
-    input_params: Optional[List[Dict]] = None
-    output_params: Optional[List[Dict]] = None
-    function_code: Optional[str] = None
+
+    name: str | None = None
+    description: str | None = None
+    func_name: str | None = None
+    category: str | None = None
+    input_params: list[dict] | None = None
+    output_params: list[dict] | None = None
+    function_code: str | None = None
+
 
 class KeywordResponse(BaseModel):
     """关键字响应"""
+
     id: int
     project_id: int
     name: str
-    description: Optional[str] = None
+    description: str | None = None
     func_name: str
     category: str
-    input_params: List[Dict]
-    output_params: List[Dict]
+    input_params: list[dict]
+    output_params: list[dict]
     function_code: str
     is_active: bool = True
-

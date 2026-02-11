@@ -2,21 +2,21 @@
 测试点生成API - 功能测试模块
 提供AI生成测试点的接口
 """
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.db import get_session
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
+
 from app.api.deps import get_current_user
-from app.models.user import User
+from app.core.db import get_session
 from app.models.functional_test_point import TestPoint
+from app.models.user import User
 from app.schemas.test_point_generation import (
+    TestPointBase,
     TestPointGenerate,
     TestPointGenerationResult,
-    TestPointBase
 )
 from app.services.test_point_generation_service import TestPointGenerationService
-from sqlmodel import select
 
 router = APIRouter(tags=["测试点生成"])
 
@@ -26,7 +26,7 @@ async def generate_test_points(
     data: TestPointGenerate,
     background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     AI生成测试点
@@ -48,28 +48,22 @@ async def generate_test_points(
         result = await service.generate_test_points(data)
 
         return TestPointGenerationResult(
-            success=True,
-            message=f"成功生成{result.total_count}个测试点",
-            data=result
+            success=True, message=f"成功生成{result.total_count}个测试点", data=result
         )
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"生成测试点失败: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"生成测试点失败: {str(e)}"
         )
 
 
-@router.get("/requirement/{requirement_id}", response_model=List[TestPointBase])
+@router.get("/requirement/{requirement_id}", response_model=list[TestPointBase])
 async def get_test_points_by_requirement(
     requirement_id: int,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取指定需求的所有测试点
@@ -90,7 +84,7 @@ async def get_test_points_by_requirement(
             title=point.title,
             description=point.description,
             priority=point.priority,
-            risk_level=point.risk_level
+            risk_level=point.risk_level,
         )
         for point in test_points
     ]
@@ -100,7 +94,7 @@ async def get_test_points_by_requirement(
 async def delete_test_point(
     test_point_id: int,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     删除测试点
@@ -110,10 +104,7 @@ async def delete_test_point(
     test_point = await session.get(TestPoint, test_point_id)
 
     if not test_point:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="测试点不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="测试点不存在")
 
     await session.delete(test_point)
     await session.commit()

@@ -1,10 +1,10 @@
-import socket
-import asyncio
 import logging
+import socket
+
 import aiomysql
-from typing import Optional
 
 logger = logging.getLogger(__name__)
+
 
 def test_tcp_connection(host: str, port: int, timeout: int = 5) -> tuple[bool, str]:
     """
@@ -22,7 +22,7 @@ def test_tcp_connection(host: str, port: int, timeout: int = 5) -> tuple[bool, s
             return True, "Success"
         else:
             return False, f"Connection failed (error code: {result})"
-    except socket.timeout:
+    except TimeoutError:
         return False, "Connection timed out"
     except Exception as e:
         return False, str(e)
@@ -33,8 +33,8 @@ async def test_mysql_connection(
     port: int,
     username: str,
     password: str,
-    database: Optional[str] = None,
-    timeout: int = 5
+    database: str | None = None,
+    timeout: int = 5,
 ) -> tuple[bool, str]:
     """
     测试 MySQL 数据库连接
@@ -50,7 +50,7 @@ async def test_mysql_connection(
             password=password,
             db=database,
             connect_timeout=timeout,
-            charset='utf8mb4'
+            charset="utf8mb4",
         )
 
         # 如果连接成功，尝试执行一个简单查询验证连接可用性
@@ -81,7 +81,7 @@ async def test_mysql_connection(
     except aiomysql.Error as e:
         return False, f"MySQL 错误: {str(e)}"
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         return False, f"连接超时 ({timeout}s)"
 
     except Exception as e:

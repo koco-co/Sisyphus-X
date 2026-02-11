@@ -3,12 +3,11 @@
 """
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
-from typing import Optional
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.db import get_session
 from app.services.execution.execution_scheduler import ExecutionScheduler
-from app.services.execution import ExecutionResult
 
 router = APIRouter()
 scheduler = ExecutionScheduler()
@@ -16,24 +15,24 @@ scheduler = ExecutionScheduler()
 
 class ExecuteRequest(BaseModel):
     """执行请求"""
-    environment_id: Optional[int] = None
+
+    environment_id: int | None = None
 
 
 class ExecutionResponse(BaseModel):
     """执行响应"""
+
     success: bool
     test_case: dict
     steps: list
     statistics: dict
-    duration: Optional[float] = None
-    error: Optional[str] = None
+    duration: float | None = None
+    error: str | None = None
 
 
 @router.post("/testcases/{test_case_id}/execute", response_model=ExecutionResponse)
 async def execute_test_case(
-    test_case_id: int,
-    request: ExecuteRequest,
-    session: AsyncSession = Depends(get_session)
+    test_case_id: int, request: ExecuteRequest, session: AsyncSession = Depends(get_session)
 ):
     """
     执行测试用例
@@ -47,11 +46,7 @@ async def execute_test_case(
         执行结果
     """
     try:
-        result = await scheduler.execute_test_case(
-            session,
-            test_case_id,
-            request.environment_id
-        )
+        result = await scheduler.execute_test_case(session, test_case_id, request.environment_id)
 
         return ExecutionResponse(
             success=result.success,
@@ -59,7 +54,7 @@ async def execute_test_case(
             steps=[step.dict() for step in result.steps],
             statistics=result.statistics.dict(),
             duration=result.duration,
-            error=result.error
+            error=result.error,
         )
 
     except ValueError as e:

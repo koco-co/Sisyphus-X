@@ -2,13 +2,15 @@
 文件附件模型 - 功能测试模块
 管理MinIO文件存储记录
 """
-from sqlmodel import SQLModel, Field
+
 from datetime import datetime
-from typing import Optional
+
+from sqlmodel import Field, SQLModel
 
 
 class FileAttachment(SQLModel, table=True):
     """文件存储记录表"""
+
     __tablename__ = "file_attachments"
 
     id: int = Field(primary_key=True)

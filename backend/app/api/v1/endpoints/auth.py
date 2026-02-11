@@ -1,66 +1,54 @@
 # 认证 API 端点
-from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi.responses import RedirectResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from typing import Optional
-import httpx
-import secrets
 
-from app.core.db import get_session
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import RedirectResponse
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api import deps
 from app.core.config import settings
+from app.core.db import get_session
 from app.core.security import (
-    get_password_hash, 
-    verify_password, 
     create_access_token,
+    get_password_hash,
+    verify_password,
 )
 from app.models.user import User
-from app.schemas.auth import UserRegister, UserLogin, UserResponse, TokenResponse
-from app.api import deps
+from app.schemas.auth import TokenResponse, UserLogin, UserRegister, UserResponse
 
 router = APIRouter()
 
 
 # ========== 邮箱+密码认证 ==========
 
+
 @router.post("/register", response_model=TokenResponse)
 async def register(data: UserRegister, session: AsyncSession = Depends(get_session)):
     """用户注册"""
     # 检查邮箱是否已存在
-    result = await session.execute(
-        select(User).where(User.email == data.email)
-    )
+    result = await session.execute(select(User).where(User.email == data.email))
     existing_user = result.scalar_one_or_none()
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="该邮箱已被注册"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="该邮箱已被注册")
+
     # 检查用户名是否已存在
-    result = await session.execute(
-        select(User).where(User.username == data.username)
-    )
+    result = await session.execute(select(User).where(User.username == data.username))
     existing_username = result.scalar_one_or_none()
     if existing_username:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="该用户名已被使用"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="该用户名已被使用")
+
     # 创建新用户
     user = User(
-        username=data.username,
-        email=data.email,
-        password_hash=get_password_hash(data.password)
+        username=data.username, email=data.email, password_hash=get_password_hash(data.password)
     )
     session.add(user)
     await session.commit()
     await session.refresh(user)
-    
+
     # 生成令牌
     token = create_access_token(data={"sub": str(user.id)})
-    
+
     return TokenResponse(
         token=token,
         user=UserResponse(
@@ -68,34 +56,26 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_sessi
             username=user.username,
             email=user.email,
             avatar=user.avatar,
-            is_active=user.is_active
-        )
+            is_active=user.is_active,
+        ),
     )
 
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
     """用户登录"""
-    result = await session.execute(
-        select(User).where(User.email == data.email)
-    )
+    result = await session.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
-    
+
     if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="邮箱或密码错误"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="邮箱或密码错误")
+
     if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="该账户已被禁用"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="该账户已被禁用")
+
     # 生成令牌
     token = create_access_token(data={"sub": str(user.id)})
-    
+
     return TokenResponse(
         token=token,
         user=UserResponse(
@@ -103,8 +83,8 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
             username=user.username,
             email=user.email,
             avatar=user.avatar,
-            is_active=user.is_active
-        )
+            is_active=user.is_active,
+        ),
     )
 
 
@@ -116,18 +96,19 @@ async def get_me(current_user: User = Depends(deps.get_current_user)):
         username=current_user.username,
         email=current_user.email,
         avatar=current_user.avatar,
-        is_active=current_user.is_active
+        is_active=current_user.is_active,
     )
 
 
 # ========== GitHub OAuth ==========
+
 
 @router.get("/github")
 async def github_login():
     """获取 GitHub OAuth 授权 URL"""
     if not settings.GITHUB_CLIENT_ID:
         raise HTTPException(status_code=500, detail="GitHub OAuth 未配置")
-    
+
     # GitHub OAuth 授权 URL
     github_auth_url = (
         f"https://github.com/login/oauth/authorize"
@@ -142,7 +123,7 @@ async def github_callback(code: str, session: AsyncSession = Depends(get_session
     """处理 GitHub OAuth 回调"""
     if not settings.GITHUB_CLIENT_ID or not settings.GITHUB_CLIENT_SECRET:
         raise HTTPException(status_code=500, detail="GitHub OAuth 未配置")
-    
+
     async with httpx.AsyncClient(trust_env=False) as client:
         # 1. 用 code 换取 access_token
         token_response = await client.post(
@@ -155,33 +136,27 @@ async def github_callback(code: str, session: AsyncSession = Depends(get_session
             headers={"Accept": "application/json"},
         )
         token_data = token_response.json()
-        
+
         if "error" in token_data:
-            return RedirectResponse(
-                url=f"{settings.FRONTEND_URL}/login?error=github_auth_failed"
-            )
-        
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=github_auth_failed")
+
         access_token = token_data.get("access_token")
-        
+
         # 检查 access_token 是否有效
         if not access_token:
-            return RedirectResponse(
-                url=f"{settings.FRONTEND_URL}/login?error=github_token_failed"
-            )
-        
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=github_token_failed")
+
         # 2. 获取用户信息
         user_response = await client.get(
             "https://api.github.com/user",
             headers={"Authorization": f"Bearer {access_token}"},
         )
         github_user = user_response.json()
-        
+
         # 检查用户信息是否有效
         if "id" not in github_user:
-            return RedirectResponse(
-                url=f"{settings.FRONTEND_URL}/login?error=github_user_failed"
-            )
-        
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=github_user_failed")
+
         # 3. 获取用户邮箱（可能需要单独请求）
         email = github_user.get("email")
         if not email:
@@ -193,25 +168,29 @@ async def github_callback(code: str, session: AsyncSession = Depends(get_session
                 emails = emails_response.json()
                 if isinstance(emails, list):
                     primary_email = next((e for e in emails if e.get("primary")), None)
-                    email = primary_email["email"] if primary_email else f"{github_user['id']}@github.local"
+                    email = (
+                        primary_email["email"]
+                        if primary_email
+                        else f"{github_user['id']}@github.local"
+                    )
                 else:
                     email = f"{github_user['id']}@github.local"
             except Exception:
                 email = f"{github_user['id']}@github.local"
-    
+
     github_id = str(github_user["id"])
-    
+
     # 4. 查找或创建用户
     result = await session.execute(
         select(User).where(User.oauth_provider == "github", User.oauth_id == github_id)
     )
     user = result.scalar_one_or_none()
-    
+
     if not user:
         # 检查邮箱是否已被使用
         result = await session.execute(select(User).where(User.email == email))
         existing_user = result.scalar_one_or_none()
-        
+
         if existing_user:
             # 关联现有账户
             existing_user.oauth_provider = "github"
@@ -230,7 +209,7 @@ async def github_callback(code: str, session: AsyncSession = Depends(get_session
                     break
                 username = f"{base_username}_{counter}"
                 counter += 1
-            
+
             user = User(
                 username=username,
                 email=email,
@@ -239,28 +218,29 @@ async def github_callback(code: str, session: AsyncSession = Depends(get_session
                 avatar=github_user.get("avatar_url"),
             )
             session.add(user)
-        
+
         await session.commit()
         await session.refresh(user)
-    
+
     # 5. 生成 JWT token
     token = create_access_token(data={"sub": str(user.id)})
-    
+
     # 6. 重定向到前端
     return RedirectResponse(url=f"{settings.FRONTEND_URL}/?token={token}")
 
 
 # ========== Google OAuth ==========
 
+
 @router.get("/google")
 async def google_login():
     """获取 Google OAuth 授权 URL"""
     if not settings.GOOGLE_CLIENT_ID:
         raise HTTPException(status_code=500, detail="Google OAuth 未配置")
-    
+
     # 回调 URL
     redirect_uri = "http://localhost:8000/api/v1/auth/google/callback"
-    
+
     google_auth_url = (
         f"https://accounts.google.com/o/oauth2/v2/auth"
         f"?client_id={settings.GOOGLE_CLIENT_ID}"
@@ -276,9 +256,9 @@ async def google_callback(code: str, session: AsyncSession = Depends(get_session
     """处理 Google OAuth 回调"""
     if not settings.GOOGLE_CLIENT_ID or not settings.GOOGLE_CLIENT_SECRET:
         raise HTTPException(status_code=500, detail="Google OAuth 未配置")
-    
+
     redirect_uri = "http://localhost:8000/api/v1/auth/google/callback"
-    
+
     async with httpx.AsyncClient(trust_env=False) as client:
         # 1. 用 code 换取 access_token
         token_response = await client.post(
@@ -292,47 +272,41 @@ async def google_callback(code: str, session: AsyncSession = Depends(get_session
             },
         )
         token_data = token_response.json()
-        
+
         if "error" in token_data:
-            return RedirectResponse(
-                url=f"{settings.FRONTEND_URL}/login?error=google_auth_failed"
-            )
-        
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=google_auth_failed")
+
         access_token = token_data.get("access_token")
-        
+
         # 检查 access_token 是否有效
         if not access_token:
-            return RedirectResponse(
-                url=f"{settings.FRONTEND_URL}/login?error=google_token_failed"
-            )
-        
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=google_token_failed")
+
         # 2. 获取用户信息
         user_response = await client.get(
             "https://www.googleapis.com/oauth2/v2/userinfo",
             headers={"Authorization": f"Bearer {access_token}"},
         )
         google_user = user_response.json()
-        
+
         # 检查用户信息是否有效
         if "id" not in google_user:
-            return RedirectResponse(
-                url=f"{settings.FRONTEND_URL}/login?error=google_user_failed"
-            )
-    
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=google_user_failed")
+
     google_id = google_user["id"]
     email = google_user.get("email", f"{google_id}@google.local")
-    
+
     # 3. 查找或创建用户
     result = await session.execute(
         select(User).where(User.oauth_provider == "google", User.oauth_id == google_id)
     )
     user = result.scalar_one_or_none()
-    
+
     if not user:
         # 检查邮箱是否已被使用
         result = await session.execute(select(User).where(User.email == email))
         existing_user = result.scalar_one_or_none()
-        
+
         if existing_user:
             # 关联现有账户
             existing_user.oauth_provider = "google"
@@ -351,7 +325,7 @@ async def google_callback(code: str, session: AsyncSession = Depends(get_session
                     break
                 username = f"{base_username}_{counter}"
                 counter += 1
-            
+
             user = User(
                 username=username,
                 email=email,
@@ -360,13 +334,12 @@ async def google_callback(code: str, session: AsyncSession = Depends(get_session
                 avatar=google_user.get("picture"),
             )
             session.add(user)
-        
+
         await session.commit()
         await session.refresh(user)
-    
+
     # 4. 生成 JWT token
     token = create_access_token(data={"sub": str(user.id)})
-    
+
     # 5. 重定向到前端
     return RedirectResponse(url=f"{settings.FRONTEND_URL}/?token={token}")
-

@@ -2,30 +2,29 @@
 AI配置管理API - 功能测试模块
 提供AI厂商配置的增删改查接口
 """
-from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.db import get_session
 from app.api.deps import get_current_user
+from app.core.db import get_session
 from app.models.user import User
 from app.schemas.ai_config import (
+    PRESET_CONFIGS,
     AIProviderConfigCreate,
-    AIProviderConfigUpdate,
     AIProviderConfigResponse,
     AIProviderConfigTest,
+    AIProviderConfigUpdate,
     TestResult,
-    PRESET_CONFIGS
 )
 from app.services.ai_config_service import AIConfigService
 
 router = APIRouter(tags=["AI配置管理"])
 
 
-@router.get("/", response_model=List[AIProviderConfigResponse])
+@router.get("/", response_model=list[AIProviderConfigResponse])
 async def list_ai_configs(
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)
 ):
     """
     获取当前用户的所有AI配置
@@ -38,8 +37,7 @@ async def list_ai_configs(
 
 @router.get("/default", response_model=AIProviderConfigResponse)
 async def get_default_config(
-    session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)
 ):
     """
     获取用户的默认AI配置
@@ -50,8 +48,7 @@ async def get_default_config(
 
     if not config:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="未找到默认AI配置，请先创建配置"
+            status_code=status.HTTP_404_NOT_FOUND, detail="未找到默认AI配置，请先创建配置"
         )
 
     return config
@@ -61,7 +58,7 @@ async def get_default_config(
 async def get_ai_config(
     config_id: int,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取指定ID的AI配置
@@ -71,10 +68,7 @@ async def get_ai_config(
     config = await AIConfigService.get_config_by_id(session, config_id, current_user.id)
 
     if not config:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="配置不存在或无权访问"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="配置不存在或无权访问")
 
     return config
 
@@ -83,7 +77,7 @@ async def get_ai_config(
 async def create_ai_config(
     data: AIProviderConfigCreate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     创建新的AI配置
@@ -101,8 +95,7 @@ async def create_ai_config(
         return config
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"创建配置失败: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"创建配置失败: {str(e)}"
         )
 
 
@@ -111,22 +104,17 @@ async def update_ai_config(
     config_id: int,
     data: AIProviderConfigUpdate,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     更新AI配置
 
     可以部分更新配置字段，API Key如果提供则更新
     """
-    config = await AIConfigService.update_config(
-        session, config_id, current_user.id, data
-    )
+    config = await AIConfigService.update_config(session, config_id, current_user.id, data)
 
     if not config:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="配置不存在或无权访问"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="配置不存在或无权访问")
 
     return config
 
@@ -135,7 +123,7 @@ async def update_ai_config(
 async def delete_ai_config(
     config_id: int,
     session: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     删除AI配置
@@ -145,10 +133,7 @@ async def delete_ai_config(
     success = await AIConfigService.delete_config(session, config_id, current_user.id)
 
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="配置不存在或无权访问"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="配置不存在或无权访问")
 
 
 @router.get("/presets/{provider_type}", response_model=dict)
@@ -161,7 +146,7 @@ async def get_preset_config(provider_type: str):
     if provider_type not in PRESET_CONFIGS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"不支持的厂商类型: {provider_type}。支持的类型: {list(PRESET_CONFIGS.keys())}"
+            detail=f"不支持的厂商类型: {provider_type}。支持的类型: {list(PRESET_CONFIGS.keys())}",
         )
 
     return PRESET_CONFIGS[provider_type]
@@ -174,16 +159,11 @@ async def list_preset_configs():
 
     返回所有支持的厂商类型及其推荐配置
     """
-    return {
-        "presets": PRESET_CONFIGS,
-        "supported_types": list(PRESET_CONFIGS.keys())
-    }
+    return {"presets": PRESET_CONFIGS, "supported_types": list(PRESET_CONFIGS.keys())}
 
 
 @router.post("/test", response_model=TestResult)
-async def test_api_config(
-    data: AIProviderConfigTest
-):
+async def test_api_config(data: AIProviderConfigTest):
     """
     测试AI配置的API连接是否有效
 
@@ -199,11 +179,10 @@ async def test_api_config(
             provider_type=data.provider_type.value,
             api_key=data.api_key,
             model_name=data.model_name,
-            api_endpoint=data.api_endpoint
+            api_endpoint=data.api_endpoint,
         )
         return result
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"测试API连接失败: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"测试API连接失败: {str(e)}"
         )

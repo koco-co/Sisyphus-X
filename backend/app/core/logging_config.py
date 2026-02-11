@@ -1,17 +1,14 @@
 """
 日志配置
 """
+
 import logging
 import sys
-from pathlib import Path
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
+from pathlib import Path
 
 
-def setup_logging(
-    log_level: str = "INFO",
-    log_dir: str = "logs",
-    app_name: str = "sisyphus"
-):
+def setup_logging(log_level: str = "INFO", log_dir: str = "logs", app_name: str = "sisyphus"):
     """
     配置应用日志系统
 
@@ -33,18 +30,12 @@ def setup_logging(
 
     # 日志格式
     detailed_formatter = logging.Formatter(
-        fmt='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        fmt="%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     simple_formatter = logging.Formatter(
-        fmt='%(asctime)s - %(levelname)s - %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-
-    json_formatter = logging.Formatter(
-        fmt='%(asctime)s - %(name)s - %(levelname)s - %(message)s - [%(extra)s]',
-        datefmt='%Y-%m-%d %H:%M:%S'
+        fmt="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
     )
 
     # 控制台处理器（开发环境）
@@ -59,7 +50,7 @@ def setup_logging(
         all_logs_file,
         maxBytes=10 * 1024 * 1024,  # 10MB
         backupCount=10,
-        encoding='utf-8'
+        encoding="utf-8",
     )
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(detailed_formatter)
@@ -68,11 +59,7 @@ def setup_logging(
     # 错误日志处理器（只记录错误和严重错误）
     error_logs_file = log_path / f"{app_name}-error.log"
     error_handler = TimedRotatingFileHandler(
-        error_logs_file,
-        when='midnight',
-        interval=1,
-        backupCount=30,
-        encoding='utf-8'
+        error_logs_file, when="midnight", interval=1, backupCount=30, encoding="utf-8"
     )
     error_handler.setLevel(logging.ERROR)
     error_handler.setFormatter(detailed_formatter)
@@ -84,7 +71,7 @@ def setup_logging(
         audit_logs_file,
         maxBytes=50 * 1024 * 1024,  # 50MB
         backupCount=5,
-        encoding='utf-8'
+        encoding="utf-8",
     )
     audit_handler.setLevel(logging.INFO)
     audit_handler.setFormatter(simple_formatter)
@@ -120,7 +107,7 @@ def log_operation(
     resource_id: int = None,
     user_id: int = None,
     details: dict = None,
-    success: bool = True
+    success: bool = True,
 ):
     """
     记录操作到审计日志
@@ -147,7 +134,7 @@ def log_operation(
         "resource_id": resource_id,
         "user_id": user_id,
         "success": success,
-        "details": details
+        "details": details,
     }
 
     if success:

@@ -191,9 +191,9 @@ export const aiConfigApi = {
     list: () => api.get('/ai/configs/'),
     getDefault: () => api.get('/ai/configs/default'),
     get: (id: number) => api.get(`/ai/configs/${id}`),
-    create: (data: { provider_name: string; provider_type: string; api_key: string; model_name: string; temperature?: number; is_default?: boolean }) =>
+    create: (data: { provider_name: string; provider_type: string; api_key: string; api_endpoint?: string; model_name: string; temperature?: number; is_default?: boolean }) =>
         api.post('/ai/configs/', data),
-    update: (id: number, data: { provider_name?: string; api_key?: string; model_name?: string; temperature?: number; is_enabled?: boolean; is_default?: boolean }) =>
+    update: (id: number, data: { provider_name?: string; api_key?: string; api_endpoint?: string; model_name?: string; temperature?: number; is_enabled?: boolean; is_default?: boolean }) =>
         api.put(`/ai/configs/${id}`, data),
     delete: (id: number) => api.delete(`/ai/configs/${id}`),
     getPresets: () => api.get('/ai/configs/presets'),

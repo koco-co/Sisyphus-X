@@ -17,15 +17,15 @@ down_revision: Union[str, Sequence[str], None] = '6f165be7569b'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-# Use JSON type compatible with both SQLite and PostgreSQL
-JSON = sa.JSON()
-if op.get_context().dialect.name == 'postgresql':
-    JSON = postgresql.JSON()
-else:
-    JSON = sa.JSON()
-
 
 def upgrade() -> None:
+    """Upgrade schema."""
+    # Use JSON type compatible with both SQLite and PostgreSQL
+    if op.get_context().dialect.name == 'postgresql':
+        from sqlalchemy.dialects import postgresql
+        JSON = postgresql.JSON()
+    else:
+        JSON = sa.JSON()
     """Upgrade schema."""
 
     # Add order column to interfacefolder

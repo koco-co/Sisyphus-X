@@ -244,8 +244,8 @@ class TestTestCaseGenerator:
     def test_preview_without_saving(self, mock_session: Mock, temp_engines_dir: Path,
                                   sample_interface: Interface, sample_environment: ProjectEnvironment) -> None:
         """Test preview function returns YAML without saving."""
-        mock_session.get.return_value = sample_interface
-        mock_session.get.return_value = sample_environment
+        # Set up mock to return different values for different calls
+        mock_session.get.side_effect = [sample_interface, sample_environment]
 
         generator = TestCaseGenerator(mock_session, engines_base_path=str(temp_engines_dir))
         yaml_content = generator.preview(1, 1)
@@ -258,8 +258,7 @@ class TestTestCaseGenerator:
         """Test that generate creates database record."""
         from app.models.interface_test_case import InterfaceTestCase
 
-        mock_session.get.return_value = sample_interface
-        mock_session.get.return_value = sample_environment
+        mock_session.get.side_effect = [sample_interface, sample_environment]
         mock_session.refresh = MagicMock()
 
         generator = TestCaseGenerator(mock_session, engines_base_path=str(temp_engines_dir))
@@ -282,8 +281,7 @@ class TestTestCaseGenerator:
         test_case = InterfaceTestCase()
         test_case.id = 1
 
-        mock_session.get.return_value = sample_interface
-        mock_session.get.return_value = sample_environment
+        mock_session.get.side_effect = [sample_interface, sample_environment]
         mock_session.add.return_value = test_case
         mock_session.commit.return_value = None
         mock_session.refresh = MagicMock()
@@ -320,15 +318,14 @@ class TestTestCaseGenerator:
             generator.preview(1, 999)
 
     def test_yaml_path_uses_sanitized_name(self, mock_session: Mock, temp_engines_dir: Path,
-                                          sample_interface: Interface) -> None:
+                                          sample_interface: Interface, sample_environment: ProjectEnvironment) -> None:
         """Test that YAML path uses sanitized name."""
         from app.models.interface_test_case import InterfaceTestCase
 
         test_case = InterfaceTestCase()
         test_case.id = 1
 
-        mock_session.get.return_value = sample_interface
-        mock_session.get.return_value = None
+        mock_session.get.side_effect = [sample_interface, sample_environment]
         mock_session.add.return_value = test_case
         mock_session.commit.return_value = None
         mock_session.refresh = MagicMock()

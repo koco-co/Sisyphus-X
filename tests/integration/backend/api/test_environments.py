@@ -7,10 +7,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
 
 from app.api.v1.endpoints.environments import (
-    clone_environment,
+    copy_environment,
     create_environment,
     delete_environment,
-    get_environments,
+    list_environments,
     replace_variables,
     update_environment,
 )
@@ -214,7 +214,7 @@ async def test_clone_environment(test_db) -> None:
         await session.commit()
         await session.refresh(original_env)
 
-        cloned = await clone_environment(
+        cloned = await copy_environment(
             original_env.id, "Clone", session
         )
 

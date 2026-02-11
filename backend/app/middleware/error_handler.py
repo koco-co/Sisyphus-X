@@ -1,23 +1,23 @@
 """
 全局错误处理中间件
 """
+
 import logging
 import time
 import traceback
-from typing import Callable
+from collections.abc import Callable
+
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.exceptions import (
-    SisyphusException,
-    ResourceNotFoundException,
-    ResourceAlreadyExistsException,
-    ValidationException,
     PermissionDeniedException,
-    ExecutionException,
-    ConfigurationException
+    ResourceAlreadyExistsException,
+    ResourceNotFoundException,
+    SisyphusException,
+    ValidationException,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,14 +37,19 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
         except Exception as exc:
             return await self.handle_unexpected_exception(exc, request)
 
-    async def handle_sisyphus_exception(self, exc: SisyphusException, request: Request) -> JSONResponse:
+    async def handle_sisyphus_exception(
+        self, exc: SisyphusException, request: Request
+    ) -> JSONResponse:
         """处理业务异常"""
-        logger.error(f"业务异常: {exc.message}", extra={
-            "exception_type": type(exc).__name__,
-            "path": request.url.path,
-            "method": request.method,
-            "details": exc.details
-        })
+        logger.error(
+            f"业务异常: {exc.message}",
+            extra={
+                "exception_type": type(exc).__name__,
+                "path": request.url.path,
+                "method": request.method,
+                "details": exc.details,
+            },
+        )
 
         status_code = 500
         if isinstance(exc, ResourceNotFoundException):
@@ -63,18 +68,23 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 "error": {
                     "type": type(exc).__name__,
                     "message": exc.message,
-                    "details": exc.details
-                }
-            }
+                    "details": exc.details,
+                },
+            },
         )
 
-    async def handle_database_exception(self, exc: SQLAlchemyError, request: Request) -> JSONResponse:
+    async def handle_database_exception(
+        self, exc: SQLAlchemyError, request: Request
+    ) -> JSONResponse:
         """处理数据库异常"""
-        logger.error(f"数据库异常: {str(exc)}", extra={
-            "exception_type": "SQLAlchemyError",
-            "path": request.url.path,
-            "method": request.method
-        })
+        logger.error(
+            f"数据库异常: {str(exc)}",
+            extra={
+                "exception_type": "SQLAlchemyError",
+                "path": request.url.path,
+                "method": request.method,
+            },
+        )
 
         return JSONResponse(
             status_code=500,
@@ -83,19 +93,22 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 "error": {
                     "type": "database_error",
                     "message": "数据库操作失败",
-                    "details": str(exc) if logger.level <= logging.DEBUG else None
-                }
-            }
+                    "details": str(exc) if logger.level <= logging.DEBUG else None,
+                },
+            },
         )
 
     async def handle_unexpected_exception(self, exc: Exception, request: Request) -> JSONResponse:
         """处理未预期的异常"""
-        logger.error(f"未预期的异常: {str(exc)}", extra={
-            "exception_type": type(exc).__name__,
-            "path": request.url.path,
-            "method": request.method,
-            "traceback": traceback.format_exc()
-        })
+        logger.error(
+            f"未预期的异常: {str(exc)}",
+            extra={
+                "exception_type": type(exc).__name__,
+                "path": request.url.path,
+                "method": request.method,
+                "traceback": traceback.format_exc(),
+            },
+        )
 
         return JSONResponse(
             status_code=500,
@@ -104,9 +117,9 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
                 "error": {
                     "type": "internal_server_error",
                     "message": "服务器内部错误",
-                    "details": str(exc) if logger.level <= logging.DEBUG else None
-                }
-            }
+                    "details": str(exc) if logger.level <= logging.DEBUG else None,
+                },
+            },
         )
 
 
@@ -117,12 +130,15 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         start_time = time.time()
 
         # 记录请求开始
-        logger.info(f"请求开始: {request.method} {request.url.path}", extra={
-            "method": request.method,
-            "path": request.url.path,
-            "query_params": dict(request.query_params),
-            "client": request.client.host if request.client else None
-        })
+        logger.info(
+            f"请求开始: {request.method} {request.url.path}",
+            extra={
+                "method": request.method,
+                "path": request.url.path,
+                "query_params": dict(request.query_params),
+                "client": request.client.host if request.client else None,
+            },
+        )
 
         # 执行请求
         try:
@@ -130,26 +146,32 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             duration = time.time() - start_time
 
             # 记录请求完成
-            logger.info(f"请求完成: {request.method} {request.url.path} - {response.status_code}", extra={
-                "method": request.method,
-                "path": request.url.path,
-                "status_code": response.status_code,
-                "duration_ms": round(duration * 1000, 2)
-            })
+            logger.info(
+                f"请求完成: {request.method} {request.url.path} - {response.status_code}",
+                extra={
+                    "method": request.method,
+                    "path": request.url.path,
+                    "status_code": response.status_code,
+                    "duration_ms": round(duration * 1000, 2),
+                },
+            )
 
             # 添加响应头
-            response.headers["X-Response-Time"] = f"{duration*1000:.2f}ms"
+            response.headers["X-Response-Time"] = f"{duration * 1000:.2f}ms"
 
             return response
 
         except Exception as exc:
             duration = time.time() - start_time
-            logger.error(f"请求失败: {request.method} {request.url.path}", extra={
-                "method": request.method,
-                "path": request.url.path,
-                "duration_ms": round(duration * 1000, 2),
-                "error": str(exc)
-            })
+            logger.error(
+                f"请求失败: {request.method} {request.url.path}",
+                extra={
+                    "method": request.method,
+                    "path": request.url.path,
+                    "duration_ms": round(duration * 1000, 2),
+                    "error": str(exc),
+                },
+            )
             raise
 
 

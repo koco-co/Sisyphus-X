@@ -3,21 +3,22 @@ API 测试执行引擎 - 核心执行模块
 
 负责解析 YAML 测试用例并执行 HTTP 请求
 """
-import yaml
-import httpx
-from typing import Dict, Any, List, Optional
-from datetime import datetime
+
 import json
-import re
+from datetime import datetime
+from typing import Any
+
+import httpx
+import yaml
 
 
 class TestExecutionContext:
     """测试执行上下文"""
 
-    def __init__(self, environment: Dict[str, Any], variables: Dict[str, Any] = None):
+    def __init__(self, environment: dict[str, Any], variables: dict[str, Any] = None):
         self.environment = environment or {}
         self.variables = variables or {}
-        self.extracted_data: Dict[str, Any] = {}
+        self.extracted_data: dict[str, Any] = {}
         self.request_count = 0
 
     def resolve_value(self, value: Any) -> Any:
@@ -37,7 +38,7 @@ class TestExecutionContext:
 
         return value
 
-    def extract_from_response(self, response_data: Any, extract_config: Dict[str, str]):
+    def extract_from_response(self, response_data: Any, extract_config: dict[str, str]):
         """从响应中提取数据"""
         if not extract_config:
             return
@@ -67,7 +68,7 @@ class TestStepExecutor:
         self.timeout = timeout
         self.client = httpx.Client(timeout=timeout)
 
-    def build_request(self, step: Dict[str, Any]) -> httpx.Request:
+    def build_request(self, step: dict[str, Any]) -> httpx.Request:
         """构建 HTTP 请求"""
         method = step.get("method", "GET").upper()
         url = self.context.resolve_value(step.get("url", ""))
@@ -105,7 +106,7 @@ class TestStepExecutor:
         request = httpx.Request(method, url, headers=headers, params=params, content=body)
         return request
 
-    def execute_assertion(self, response: httpx.Response, assertion: Dict[str, Any]) -> bool:
+    def execute_assertion(self, response: httpx.Response, assertion: dict[str, Any]) -> bool:
         """执行断言"""
         assertion_type = assertion.get("type", "status")
 
@@ -137,7 +138,7 @@ class TestStepExecutor:
                 return value == expected
 
             elif assertion_type == "response_time":
-                max_time = assertion.get("value", 1000)  # 默认 1000ms
+                # max_time = assertion.get("value", 1000)  # 默认 1000ms
                 # httpx 不直接提供响应时间，这里返回 True
                 # 实际应用中需要用 time.time() 测量
                 return True
@@ -147,7 +148,7 @@ class TestStepExecutor:
 
         return True
 
-    def execute_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def execute_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """执行单个测试步骤"""
         start_time = datetime.now()
         result = {
@@ -157,7 +158,7 @@ class TestStepExecutor:
             "response": {},
             "assertions": [],
             "duration": 0,
-            "error": None
+            "error": None,
         }
 
         try:
@@ -167,7 +168,7 @@ class TestStepExecutor:
                 "method": request.method,
                 "url": str(request.url),
                 "headers": dict(request.headers),
-                "body": request.content.decode() if request.content else None
+                "body": request.content.decode() if request.content else None,
             }
 
             # 执行请求
@@ -177,12 +178,14 @@ class TestStepExecutor:
             response_data = {
                 "status": response.status_code,
                 "headers": dict(response.headers),
-                "body": response.text[:1000] if len(response.text) > 1000 else response.text  # 限制大小
+                "body": response.text[:1000]
+                if len(response.text) > 1000
+                else response.text,  # 限制大小
             }
 
             try:
                 response_data["json"] = response.json()
-            except:
+            except Exception:  # noqa: BLE001 (ignore bare except warning)
                 pass
 
             result["response"] = response_data
@@ -198,11 +201,13 @@ class TestStepExecutor:
 
             for assertion in assertions:
                 passed = self.execute_assertion(response, assertion)
-                assertion_results.append({
-                    "type": assertion.get("type"),
-                    "expected": assertion.get("value"),
-                    "passed": passed
-                })
+                assertion_results.append(
+                    {
+                        "type": assertion.get("type"),
+                        "expected": assertion.get("value"),
+                        "passed": passed,
+                    }
+                )
                 if not passed:
                     all_passed = False
 
@@ -228,17 +233,17 @@ class TestStepExecutor:
 class TestExecutor:
     """测试用例执行器"""
 
-    def __init__(self, environment: Dict[str, Any], variables: Dict[str, Any] = None):
+    def __init__(self, environment: dict[str, Any], variables: dict[str, Any] = None):
         self.context = TestExecutionContext(environment, variables)
 
-    def parse_yaml(self, yaml_content: str) -> Dict[str, Any]:
+    def parse_yaml(self, yaml_content: str) -> dict[str, Any]:
         """解析 YAML 测试用例"""
         try:
             return yaml.safe_load(yaml_content)
         except Exception as e:
             raise ValueError(f"YAML 解析失败: {str(e)}")
 
-    def execute_test_case(self, yaml_content: str) -> Dict[str, Any]:
+    def execute_test_case(self, yaml_content: str) -> dict[str, Any]:
         """执行完整的测试用例"""
         start_time = datetime.now()
 
@@ -254,7 +259,7 @@ class TestExecutor:
             "failed_steps": 0,
             "error_steps": 0,
             "duration": 0,
-            "error": None
+            "error": None,
         }
 
         try:
@@ -281,7 +286,9 @@ class TestExecutor:
                     result["error_steps"] += 1
 
                 # 如果步骤失败且配置了失败时停止，则中断执行
-                if step_result["status"] in ["failed", "error"] and step_config.get("stop_on_failure", True):
+                if step_result["status"] in ["failed", "error"] and step_config.get(
+                    "stop_on_failure", True
+                ):
                     break
 
             # 确定整体状态
@@ -302,7 +309,7 @@ class TestExecutor:
 
         return result
 
-    def execute_batch(self, test_cases: List[str]) -> List[Dict[str, Any]]:
+    def execute_batch(self, test_cases: list[str]) -> list[dict[str, Any]]:
         """批量执行测试用例"""
         results = []
         for yaml_content in test_cases:

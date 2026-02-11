@@ -2,21 +2,21 @@
 AI配置服务 - 功能测试模块
 处理AI厂商配置的业务逻辑
 """
-from typing import List, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
-from cryptography.fernet import Fernet
+
 import base64
 import os
+
 import httpx
+from cryptography.fernet import Fernet
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from app.models.ai_config import AIProviderConfig
 from app.schemas.ai_config import (
     AIProviderConfigCreate,
-    AIProviderConfigUpdate,
     AIProviderConfigResponse,
-    ProviderType,
-    TestResult
+    AIProviderConfigUpdate,
+    TestResult,
 )
 
 
@@ -69,9 +69,8 @@ class AIConfigService:
 
     @staticmethod
     async def get_user_configs(
-        session: AsyncSession,
-        user_id: int
-    ) -> List[AIProviderConfigResponse]:
+        session: AsyncSession, user_id: int
+    ) -> list[AIProviderConfigResponse]:
         """获取用户的所有AI配置"""
         result = await session.execute(
             select(AIProviderConfig)
@@ -90,23 +89,23 @@ class AIConfigService:
 
                 # 创建响应对象（兼容 Pydantic v1 和 v2）
                 response_data = {
-                    'id': config.id,
-                    'provider_name': config.provider_name,
-                    'provider_type': config.provider_type,
-                    'model_name': config.model_name,
-                    'temperature': config.temperature,
-                    'max_tokens': config.max_tokens,
-                    'is_enabled': config.is_enabled,
-                    'is_default': config.is_default,
-                    'api_key_masked': masked_key,
-                    'api_endpoint': config.api_endpoint,
-                    'user_id': config.user_id,
-                    'created_at': config.created_at,
-                    'updated_at': config.updated_at,
+                    "id": config.id,
+                    "provider_name": config.provider_name,
+                    "provider_type": config.provider_type,
+                    "model_name": config.model_name,
+                    "temperature": config.temperature,
+                    "max_tokens": config.max_tokens,
+                    "is_enabled": config.is_enabled,
+                    "is_default": config.is_default,
+                    "api_key_masked": masked_key,
+                    "api_endpoint": config.api_endpoint,
+                    "user_id": config.user_id,
+                    "created_at": config.created_at,
+                    "updated_at": config.updated_at,
                 }
                 response = AIProviderConfigResponse(**response_data)
                 responses.append(response)
-            except Exception as e:
+            except Exception:
                 # 跳过解密失败的配置
                 continue
 
@@ -114,15 +113,14 @@ class AIConfigService:
 
     @staticmethod
     async def get_default_config(
-        session: AsyncSession,
-        user_id: int
-    ) -> Optional[AIProviderConfigResponse]:
+        session: AsyncSession, user_id: int
+    ) -> AIProviderConfigResponse | None:
         """获取用户的默认AI配置"""
         result = await session.execute(
             select(AIProviderConfig)
             .where(AIProviderConfig.user_id == user_id)
-            .where(AIProviderConfig.is_default == True)
-            .where(AIProviderConfig.is_enabled == True)
+            .where(AIProviderConfig.is_default)
+            .where(AIProviderConfig.is_enabled)
             .order_by(AIProviderConfig.created_at.desc())  # 按创建时间降序，获取最新的
             .limit(1)  # 只获取一条记录
         )
@@ -138,31 +136,29 @@ class AIConfigService:
 
             # 创建响应对象（兼容 Pydantic v1 和 v2）
             response_data = {
-                'id': config.id,
-                'provider_name': config.provider_name,
-                'provider_type': config.provider_type,
-                'model_name': config.model_name,
-                'temperature': config.temperature,
-                'max_tokens': config.max_tokens,
-                'is_enabled': config.is_enabled,
-                'is_default': config.is_default,
-                'api_key_masked': masked_key,
-                'api_endpoint': config.api_endpoint,
-                'user_id': config.user_id,
-                'created_at': config.created_at,
-                'updated_at': config.updated_at,
+                "id": config.id,
+                "provider_name": config.provider_name,
+                "provider_type": config.provider_type,
+                "model_name": config.model_name,
+                "temperature": config.temperature,
+                "max_tokens": config.max_tokens,
+                "is_enabled": config.is_enabled,
+                "is_default": config.is_default,
+                "api_key_masked": masked_key,
+                "api_endpoint": config.api_endpoint,
+                "user_id": config.user_id,
+                "created_at": config.created_at,
+                "updated_at": config.updated_at,
             }
             return AIProviderConfigResponse(**response_data)
-        except Exception as e:
+        except Exception:
             # 解密或其他错误，返回 None
             return None
 
     @staticmethod
     async def get_config_by_id(
-        session: AsyncSession,
-        config_id: int,
-        user_id: int
-    ) -> Optional[AIProviderConfigResponse]:
+        session: AsyncSession, config_id: int, user_id: int
+    ) -> AIProviderConfigResponse | None:
         """根据ID获取AI配置"""
         config = await session.get(AIProviderConfig, config_id)
 
@@ -175,27 +171,25 @@ class AIConfigService:
 
         # 创建响应对象（兼容 Pydantic v1 和 v2）
         response_data = {
-            'id': config.id,
-            'provider_name': config.provider_name,
-            'provider_type': config.provider_type,
-            'model_name': config.model_name,
-            'temperature': config.temperature,
-            'max_tokens': config.max_tokens,
-            'is_enabled': config.is_enabled,
-            'is_default': config.is_default,
-            'api_key_masked': masked_key,
-            'api_endpoint': config.api_endpoint,
-            'user_id': config.user_id,
-            'created_at': config.created_at,
-            'updated_at': config.updated_at,
+            "id": config.id,
+            "provider_name": config.provider_name,
+            "provider_type": config.provider_type,
+            "model_name": config.model_name,
+            "temperature": config.temperature,
+            "max_tokens": config.max_tokens,
+            "is_enabled": config.is_enabled,
+            "is_default": config.is_default,
+            "api_key_masked": masked_key,
+            "api_endpoint": config.api_endpoint,
+            "user_id": config.user_id,
+            "created_at": config.created_at,
+            "updated_at": config.updated_at,
         }
         return AIProviderConfigResponse(**response_data)
 
     @staticmethod
     async def create_config(
-        session: AsyncSession,
-        user_id: int,
-        data: AIProviderConfigCreate
+        session: AsyncSession, user_id: int, data: AIProviderConfigCreate
     ) -> AIProviderConfigResponse:
         """创建AI配置"""
         # 如果设置为默认，需要取消其他配置的默认状态
@@ -216,7 +210,7 @@ class AIConfigService:
             is_enabled=data.is_enabled,
             is_default=data.is_default,
             api_key_encrypted=encrypted_key,
-            api_endpoint=data.api_endpoint
+            api_endpoint=data.api_endpoint,
         )
 
         session.add(config)
@@ -224,17 +218,13 @@ class AIConfigService:
         await session.refresh(config)
 
         return AIProviderConfigResponse(
-            **config.__dict__,
-            api_key_masked=EncryptionService.mask_api_key(data.api_key)
+            **config.__dict__, api_key_masked=EncryptionService.mask_api_key(data.api_key)
         )
 
     @staticmethod
     async def update_config(
-        session: AsyncSession,
-        config_id: int,
-        user_id: int,
-        data: AIProviderConfigUpdate
-    ) -> Optional[AIProviderConfigResponse]:
+        session: AsyncSession, config_id: int, user_id: int, data: AIProviderConfigUpdate
+    ) -> AIProviderConfigResponse | None:
         """更新AI配置"""
         config = await session.get(AIProviderConfig, config_id)
 
@@ -252,9 +242,7 @@ class AIConfigService:
 
         # 如果设置为默认，需要取消其他配置的默认状态
         if data.is_default and not config.is_default:
-            await AIConfigService._clear_default_flag(
-                session, user_id, config.provider_type
-            )
+            await AIConfigService._clear_default_flag(session, user_id, config.provider_type)
 
         # 应用更新
         for field, value in update_data.items():
@@ -267,15 +255,11 @@ class AIConfigService:
             **config.__dict__,
             api_key_masked=EncryptionService.mask_api_key(
                 EncryptionService.decrypt_api_key(config.api_key_encrypted)
-            )
+            ),
         )
 
     @staticmethod
-    async def delete_config(
-        session: AsyncSession,
-        config_id: int,
-        user_id: int
-    ) -> bool:
+    async def delete_config(session: AsyncSession, config_id: int, user_id: int) -> bool:
         """删除AI配置"""
         config = await session.get(AIProviderConfig, config_id)
 
@@ -287,17 +271,13 @@ class AIConfigService:
         return True
 
     @staticmethod
-    async def _clear_default_flag(
-        session: AsyncSession,
-        user_id: int,
-        provider_type: str
-    ):
+    async def _clear_default_flag(session: AsyncSession, user_id: int, provider_type: str):
         """清除用户指定厂商类型的默认标记"""
         result = await session.execute(
             select(AIProviderConfig)
             .where(AIProviderConfig.user_id == user_id)
             .where(AIProviderConfig.provider_type == provider_type)
-            .where(AIProviderConfig.is_default == True)
+            .where(AIProviderConfig.is_default)
         )
         configs = result.scalars().all()
 
@@ -313,10 +293,7 @@ class AIConfigService:
 
     @staticmethod
     async def test_api_connection(
-        provider_type: str,
-        api_key: str,
-        model_name: str,
-        api_endpoint: Optional[str] = None
+        provider_type: str, api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """
         测试API连接是否有效
@@ -347,35 +324,24 @@ class AIConfigService:
                 return TestResult(
                     success=False,
                     message=f"暂不支持测试厂商类型: {provider_type}",
-                    error="不支持的厂商类型"
+                    error="不支持的厂商类型",
                 )
         except Exception as e:
-            return TestResult(
-                success=False,
-                message="API测试失败",
-                error=str(e)
-            )
+            return TestResult(success=False, message="API测试失败", error=str(e))
 
     @staticmethod
     async def _test_zhipu(
-        api_key: str,
-        model_name: str,
-        api_endpoint: Optional[str] = None
+        api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """测试智谱AI API连接"""
         endpoint = api_endpoint or "https://open.bigmodel.cn/api/paas/v4/chat/completions"
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
         payload = {
             "model": model_name,
-            "messages": [
-                {"role": "user", "content": "你好"}
-            ],
-            "max_tokens": 10
+            "messages": [{"role": "user", "content": "你好"}],
+            "max_tokens": 10,
         }
 
         try:
@@ -387,57 +353,42 @@ class AIConfigService:
                     if "choices" in data and len(data["choices"]) > 0:
                         return TestResult(
                             success=True,
-                            message=f"智谱AI API连接成功！模型响应: {data['choices'][0]['message']['content'][:20]}..."
+                            message=f"智谱AI API连接成功！模型响应: {data['choices'][0]['message']['content'][:20]}...",
                         )
                     else:
                         return TestResult(
-                            success=False,
-                            message="API返回格式异常",
-                            error="响应中缺少choices字段"
+                            success=False, message="API返回格式异常", error="响应中缺少choices字段"
                         )
                 elif response.status_code == 401:
                     return TestResult(
-                        success=False,
-                        message="API Key验证失败",
-                        error="请检查API Key是否正确"
+                        success=False, message="API Key验证失败", error="请检查API Key是否正确"
                     )
                 else:
                     return TestResult(
                         success=False,
                         message=f"API请求失败，状态码: {response.status_code}",
-                        error=response.text
+                        error=response.text,
                     )
         except httpx.TimeoutException:
             return TestResult(
-                success=False,
-                message="请求超时",
-                error="连接智谱AI API超时，请检查网络"
+                success=False, message="请求超时", error="连接智谱AI API超时，请检查网络"
             )
         except Exception as e:
-            return TestResult(
-                success=False,
-                message="连接失败",
-                error=str(e)
-            )
+            return TestResult(success=False, message="连接失败", error=str(e))
 
     @staticmethod
     async def _test_openai(
-        api_key: str,
-        model_name: str,
-        api_endpoint: Optional[str] = None
+        api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """测试OpenAI API连接"""
         endpoint = api_endpoint or "https://api.openai.com/v1/chat/completions"
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
         payload = {
             "model": model_name,
             "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 10
+            "max_tokens": 10,
         }
 
         try:
@@ -447,21 +398,21 @@ class AIConfigService:
                 if response.status_code == 200:
                     return TestResult(success=True, message="OpenAI API连接成功！")
                 elif response.status_code == 401:
-                    return TestResult(success=False, message="API Key验证失败", error="请检查API Key")
+                    return TestResult(
+                        success=False, message="API Key验证失败", error="请检查API Key"
+                    )
                 else:
                     return TestResult(
                         success=False,
                         message=f"API请求失败: {response.status_code}",
-                        error=response.text[:100]
+                        error=response.text[:100],
                     )
         except Exception as e:
             return TestResult(success=False, message="连接失败", error=str(e))
 
     @staticmethod
     async def _test_anthropic(
-        api_key: str,
-        model_name: str,
-        api_endpoint: Optional[str] = None
+        api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """测试Anthropic API连接"""
         endpoint = api_endpoint or "https://api.anthropic.com/v1/messages"
@@ -469,13 +420,13 @@ class AIConfigService:
         headers = {
             "x-api-key": api_key,
             "Content-Type": "application/json",
-            "anthropic-version": "2023-06-01"
+            "anthropic-version": "2023-06-01",
         }
 
         payload = {
             "model": model_name,
             "max_tokens": 10,
-            "messages": [{"role": "user", "content": "Hello"}]
+            "messages": [{"role": "user", "content": "Hello"}],
         }
 
         try:
@@ -485,34 +436,33 @@ class AIConfigService:
                 if response.status_code == 200:
                     return TestResult(success=True, message="Anthropic API连接成功！")
                 elif response.status_code == 401:
-                    return TestResult(success=False, message="API Key验证失败", error="请检查API Key")
+                    return TestResult(
+                        success=False, message="API Key验证失败", error="请检查API Key"
+                    )
                 else:
                     return TestResult(
                         success=False,
                         message=f"API请求失败: {response.status_code}",
-                        error=response.text[:100]
+                        error=response.text[:100],
                     )
         except Exception as e:
             return TestResult(success=False, message="连接失败", error=str(e))
 
     @staticmethod
     async def _test_qwen(
-        api_key: str,
-        model_name: str,
-        api_endpoint: Optional[str] = None
+        api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """测试通义千问API连接"""
-        endpoint = api_endpoint or "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+        endpoint = (
+            api_endpoint or "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
+        )
 
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
+        headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
 
         payload = {
             "model": model_name,
             "messages": [{"role": "user", "content": "你好"}],
-            "max_tokens": 10
+            "max_tokens": 10,
         }
 
         try:
@@ -522,33 +472,34 @@ class AIConfigService:
                 if response.status_code == 200:
                     return TestResult(success=True, message="通义千问API连接成功！")
                 elif response.status_code == 401:
-                    return TestResult(success=False, message="API Key验证失败", error="请检查API Key")
+                    return TestResult(
+                        success=False, message="API Key验证失败", error="请检查API Key"
+                    )
                 else:
                     return TestResult(
                         success=False,
                         message=f"API请求失败: {response.status_code}",
-                        error=response.text[:100]
+                        error=response.text[:100],
                     )
         except Exception as e:
             return TestResult(success=False, message="连接失败", error=str(e))
 
     @staticmethod
     async def _test_qianfan(
-        api_key: str,
-        model_name: str,
-        api_endpoint: Optional[str] = None
+        api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """测试文心一言API连接"""
-        endpoint = api_endpoint or "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions"
+        endpoint = (
+            api_endpoint
+            or "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions"
+        )
 
-        headers = {
-            "Content-Type": "application/json"
-        }
+        headers = {"Content-Type": "application/json"}
 
         payload = {
             "model": model_name,
             "messages": [{"role": "user", "content": "你好"}],
-            "max_tokens": 10
+            "max_tokens": 10,
         }
 
         # 文心一言需要从API Key中提取 Access Key 和 Secret Key
@@ -560,12 +511,14 @@ class AIConfigService:
                 if response.status_code == 200:
                     return TestResult(success=True, message="文心一言API连接成功！")
                 elif response.status_code == 401:
-                    return TestResult(success=False, message="API Key验证失败", error="请检查API Key格式")
+                    return TestResult(
+                        success=False, message="API Key验证失败", error="请检查API Key格式"
+                    )
                 else:
                     return TestResult(
                         success=False,
                         message=f"API请求失败: {response.status_code}",
-                        error=response.text[:100]
+                        error=response.text[:100],
                     )
         except Exception as e:
             return TestResult(success=False, message="连接失败", error=str(e))

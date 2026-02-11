@@ -2,10 +2,12 @@
 多厂商LLM服务 - 功能测试模块
 支持OpenAI、Anthropic、通义千问、文心一言
 """
-from typing import Optional, Dict, Any, List
-from langchain_openai import ChatOpenAI
+
+from typing import Any, Optional
+
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_models import QianfanChatEndpoint
+from langchain_openai import ChatOpenAI
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -48,7 +50,7 @@ class MultiVendorLLMService:
                 model=self.config.model_name,
                 openai_api_key=self._decrypted_api_key,
                 base_url=self.config.api_endpoint,
-                **kwargs
+                **kwargs,
             )
 
         elif provider_type == "anthropic":
@@ -56,63 +58,94 @@ class MultiVendorLLMService:
                 model=self.config.model_name,
                 anthropic_api_key=self._decrypted_api_key,
                 base_url=self.config.api_endpoint,
-                **kwargs
+                **kwargs,
             )
 
         elif provider_type == "qwen":
             # 阿里云通义千问
             from langchain_community.chat_models.tongyi import ChatTongyi
+
             return ChatTongyi(
                 dashscope_api_key=self._decrypted_api_key,
                 model_name=self.config.model_name,
-                **kwargs
+                **kwargs,
             )
 
         elif provider_type == "qianfan":
             # 百度文心一言
             return QianfanChatEndpoint(
-                qianfan_api_key=self._decrypted_api_key,
-                model=self.config.model_name,
-                **kwargs
+                qianfan_api_key=self._decrypted_api_key, model=self.config.model_name, **kwargs
+            )
+
+        elif provider_type == "glm":
+            # 智谱AI (GLM) - 使用专用实现
+            from langchain_community.chat_models import ChatZhipuAI
+
+            return ChatZhipuAI(
+                api_key=self._decrypted_api_key, model=self.config.model_name, **kwargs
             )
 
         else:
             raise ValueError(f"不支持的AI厂商: {provider_type}")
 
     @staticmethod
-    async def get_default_llm(session: AsyncSession, user_id: int) -> Optional[Any]:
+    async def get_default_llm_service(
+        session: AsyncSession, user_id: int
+    ) -> Optional["MultiVendorLLMService"]:
         """
-        获取用户的默认LLM实例
+        获取用户的默认LLM服务实例
 
         Args:
             session: 数据库会话
             user_id: 用户ID
 
         Returns:
-            LLM实例或None（如果没有默认配置）
+            MultiVendorLLMService实例或None（如果没有默认配置）
         """
+        import sys
+
+        print(f"🔍 [get_default_llm] 开始获取用户 {user_id} 的默认LLM", file=sys.stderr, flush=True)
+
         # 获取默认配置
         result = await session.execute(
             select(AIProviderConfig)
             .where(AIProviderConfig.user_id == user_id)
-            .where(AIProviderConfig.is_default == True)
-            .where(AIProviderConfig.is_enabled == True)
+            .where(AIProviderConfig.is_default)
+            .where(AIProviderConfig.is_enabled)
         )
         config = result.scalar_one_or_none()
 
+        print(f"🔍 [get_default_llm] 查询结果: {config}", file=sys.stderr, flush=True)
+
         if not config:
+            print("❌ [get_default_llm] 未找到配置", file=sys.stderr, flush=True)
             return None
 
-        # 创建并返回LLM实例
-        llm_service = MultiVendorLLMService(config)
-        return llm_service.get_llm()
+        # 创建并返回LLM服务实例
+        try:
+            print(
+                f"🏗️ [get_default_llm] 创建 LLM 服务，provider_type={config.provider_type}",
+                file=sys.stderr,
+                flush=True,
+            )
+            llm_service = MultiVendorLLMService(config)
+            print(
+                f"✅ [get_default_llm] LLM 服务创建成功: {type(llm_service).__name__}",
+                file=sys.stderr,
+                flush=True,
+            )
+            return llm_service
+        except Exception as e:
+            print(f"❌ [get_default_llm] 创建 LLM 失败: {e}", file=sys.stderr, flush=True)
+            import traceback
+
+            traceback.print_exc(file=sys.stderr)
+            return None
 
     @staticmethod
     async def get_llm_by_provider(
-        session: AsyncSession,
-        user_id: int,
-        provider_type: str
-    ) -> Optional[Any]:
+        session: AsyncSession, user_id: int, provider_type: str
+    ) -> Any | None:
         """
         根据厂商类型获取LLM实例
 
@@ -129,7 +162,7 @@ class MultiVendorLLMService:
             select(AIProviderConfig)
             .where(AIProviderConfig.user_id == user_id)
             .where(AIProviderConfig.provider_type == provider_type)
-            .where(AIProviderConfig.is_enabled == True)
+            .where(AIProviderConfig.is_enabled)
             .order_by(AIProviderConfig.is_default.desc())
         )
         config = result.scalar_one_or_none()
@@ -141,7 +174,7 @@ class MultiVendorLLMService:
         llm_service = MultiVendorLLMService(config)
         return llm_service.get_llm()
 
-    async def ainvoke(self, messages: List[Dict[str, str]]) -> str:
+    async def ainvoke(self, messages: list[dict[str, str]]) -> str:
         """
         异步调用LLM
 
@@ -151,10 +184,18 @@ class MultiVendorLLMService:
         Returns:
             LLM响应文本
         """
+        import sys
+
         llm = self.get_llm()
+        print(
+            f"[ainvoke] 开始异步调用, provider_type={self._provider_type}",
+            file=sys.stderr,
+            flush=True,
+        )
 
         # 转换消息格式（如果需要）
-        from langchain.schema import HumanMessage, AIMessage, SystemMessage
+        from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+
         lc_messages = []
         for msg in messages:
             if msg["role"] == "system":
@@ -164,11 +205,34 @@ class MultiVendorLLMService:
             elif msg["role"] == "assistant":
                 lc_messages.append(AIMessage(content=msg["content"]))
 
-        # 调用LLM
-        response = await llm.ainvoke(lc_messages)
-        return response.content
+        print(f"[ainvoke] 消息转换完成, 消息数量={len(lc_messages)}", file=sys.stderr, flush=True)
 
-    async def astream(self, messages: List[Dict[str, str]]):
+        # 对于 qwen (ChatTongyi)，使用 to_thread 在线程池中运行同步调用
+        if self._provider_type == "qwen":
+            import asyncio
+
+            print("[ainvoke] 使用 asyncio.to_thread 调用同步 invoke", file=sys.stderr, flush=True)
+            try:
+                response = await asyncio.to_thread(llm.invoke, lc_messages)
+                print(
+                    f"[ainvoke] asyncio.to_thread 完成, 响应长度={len(response.content)}",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                return response.content
+            except Exception as e:
+                print(f"[ainvoke] asyncio.to_thread 失败: {e}", file=sys.stderr, flush=True)
+                import traceback
+
+                traceback.print_exc(file=sys.stderr)
+                raise
+        else:
+            # 其他厂商使用异步调用
+            print("[ainvoke] 使用异步 ainvoke", file=sys.stderr, flush=True)
+            response = await llm.ainvoke(lc_messages)
+            return response.content
+
+    async def astream(self, messages: list[dict[str, str]]):
         """
         异步流式调用LLM
 
@@ -181,7 +245,8 @@ class MultiVendorLLMService:
         llm = self.get_llm()
 
         # 转换消息格式
-        from langchain.schema import HumanMessage, AIMessage, SystemMessage
+        from langchain.schema import AIMessage, HumanMessage, SystemMessage
+
         lc_messages = []
         for msg in messages:
             if msg["role"] == "system":
@@ -195,7 +260,7 @@ class MultiVendorLLMService:
         async for chunk in llm.astream(lc_messages):
             yield chunk.content
 
-    def get_model_info(self) -> Dict[str, Any]:
+    def get_model_info(self) -> dict[str, Any]:
         """
         获取当前模型信息
 

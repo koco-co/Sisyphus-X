@@ -9,10 +9,12 @@
 """
 
 import json
-from typing import Dict, Any, List
 from datetime import datetime
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from . import ExecutionResult, TestCaseInfo, StepResult, Statistics, PerformanceMetrics
+
+from . import ExecutionResult, PerformanceMetrics, Statistics, StepResult, TestCaseInfo
 from .exceptions import ResultParseException
 
 
@@ -35,7 +37,7 @@ class ResultParser:
         except json.JSONDecodeError as e:
             raise ResultParseException(f"Invalid JSON format: {e}")
 
-    def _parse_execution_result(self, data: Dict[str, Any]) -> ExecutionResult:
+    def _parse_execution_result(self, data: dict[str, Any]) -> ExecutionResult:
         """解析执行结果"""
         # 提取测试用例信息
         tc_data = data.get("test_case", {})
@@ -44,7 +46,7 @@ class ResultParser:
             status=tc_data.get("status", "error"),
             start_time=tc_data.get("start_time", ""),
             end_time=tc_data.get("end_time", ""),
-            duration=tc_data.get("duration", 0)
+            duration=tc_data.get("duration", 0),
         )
 
         # 提取步骤结果
@@ -62,7 +64,7 @@ class ResultParser:
                     tls_time=perf_data.get("tls_time"),
                     server_time=perf_data.get("server_time"),
                     download_time=perf_data.get("download_time"),
-                    size=perf_data.get("size")
+                    size=perf_data.get("size"),
                 )
 
             step = StepResult(
@@ -73,7 +75,7 @@ class ResultParser:
                 duration=step_data.get("duration", 0) / 1000 if step_data.get("duration") else 0,
                 error=step_data.get("error") or step_data.get("message"),
                 performance=performance,
-                response=step_data.get("response")
+                response=step_data.get("response"),
             )
             steps.append(step)
 
@@ -84,7 +86,7 @@ class ResultParser:
             passed_steps=stats_data.get("passed_steps", 0),
             failed_steps=stats_data.get("failed_steps", 0),
             skipped_steps=stats_data.get("skipped_steps", 0),
-            pass_rate=stats_data.get("pass_rate", 0.0)
+            pass_rate=stats_data.get("pass_rate", 0.0),
         )
 
         # 判断是否成功
@@ -98,24 +100,22 @@ class ResultParser:
             final_variables=data.get("final_variables", {}),
             performance_metrics=data.get("performance_metrics"),
             error=None if success else self._extract_error(steps),
-            duration=test_case_info.duration
+            duration=test_case_info.duration,
         )
 
-    def extract_failures(self, result: ExecutionResult) -> List[Dict[str, Any]]:
+    def extract_failures(self, result: ExecutionResult) -> list[dict[str, Any]]:
         """提取失败信息"""
         failures = []
 
         for step in result.steps:
             if step.status == "failed" or step.status == "error":
-                failures.append({
-                    "step_name": step.name,
-                    "error": step.error,
-                    "status": step.status
-                })
+                failures.append(
+                    {"step_name": step.name, "error": step.error, "status": step.status}
+                )
 
         return failures
 
-    def calculate_statistics(self, result: ExecutionResult) -> Dict[str, Any]:
+    def calculate_statistics(self, result: ExecutionResult) -> dict[str, Any]:
         """计算统计数据"""
         return {
             "total_duration": result.duration,
@@ -123,15 +123,13 @@ class ResultParser:
             "passed_steps": result.statistics.passed_steps,
             "failed_steps": result.statistics.failed_steps,
             "pass_rate": result.statistics.pass_rate,
-            "avg_step_duration": sum(s.duration for s in result.steps) / len(result.steps) if result.steps else 0
+            "avg_step_duration": sum(s.duration for s in result.steps) / len(result.steps)
+            if result.steps
+            else 0,
         }
 
     async def save_to_database(
-        self,
-        result: ExecutionResult,
-        test_case_id: int,
-        environment_id: int,
-        session: AsyncSession
+        self, result: ExecutionResult, test_case_id: int, environment_id: int, session: AsyncSession
     ) -> int:
         """
         保存结果到数据库
@@ -153,8 +151,12 @@ class ResultParser:
             status="success" if result.success else "failed",
             result_data=result.dict(),
             duration=result.duration,
-            started_at=datetime.fromisoformat(result.test_case.start_time) if result.test_case.start_time else None,
-            completed_at=datetime.fromisoformat(result.test_case.end_time) if result.test_case.end_time else None
+            started_at=datetime.fromisoformat(result.test_case.start_time)
+            if result.test_case.start_time
+            else None,
+            completed_at=datetime.fromisoformat(result.test_case.end_time)
+            if result.test_case.end_time
+            else None,
         )
 
         session.add(execution)
@@ -163,7 +165,7 @@ class ResultParser:
 
         return execution.id
 
-    def _extract_error(self, steps: List[StepResult]) -> str:
+    def _extract_error(self, steps: list[StepResult]) -> str:
         """从步骤中提取错误信息"""
         for step in steps:
             if step.status == "failed" or step.status == "error":

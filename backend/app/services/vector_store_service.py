@@ -2,13 +2,14 @@
 向量检索服务 - 功能测试模块
 使用pgvector进行语义搜索
 """
-from typing import List, Optional, Dict, Any
+
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
-import numpy as np
 
-from app.models.test_case_knowledge import TestCaseKnowledge
 from app.models.functional_test_case import FunctionalTestCase
+from app.models.test_case_knowledge import TestCaseKnowledge
 
 
 class VectorStoreService:
@@ -26,11 +27,11 @@ class VectorStoreService:
     async def similarity_search(
         self,
         query_text: str,
-        query_embedding: Optional[List[float]] = None,
+        query_embedding: list[float] | None = None,
         k: int = 5,
         threshold: float = 0.7,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+        filters: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         """
         向量相似度搜索
 
@@ -52,36 +53,26 @@ class VectorStoreService:
                 return await self._fallback_text_search(query_text, k, threshold, filters)
 
         # 2. 构建基础查询
-        from sqlalchemy import func, text
-        from pgvector.sqlalchemy import Vector
+        from sqlalchemy import func
 
         statement = select(
             TestCaseKnowledge,
             FunctionalTestCase,
-            func.cosine_distance(TestCaseKnowledge.embedding, query_embedding).label('distance')
-        ).join(
-            FunctionalTestCase,
-            TestCaseKnowledge.test_case_id == FunctionalTestCase.id
-        )
+            func.cosine_distance(TestCaseKnowledge.embedding, query_embedding).label("distance"),
+        ).join(FunctionalTestCase, TestCaseKnowledge.test_case_id == FunctionalTestCase.id)
 
         # 3. 应用过滤条件
         if filters:
             if "module_name" in filters:
-                statement = statement.where(
-                    TestCaseKnowledge.module_name == filters["module_name"]
-                )
+                statement = statement.where(TestCaseKnowledge.module_name == filters["module_name"])
             if "priority" in filters:
-                statement = statement.where(
-                    TestCaseKnowledge.priority == filters["priority"]
-                )
+                statement = statement.where(TestCaseKnowledge.priority == filters["priority"])
             if "case_type" in filters:
-                statement = statement.where(
-                    TestCaseKnowledge.case_type == filters["case_type"]
-                )
+                statement = statement.where(TestCaseKnowledge.case_type == filters["case_type"])
 
         # 4. 按相似度排序并限制结果数量
         # 余弦距离越小，相似度越高（距离 = 1 - 相似度）
-        statement = statement.order_by('distance').limit(k)
+        statement = statement.order_by("distance").limit(k)
 
         # 5. 执行查询
         result = await self.session.execute(statement)
@@ -95,12 +86,14 @@ class VectorStoreService:
 
             # 过滤低于阈值的结果
             if similarity >= threshold:
-                results.append({
-                    "test_case": test_case,
-                    "similarity": similarity,
-                    "quality_score": knowledge.quality_score,
-                    "embedding_model": knowledge.embedding_model
-                })
+                results.append(
+                    {
+                        "test_case": test_case,
+                        "similarity": similarity,
+                        "quality_score": knowledge.quality_score,
+                        "embedding_model": knowledge.embedding_model,
+                    }
+                )
 
         # 7. 如果向量搜索没有结果，回退到文本搜索
         if not results:
@@ -109,37 +102,24 @@ class VectorStoreService:
         return results
 
     async def _fallback_text_search(
-        self,
-        query_text: str,
-        k: int,
-        threshold: float,
-        filters: Optional[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+        self, query_text: str, k: int, threshold: float, filters: dict[str, Any] | None
+    ) -> list[dict[str, Any]]:
         """回退到文本搜索"""
         statement = select(TestCaseKnowledge).join(
-            FunctionalTestCase,
-            TestCaseKnowledge.test_case_id == FunctionalTestCase.id
+            FunctionalTestCase, TestCaseKnowledge.test_case_id == FunctionalTestCase.id
         )
 
         # 应用过滤条件
         if filters:
             if "module_name" in filters:
-                statement = statement.where(
-                    TestCaseKnowledge.module_name == filters["module_name"]
-                )
+                statement = statement.where(TestCaseKnowledge.module_name == filters["module_name"])
             if "priority" in filters:
-                statement = statement.where(
-                    TestCaseKnowledge.priority == filters["priority"]
-                )
+                statement = statement.where(TestCaseKnowledge.priority == filters["priority"])
             if "case_type" in filters:
-                statement = statement.where(
-                    TestCaseKnowledge.case_type == filters["case_type"]
-                )
+                statement = statement.where(TestCaseKnowledge.case_type == filters["case_type"])
 
         # 执行查询
-        statement = statement.order_by(
-            TestCaseKnowledge.quality_score.desc()
-        ).limit(k)
+        statement = statement.order_by(TestCaseKnowledge.quality_score.desc()).limit(k)
 
         result = await self.session.execute(statement)
         knowledge_list = result.scalars().all()
@@ -147,39 +127,35 @@ class VectorStoreService:
         # 获取完整的测试用例信息
         results = []
         for knowledge in knowledge_list:
-            test_case = await self.session.get(
-                FunctionalTestCase,
-                knowledge.test_case_id
-            )
+            test_case = await self.session.get(FunctionalTestCase, knowledge.test_case_id)
 
             if test_case:
                 # 计算简单的文本相似度
-                similarity = self._calculate_text_similarity(
-                    query_text,
-                    test_case
-                )
+                similarity = self._calculate_text_similarity(query_text, test_case)
 
                 if similarity >= threshold:
-                    results.append({
-                        "test_case": test_case,
-                        "similarity": similarity,
-                        "quality_score": knowledge.quality_score,
-                        "embedding_model": knowledge.embedding_model
-                    })
+                    results.append(
+                        {
+                            "test_case": test_case,
+                            "similarity": similarity,
+                            "quality_score": knowledge.quality_score,
+                            "embedding_model": knowledge.embedding_model,
+                        }
+                    )
 
         # 按相似度排序
         results.sort(key=lambda x: x["similarity"], reverse=True)
 
         return results[:k]
 
-    async def _generate_embedding(self, text: str) -> Optional[List[float]]:
+    async def _generate_embedding(self, text: str) -> list[float] | None:
         """生成文本的向量嵌入"""
         try:
-            from langchain_openai import OpenAIEmbeddings
             import os
 
+            from langchain_openai import OpenAIEmbeddings
+
             # 获取默认的 AI 配置
-            from app.services.ai.llm_service import MultiVendorLLMService
 
             # 尝试获取默认的 OpenAI 配置
             # 注意：这里需要从数据库获取配置，暂时使用环境变量
@@ -188,10 +164,7 @@ class VectorStoreService:
                 print("Warning: OPENAI_API_KEY not set, cannot generate embedding")
                 return None
 
-            embeddings = OpenAIEmbeddings(
-                model="text-embedding-3-small",
-                openai_api_key=api_key
-            )
+            embeddings = OpenAIEmbeddings(model="text-embedding-3-small", openai_api_key=api_key)
 
             # 生成嵌入
             embedding = await embeddings.aembed_query(text)
@@ -201,11 +174,7 @@ class VectorStoreService:
             print(f"Error generating embedding: {e}")
             return None
 
-    def _calculate_text_similarity(
-        self,
-        query_text: str,
-        test_case: FunctionalTestCase
-    ) -> float:
+    def _calculate_text_similarity(self, query_text: str, test_case: FunctionalTestCase) -> float:
         """计算文本相似度（简单实现）"""
         from difflib import SequenceMatcher
 
@@ -233,8 +202,8 @@ class VectorStoreService:
     async def add_test_case_to_knowledge(
         self,
         test_case: FunctionalTestCase,
-        embedding: List[float],
-        embedding_model: str = "text-embedding-3-small"
+        embedding: list[float],
+        embedding_model: str = "text-embedding-3-small",
     ):
         """
         将测试用例添加到知识库
@@ -246,8 +215,7 @@ class VectorStoreService:
         """
         # 检查是否已存在
         result = await self.session.execute(
-            select(TestCaseKnowledge)
-            .where(TestCaseKnowledge.test_case_id == test_case.id)
+            select(TestCaseKnowledge).where(TestCaseKnowledge.test_case_id == test_case.id)
         )
         existing = result.scalar_one_or_none()
 
@@ -270,16 +238,13 @@ class VectorStoreService:
                 case_type=test_case.case_type,
                 tags=test_case.tags or [],
                 quality_score=8.0,  # 默认质量分
-                usage_count=0
+                usage_count=0,
             )
             self.session.add(knowledge)
 
         await self.session.commit()
 
-    async def get_knowledge_stats(
-        self,
-        module_name: Optional[str] = None
-    ) -> Dict[str, Any]:
+    async def get_knowledge_stats(self, module_name: str | None = None) -> dict[str, Any]:
         """
         获取知识库统计信息
 
@@ -292,9 +257,7 @@ class VectorStoreService:
         statement = select(TestCaseKnowledge)
 
         if module_name:
-            statement = statement.where(
-                TestCaseKnowledge.module_name == module_name
-            )
+            statement = statement.where(TestCaseKnowledge.module_name == module_name)
 
         result = await self.session.execute(statement)
         knowledge_list = result.scalars().all()
@@ -306,7 +269,7 @@ class VectorStoreService:
                 "total_count": 0,
                 "module_name": module_name,
                 "avg_quality_score": 0.0,
-                "embedding_models": []
+                "embedding_models": [],
             }
 
         # 计算平均质量分
@@ -322,7 +285,7 @@ class VectorStoreService:
             "module_name": module_name,
             "avg_quality_score": round(avg_quality, 2),
             "embedding_models": list(models.keys()),
-            "model_distribution": models
+            "model_distribution": models,
         }
 
 

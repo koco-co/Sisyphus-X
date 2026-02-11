@@ -4,8 +4,10 @@ YAML生成器 - 将表单数据转换为YAML格式
 支持将前端表单数据转换为 Sisyphus-api-engine 可识别的 YAML 格式
 """
 
+from typing import Any
+
 import yaml
-from typing import Dict, Any, List
+
 from . import TestCaseForm
 from .exceptions import YAMLGenerationException
 
@@ -48,16 +50,13 @@ class YAMLGenerator:
 
             # 生成YAML
             return yaml.dump(
-                yaml_dict,
-                allow_unicode=True,
-                sort_keys=False,
-                default_flow_style=False
+                yaml_dict, allow_unicode=True, sort_keys=False, default_flow_style=False
             )
 
         except Exception as e:
             raise YAMLGenerationException(f"Failed to generate YAML: {str(e)}")
 
-    def _convert_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """
         转换单个步骤
 
@@ -82,7 +81,7 @@ class YAMLGenerator:
         else:
             raise YAMLGenerationException(f"Unknown step type: {step_type}")
 
-    def _convert_request_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_request_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """转换HTTP请求步骤"""
         params = step.get("params", {})
 
@@ -117,7 +116,7 @@ class YAMLGenerator:
 
         return step_dict
 
-    def _convert_database_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_database_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """转换数据库操作步骤"""
         params = step.get("params", {})
 
@@ -127,7 +126,7 @@ class YAMLGenerator:
                 "operation": {
                     "type": params.get("operation_type", "query"),
                     "sql": params.get("sql", ""),
-                }
+                },
             }
         }
 
@@ -144,7 +143,7 @@ class YAMLGenerator:
 
         return step_dict
 
-    def _convert_wait_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_wait_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """转换等待步骤"""
         params = step.get("params", {})
         wait_type = params.get("wait_type", "fixed")
@@ -153,10 +152,7 @@ class YAMLGenerator:
             return {
                 step["name"]: {
                     "type": "wait",
-                    "wait": {
-                        "type": "fixed",
-                        "seconds": params.get("seconds", 1)
-                    }
+                    "wait": {"type": "fixed", "seconds": params.get("seconds", 1)},
                 }
             }
         elif wait_type == "condition":
@@ -167,14 +163,14 @@ class YAMLGenerator:
                         "type": "condition",
                         "condition": params.get("condition", ""),
                         "timeout": params.get("timeout", 30),
-                        "interval": params.get("interval", 1)
-                    }
+                        "interval": params.get("interval", 1),
+                    },
                 }
             }
         else:
             raise YAMLGenerationException(f"Unknown wait type: {wait_type}")
 
-    def _convert_keyword_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_keyword_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """转换关键字步骤"""
         params = step.get("params", {})
 
@@ -182,11 +178,11 @@ class YAMLGenerator:
             step["name"]: {
                 "type": "keyword",
                 "keyword": params.get("keyword_name", ""),
-                "params": params.get("keyword_params", {})
+                "params": params.get("keyword_params", {}),
             }
         }
 
-    def _convert_condition_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_condition_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """转换条件判断步骤"""
         params = step.get("params", {})
 
@@ -211,7 +207,7 @@ class YAMLGenerator:
 
         return condition_dict
 
-    def _convert_validations(self, validations: List[Dict[str, Any]]) -> List[Dict]:
+    def _convert_validations(self, validations: list[dict[str, Any]]) -> list[dict]:
         """转换验证规则"""
         converted = []
 

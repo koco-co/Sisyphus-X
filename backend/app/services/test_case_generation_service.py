@@ -2,19 +2,19 @@
 测试用例生成服务 - 功能测试模块
 基于测试点生成详细的测试用例
 """
-from typing import List, Dict, Any
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+
 import json
 
-from app.models.requirement import Requirement
-from app.models.functional_test_point import TestPoint
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.functional_test_case import FunctionalTestCase
+from app.models.functional_test_point import TestPoint
+from app.models.requirement import Requirement
 from app.schemas.test_case_generation import (
-    TestCaseGenerate,
     GeneratedTestCase,
     GeneratedTestCases,
-    TestStep
+    TestCaseGenerate,
+    TestStep,
 )
 from app.services.ai.llm_service import MultiVendorLLMService
 
@@ -106,10 +106,7 @@ class TestCaseGenerationService:
         self.session = session
         self.user_id = user_id
 
-    async def generate_test_cases(
-        self,
-        data: TestCaseGenerate
-    ) -> GeneratedTestCases:
+    async def generate_test_cases(self, data: TestCaseGenerate) -> GeneratedTestCases:
         """
         生成测试用例
 
@@ -151,13 +148,11 @@ class TestCaseGenerationService:
             test_points=test_points_text,
             module_name=data.module_name,
             page_name=data.page_name,
-            template_example=template_example
+            template_example=template_example,
         )
 
         # 7. 调用LLM生成
-        response = await llm.ainvoke([
-            {"role": "user", "content": prompt}
-        ])
+        response = await llm.ainvoke([{"role": "user", "content": prompt}])
 
         # 8. 解析响应
         test_cases = self._parse_llm_response(response)
@@ -169,10 +164,7 @@ class TestCaseGenerationService:
             tc.case_type = data.case_type.value
 
         # 10. 保存到数据库
-        saved_cases = await self._save_test_cases(
-            data.requirement_id,
-            test_cases
-        )
+        saved_cases = await self._save_test_cases(data.requirement_id, test_cases)
 
         return GeneratedTestCases(
             requirement_id=data.requirement_id,
@@ -182,19 +174,19 @@ class TestCaseGenerationService:
                 "test_point_count": len(test_points),
                 "used_knowledge": data.include_knowledge,
                 "module_name": data.module_name,
-                "page_name": data.page_name
-            }
+                "page_name": data.page_name,
+            },
         )
 
-    def _format_test_points(self, test_points: List[TestPoint]) -> str:
+    def _format_test_points(self, test_points: list[TestPoint]) -> str:
         """格式化测试点"""
         formatted = []
         for idx, tp in enumerate(test_points, 1):
             formatted.append(f"""
 {idx}. [{tp.category}] {tp.title}
-   - 描述: {tp.description or '无'}
+   - 描述: {tp.description or "无"}
    - 优先级: {tp.priority}
-   - 风险级别: {tp.risk_level or '未评估'}
+   - 风险级别: {tp.risk_level or "未评估"}
 """)
         return "\n".join(formatted)
 
@@ -233,7 +225,7 @@ class TestCaseGenerationService:
 - **复杂度**: low
 """
 
-    def _parse_llm_response(self, response: str) -> List[GeneratedTestCase]:
+    def _parse_llm_response(self, response: str) -> list[GeneratedTestCase]:
         """解析LLM响应"""
         try:
             # 尝试直接解析JSON
@@ -264,7 +256,8 @@ class TestCaseGenerationService:
         except json.JSONDecodeError:
             # 尝试提取JSON代码块
             import re
-            match = re.search(r'```json\n(.*?)\n```', response, re.DOTALL)
+
+            match = re.search(r"```json\n(.*?)\n```", response, re.DOTALL)
             if match:
                 return self._parse_llm_response(match.group(1))
 
@@ -273,12 +266,9 @@ class TestCaseGenerationService:
             return []
 
     async def _save_test_cases(
-        self,
-        requirement_id: int,
-        test_cases: List[GeneratedTestCase]
-    ) -> List[GeneratedTestCase]:
+        self, requirement_id: int, test_cases: list[GeneratedTestCase]
+    ) -> list[GeneratedTestCase]:
         """保存测试用例到数据库"""
-        import uuid
         from datetime import datetime
 
         saved_cases = []
@@ -292,7 +282,7 @@ class TestCaseGenerationService:
                 {
                     "step_number": step.step_number,
                     "action": step.action,
-                    "expected_result": step.expected_result
+                    "expected_result": step.expected_result,
                 }
                 for step in case_data.steps
             ]
@@ -313,7 +303,7 @@ class TestCaseGenerationService:
                 complexity=case_data.complexity,
                 is_ai_generated=True,
                 ai_model="default",
-                status="draft"  # 草稿状态，待审核
+                status="draft",  # 草稿状态，待审核
             )
 
             self.session.add(test_case)

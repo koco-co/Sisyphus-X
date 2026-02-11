@@ -3,18 +3,18 @@ Sisyphus-api-engine 执行适配器
 负责调用 sisyphus-api-engine 命令并处理输出
 """
 
-import os
 import json
+import os
 import subprocess
 import tempfile
-from typing import Dict, Any, Optional
 from pathlib import Path
+from typing import Any
 
 
 class APIEngineAdapter:
     """Sisyphus-api-engine 执行适配器"""
 
-    def __init__(self, temp_dir: Optional[str] = None):
+    def __init__(self, temp_dir: str | None = None):
         """
         初始化适配器
 
@@ -30,10 +30,10 @@ class APIEngineAdapter:
     def execute_test_case(
         self,
         yaml_content: str,
-        environment: Optional[str] = None,
+        environment: str | None = None,
         verbose: bool = True,
-        output_format: str = "json"
-    ) -> Dict[str, Any]:
+        output_format: str = "json",
+    ) -> dict[str, Any]:
         """
         执行测试用例
 
@@ -70,7 +70,7 @@ class APIEngineAdapter:
                 temp_yaml_file,
                 environment=environment,
                 verbose=verbose,
-                output_format=output_format
+                output_format=output_format,
             )
 
             # 执行命令
@@ -110,10 +110,7 @@ class APIEngineAdapter:
         """
         try:
             result = subprocess.run(
-                ["which", self.engine_cmd],
-                capture_output=True,
-                text=True,
-                timeout=5
+                ["which", self.engine_cmd], capture_output=True, text=True, timeout=5
             )
             return result.returncode == 0
         except Exception:
@@ -132,7 +129,7 @@ class APIEngineAdapter:
         """
         fd, path = tempfile.mkstemp(suffix=suffix, dir=self.temp_dir)
         try:
-            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
                 f.write(content)
         except Exception:
             os.close(fd)
@@ -143,9 +140,9 @@ class APIEngineAdapter:
     def _build_command(
         self,
         yaml_file: str,
-        environment: Optional[str] = None,
+        environment: str | None = None,
         verbose: bool = True,
-        output_format: str = "json"
+        output_format: str = "json",
     ) -> list:
         """
         构建执行命令
@@ -193,7 +190,7 @@ class APIEngineAdapter:
                 capture_output=True,
                 text=True,
                 timeout=300,  # 5分钟超时
-                cwd=self.temp_dir
+                cwd=self.temp_dir,
             )
 
             # 检查返回码
@@ -212,11 +209,10 @@ class APIEngineAdapter:
 
         except FileNotFoundError:
             raise FileNotFoundError(
-                f"命令未找到: {cmd[0]}。"
-                f"请确保 sisyphus-api-engine 已安装并添加到 PATH"
+                f"命令未找到: {cmd[0]}。请确保 sisyphus-api-engine 已安装并添加到 PATH"
             )
 
-    def _parse_json_output(self, output: str) -> Dict[str, Any]:
+    def _parse_json_output(self, output: str) -> dict[str, Any]:
         """
         解析 JSON 格式输出
 
@@ -246,16 +242,11 @@ class APIEngineAdapter:
             输出文件路径
         """
         yaml_path = Path(yaml_file)
-        extensions = {
-            "json": ".json",
-            "csv": ".csv",
-            "html": ".html",
-            "junit": ".xml"
-        }
+        extensions = {"json": ".json", "csv": ".csv", "html": ".html", "junit": ".xml"}
         ext = extensions.get(output_format, ".json")
         return str(yaml_path.with_suffix(ext))
 
-    def _read_output_file(self, output_file: str, output_format: str) -> Dict[str, Any]:
+    def _read_output_file(self, output_file: str, output_format: str) -> dict[str, Any]:
         """
         读取输出文件
 
@@ -270,7 +261,7 @@ class APIEngineAdapter:
             raise FileNotFoundError(f"输出文件不存在: {output_file}")
 
         try:
-            with open(output_file, 'r', encoding='utf-8') as f:
+            with open(output_file, encoding="utf-8") as f:
                 content = f.read()
 
             if output_format == "json":
@@ -301,12 +292,7 @@ class APIEngineAdapter:
             # 使用 sisyphus-api-validate 验证
             cmd = ["sisyphus-api-validate", temp_yaml_file]
 
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
             return result.returncode == 0
 
@@ -321,7 +307,7 @@ class APIEngineAdapter:
                 except Exception:
                     pass
 
-    def get_engine_version(self) -> Optional[str]:
+    def get_engine_version(self) -> str | None:
         """
         获取 sisyphus-api-engine 版本
 
@@ -330,12 +316,7 @@ class APIEngineAdapter:
         """
         try:
             cmd = [self.engine_cmd, "--version"]
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 return result.stdout.strip()
@@ -347,10 +328,8 @@ class APIEngineAdapter:
 
 # 便捷函数
 def execute_test_case(
-    yaml_content: str,
-    environment: Optional[str] = None,
-    verbose: bool = True
-) -> Dict[str, Any]:
+    yaml_content: str, environment: str | None = None, verbose: bool = True
+) -> dict[str, Any]:
     """
     执行测试用例（便捷函数）
 

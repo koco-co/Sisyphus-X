@@ -2,9 +2,12 @@
 需求澄清LangGraph状态图 - 功能测试模块
 使用LangGraph实现多轮需求澄清对话
 """
-from typing import TypedDict, Annotated, Sequence, List, Dict, Any, Optional
-from langgraph.graph import StateGraph, END
+
+from collections.abc import Sequence
+from typing import Any, TypedDict
+
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services.ai.llm_service import MultiVendorLLMService
@@ -13,6 +16,7 @@ from app.services.ai.llm_service import MultiVendorLLMService
 # 定义状态
 class RequirementClarificationState(TypedDict):
     """需求澄清状态"""
+
     # 用户输入
     user_input: str
 
@@ -22,12 +26,12 @@ class RequirementClarificationState(TypedDict):
     module_name: str  # 模块名称
 
     # 对话历史
-    messages: Sequence[Dict[str, str]]  # [{"role": "user/assistant", "content": "..."}]
+    messages: Sequence[dict[str, str]]  # [{"role": "user/assistant", "content": "..."}]
 
     # AI分析结果
-    identified_issues: List[str]  # 识别到的问题
-    risk_points: List[str]  # 风险点
-    suggestions: List[str]  # 建议
+    identified_issues: list[str]  # 识别到的问题
+    risk_points: list[str]  # 风险点
+    suggestions: list[str]  # 建议
 
     # 控制流程
     needs_clarification: bool  # 是否需要继续澄清
@@ -162,19 +166,13 @@ class RequirementClarificationGraph:
         workflow.add_conditional_edges(
             "analyze_requirement",
             self.should_continue_clarification,
-            {
-                "continue": "update_requirement",
-                "complete": "generate_response"
-            }
+            {"continue": "update_requirement", "complete": "generate_response"},
         )
 
         workflow.add_conditional_edges(
             "update_requirement",
             self.should_continue_clarification,
-            {
-                "continue": "generate_response",
-                "complete": "generate_response"
-            }
+            {"continue": "generate_response", "complete": "generate_response"},
         )
 
         workflow.add_edge("generate_response", END)
@@ -183,9 +181,8 @@ class RequirementClarificationGraph:
         self.graph = workflow.compile(checkpointer=self.checkpointer)
 
     async def analyze_requirement_node(
-        self,
-        state: RequirementClarificationState
-    ) -> Dict[str, Any]:
+        self, state: RequirementClarificationState
+    ) -> dict[str, Any]:
         """
         分析需求节点
 
@@ -193,29 +190,35 @@ class RequirementClarificationGraph:
         """
         print("🔍 [analyze_requirement] 分析用户需求...")
 
-        # 获取用户的默认LLM
-        llm = await MultiVendorLLMService.get_default_llm(self.session, self.user_id)
-        if not llm:
+        # 获取用户的默认LLM服务
+        print(f"🔍 获取用户 {self.user_id} 的默认LLM服务...")
+        llm_service = await MultiVendorLLMService.get_default_llm_service(
+            self.session, self.user_id
+        )
+        print(f"🔍 LLM服务查询结果: {llm_service}")
+        if not llm_service:
+            print("❌ 未找到默认LLM配置")
             raise ValueError("用户未配置AI服务，请先在AI配置中添加")
+
+        print(f"✅ LLM服务实例获取成功: {type(llm_service).__name__}")
 
         # 构建prompt
         chat_history = self._format_chat_history(state.get("messages", []))
 
         prompt = ANALYZE_REQUIREMENT_PROMPT.format(
-            user_input=state["user_input"],
-            chat_history=chat_history
+            user_input=state["user_input"], chat_history=chat_history
         )
 
-        # 调用LLM
-        response = await llm.ainvoke([
-            {"role": "user", "content": prompt}
-        ])
+        # 调用LLM服务
+        print(f"🤖 调用LLM服务，prompt长度: {len(prompt)}")
+        response = await llm_service.ainvoke([{"role": "user", "content": prompt}])
+        print(f"✅ LLM响应长度: {len(response)}")
+        print(f"📄 LLM响应前200字符: {response[:200]}")
 
         # 解析JSON响应
-        import json
         try:
             result = self._extract_json(response)
-
+            print(f"✅ 解析JSON成功，键: {list(result.keys())}")
             return {
                 "requirement_document": result.get("requirement_document", ""),
                 "identified_issues": result.get("questions", []),
@@ -226,7 +229,8 @@ class RequirementClarificationGraph:
                 "question_count": 1,
             }
         except Exception as e:
-            print(f"解析LLM响应失败: {e}")
+            print(f"❌ 解析LLM响应失败: {e}")
+            print(f"完整响应: {response}")
             return {
                 "requirement_document": state["user_input"],
                 "identified_issues": ["需求描述不够详细，请提供更多信息"],
@@ -237,10 +241,7 @@ class RequirementClarificationGraph:
                 "question_count": 1,
             }
 
-    async def update_requirement_node(
-        self,
-        state: RequirementClarificationState
-    ) -> Dict[str, Any]:
+    async def update_requirement_node(self, state: RequirementClarificationState) -> dict[str, Any]:
         """
         更新需求节点
 
@@ -257,21 +258,20 @@ class RequirementClarificationGraph:
         prompt = UPDATE_REQUIREMENT_PROMPT.format(
             requirement_document=state.get("requirement_document", ""),
             user_response=state.get("user_response", ""),
-            chat_history=chat_history
+            chat_history=chat_history,
         )
 
         # 调用LLM
-        response = await llm.ainvoke([
-            {"role": "user", "content": prompt}
-        ])
+        response = await llm.ainvoke([{"role": "user", "content": prompt}])
 
         # 解析JSON响应
-        import json
         try:
             result = self._extract_json(response)
 
             return {
-                "requirement_document": result.get("requirement_document", state.get("requirement_document", "")),
+                "requirement_document": result.get(
+                    "requirement_document", state.get("requirement_document", "")
+                ),
                 "identified_issues": result.get("questions", []),
                 "risk_points": result.get("risk_points", []),
                 "suggestions": result.get("suggestions", []),
@@ -287,10 +287,7 @@ class RequirementClarificationGraph:
                 "question_count": state.get("question_count", 0) + 1,
             }
 
-    async def generate_response_node(
-        self,
-        state: RequirementClarificationState
-    ) -> Dict[str, Any]:
+    async def generate_response_node(self, state: RequirementClarificationState) -> dict[str, Any]:
         """
         生成响应节点
 
@@ -303,13 +300,13 @@ class RequirementClarificationGraph:
             response_content = f"""## ✅ 需求澄清完成
 
 ### 需求文档
-{state.get('requirement_document', '')}
+{state.get("requirement_document", "")}
 
 ### 识别到的风险点
-{self._format_list(state.get('risk_points', []))}
+{self._format_list(state.get("risk_points", []))}
 
 ### 建议
-{self._format_list(state.get('suggestions', []))}
+{self._format_list(state.get("suggestions", []))}
 
 ---
 
@@ -318,16 +315,16 @@ class RequirementClarificationGraph:
             response_content = f"""## 🔍 需求澄清
 
 ### 当前需求文档
-{state.get('requirement_document', '')}
+{state.get("requirement_document", "")}
 
 ### 需要确认的问题
-{self._format_list(state.get('identified_issues', []))}
+{self._format_list(state.get("identified_issues", []))}
 
 ### 识别到的风险点
-{self._format_list(state.get('risk_points', []))}
+{self._format_list(state.get("risk_points", []))}
 
 ### 💡 建议
-{self._format_list(state.get('suggestions', []))}
+{self._format_list(state.get("suggestions", []))}
 
 ---
 
@@ -335,16 +332,13 @@ class RequirementClarificationGraph:
 
         # 添加到消息历史
         messages = list(state.get("messages", []))
-        messages.append({
-            "role": "assistant",
-            "content": response_content
-        })
+        messages.append({"role": "assistant", "content": response_content})
 
         return {
             "messages": messages,
         }
 
-    def should_continue_clarification(self, state: Dict[str, Any]) -> str:
+    def should_continue_clarification(self, state: dict[str, Any]) -> str:
         """
         判断是否继续澄清
 
@@ -363,7 +357,7 @@ class RequirementClarificationGraph:
         else:
             return "continue"
 
-    def _format_chat_history(self, messages: List[Dict[str, str]]) -> str:
+    def _format_chat_history(self, messages: list[dict[str, str]]) -> str:
         """格式化聊天历史"""
         if not messages:
             return "（无历史对话）"
@@ -375,14 +369,14 @@ class RequirementClarificationGraph:
 
         return "\n".join(formatted)
 
-    def _format_list(self, items: List[str]) -> str:
+    def _format_list(self, items: list[str]) -> str:
         """格式化列表"""
         if not items:
             return "（无）"
 
         return "\n".join([f"- {item}" for item in items])
 
-    def _extract_json(self, response: str) -> Dict[str, Any]:
+    def _extract_json(self, response: str) -> dict[str, Any]:
         """从LLM响应中提取JSON"""
         import json
         import re
@@ -394,7 +388,7 @@ class RequirementClarificationGraph:
             pass
 
         # 尝试提取代码块中的JSON
-        match = re.search(r'```json\n(.*?)\n```', response, re.DOTALL)
+        match = re.search(r"```json\n(.*?)\n```", response, re.DOTALL)
         if match:
             try:
                 return json.loads(match.group(1))
@@ -402,7 +396,7 @@ class RequirementClarificationGraph:
                 pass
 
         # 尝试提取JSON对象
-        match = re.search(r'\{.*\}', response, re.DOTALL)
+        match = re.search(r"\{.*\}", response, re.DOTALL)
         if match:
             try:
                 return json.loads(match.group(0))
@@ -412,10 +406,7 @@ class RequirementClarificationGraph:
         raise ValueError("无法从响应中提取JSON")
 
     async def astream_chat(
-        self,
-        requirement_id: str,
-        user_input: str,
-        config: Optional[Dict[str, Any]] = None
+        self, requirement_id: str, user_input: str, config: dict[str, Any] | None = None
     ):
         """
         流式对话接口
@@ -428,6 +419,10 @@ class RequirementClarificationGraph:
         Yields:
             响应片段
         """
+        print(
+            f"🚀 开始 astream_chat: requirement_id={requirement_id}, user_input={user_input[:50]}..."
+        )
+
         if config is None:
             config = {"configurable": {"thread_id": requirement_id}}
 
@@ -447,21 +442,46 @@ class RequirementClarificationGraph:
             "user_response": "",
         }
 
+        print("📋 初始状态准备完成，开始运行状态图...")
+
         # 运行状态图
+        event_count = 0
         async for event in self.graph.astream(initial_state, config):
+            event_count += 1
+            print(f"📦 Event #{event_count}: {event}")
             node_name = list(event.keys())[0]
             node_output = event[node_name]
+
+            print(f"📡 Node: {node_name}, Output keys: {node_output.keys()}")
 
             # 如果是generate_response节点，yield响应
             if node_name == "generate_response" and "messages" in node_output:
                 messages = node_output["messages"]
                 if messages:
                     latest_message = messages[-1]["content"]
+                    is_complete = node_output.get("is_complete", False)
+
+                    # 发送状态更新（包含问题和风险点）
                     yield {
-                        "type": "message",
-                        "content": latest_message,
-                        "is_complete": node_output.get("is_complete", False),
+                        "type": "state",
+                        "state": {
+                            "requirement_document": node_output.get("requirement_document", ""),
+                            "identified_issues": node_output.get("identified_issues", []),
+                            "risk_points": node_output.get("risk_points", []),
+                            "needs_clarification": node_output.get("needs_clarification", True),
+                            "is_complete": is_complete,
+                            "question_count": node_output.get("question_count", 0),
+                        },
                     }
+
+                    # 发送内容（使用 "content" 类型而不是 "message"）
+                    yield {
+                        "type": "content",
+                        "content": latest_message,
+                        "is_complete": is_complete,
+                    }
+
+        print(f"✅ 状态图运行完成，共处理 {event_count} 个事件")
 
 
 # 使用示例

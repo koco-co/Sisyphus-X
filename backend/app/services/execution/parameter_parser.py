@@ -2,13 +2,14 @@
 参数解析器 - 组装完整的执行参数
 """
 
-from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.models.test_case import TestCase
+
 from app.models.project import Environment
+from app.models.test_case import TestCase
+
 from . import ExecutionRequest, TestCaseForm
-from .yaml_generator import YAMLGenerator
 from .keyword_injector import KeywordInjector
+from .yaml_generator import YAMLGenerator
 
 
 class ParameterParser:
@@ -19,10 +20,7 @@ class ParameterParser:
         self.keyword_injector = KeywordInjector()
 
     async def parse_execution_request(
-        self,
-        session: AsyncSession,
-        test_case: TestCase,
-        environment_id: Optional[int] = None
+        self, session: AsyncSession, test_case: TestCase, environment_id: int | None = None
     ) -> ExecutionRequest:
         """
         解析执行请求，组装完整的执行参数
@@ -48,7 +46,7 @@ class ParameterParser:
 
         # 2. 生成YAML（注意：这里假设 TestCase 有 form_data 字段）
         # 如果实际模型不同，需要调整
-        if hasattr(test_case, 'form_data') and test_case.form_data:
+        if hasattr(test_case, "form_data") and test_case.form_data:
             form_data_dict = test_case.form_data if isinstance(test_case.form_data, dict) else {}
             form_data = TestCaseForm(**form_data_dict)
         else:
@@ -57,7 +55,7 @@ class ParameterParser:
                 name=test_case.name or "Test Case",
                 project_id=test_case.project_id,
                 steps=[],
-                variables={}
+                variables={},
             )
 
         yaml_content = self.yaml_generator.generate_from_form(form_data)
@@ -79,5 +77,5 @@ class ParameterParser:
             variables=variables,
             dynamic_keywords=dynamic_keywords,
             timeout=300,
-            environment=environment.name if environment else None
+            environment=environment.name if environment else None,
         )

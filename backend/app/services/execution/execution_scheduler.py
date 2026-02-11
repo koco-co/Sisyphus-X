@@ -2,15 +2,16 @@
 执行调度器 - 统一管理测试执行
 """
 
-import uuid
-from typing import Optional
 from datetime import datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.models.test_case import TestCase
 from app.models.test_execution import TestExecution
+
+from . import ExecutionResult
 from .executor_adapter import ExecutorAdapter
 from .parameter_parser import ParameterParser
-from . import ExecutionResult
 
 
 class ExecutionScheduler:
@@ -21,10 +22,7 @@ class ExecutionScheduler:
         self.parser = ParameterParser()
 
     async def execute_test_case(
-        self,
-        session: AsyncSession,
-        test_case_id: int,
-        environment_id: Optional[int] = None
+        self, session: AsyncSession, test_case_id: int, environment_id: int | None = None
     ) -> ExecutionResult:
         """
         执行单个测试用例（同步）
@@ -50,16 +48,14 @@ class ExecutionScheduler:
             test_case_id=test_case_id,
             environment_id=environment_id,
             status="running",
-            started_at=datetime.utcnow()
+            started_at=datetime.utcnow(),
         )
         session.add(execution)
         await session.commit()
         await session.refresh(execution)
 
         # 3. 解析参数
-        request = await self.parser.parse_execution_request(
-            session, test_case, environment_id
-        )
+        request = await self.parser.parse_execution_request(session, test_case, environment_id)
 
         # 4. 执行
         try:

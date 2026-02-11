@@ -2,9 +2,9 @@
 YAML 生成器 - 将结构化数据转换为 Sisyphus-api-engine YAML 格式
 """
 
+from typing import Any
+
 import yaml
-from typing import Dict, Any, List
-from datetime import datetime
 
 
 class YAMLGenerator:
@@ -14,15 +14,15 @@ class YAMLGenerator:
         """初始化 YAML 生成器"""
         # 支持的步骤类型
         self.supported_step_types = [
-            "request",    # HTTP/HTTPS 请求
-            "database",   # 数据库操作
-            "wait",       # 等待/延迟
-            "loop",       # 循环控制
-            "script",     # 脚本执行
-            "concurrent"  # 并发执行
+            "request",  # HTTP/HTTPS 请求
+            "database",  # 数据库操作
+            "wait",  # 等待/延迟
+            "loop",  # 循环控制
+            "script",  # 脚本执行
+            "concurrent",  # 并发执行
         ]
 
-    def generate_yaml(self, test_case_config: Dict[str, Any]) -> str:
+    def generate_yaml(self, test_case_config: dict[str, Any]) -> str:
         """
         将结构化配置转换为 YAML 格式
 
@@ -67,16 +67,12 @@ class YAMLGenerator:
 
         # 转换为 YAML 字符串
         yaml_content = yaml.dump(
-            yaml_data,
-            allow_unicode=True,
-            sort_keys=False,
-            default_flow_style=False,
-            indent=2
+            yaml_data, allow_unicode=True, sort_keys=False, default_flow_style=False, indent=2
         )
 
         return yaml_content
 
-    def _validate_config(self, config: Dict[str, Any]) -> None:
+    def _validate_config(self, config: dict[str, Any]) -> None:
         """
         验证配置格式
 
@@ -98,7 +94,7 @@ class YAMLGenerator:
         if not isinstance(config["steps"], list):
             raise ValueError("steps 必须是列表类型")
 
-    def _build_config(self, config: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_config(self, config: dict[str, Any]) -> dict[str, Any]:
         """
         构建配置部分
 
@@ -146,7 +142,7 @@ class YAMLGenerator:
 
         return result
 
-    def _build_steps(self, steps: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _build_steps(self, steps: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         构建步骤列表
 
@@ -173,7 +169,7 @@ class YAMLGenerator:
 
         return result
 
-    def _build_single_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_single_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """
         构建单个步骤
 
@@ -239,7 +235,7 @@ class YAMLGenerator:
 
         return result
 
-    def _build_request_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_request_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """构建 HTTP 请求步骤"""
         result = {}
 
@@ -269,7 +265,7 @@ class YAMLGenerator:
 
         return result
 
-    def _build_database_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_database_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """构建数据库操作步骤"""
         result = {}
 
@@ -291,7 +287,7 @@ class YAMLGenerator:
 
         return result
 
-    def _build_wait_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_wait_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """构建等待步骤"""
         result = {}
 
@@ -317,7 +313,7 @@ class YAMLGenerator:
 
         return result
 
-    def _build_loop_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_loop_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """构建循环步骤"""
         result = {}
 
@@ -343,7 +339,7 @@ class YAMLGenerator:
 
         return result
 
-    def _build_script_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_script_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """构建脚本执行步骤"""
         result = {}
 
@@ -361,7 +357,7 @@ class YAMLGenerator:
 
         return result
 
-    def _build_concurrent_step(self, step: Dict[str, Any]) -> Dict[str, Any]:
+    def _build_concurrent_step(self, step: dict[str, Any]) -> dict[str, Any]:
         """构建并发执行步骤"""
         result = {}
 
@@ -375,7 +371,7 @@ class YAMLGenerator:
 
         return result
 
-    def _build_validations(self, validations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _build_validations(self, validations: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         构建验证规则列表
 
@@ -411,7 +407,7 @@ class YAMLGenerator:
 
         return result
 
-    def _build_extractors(self, extractors: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _build_extractors(self, extractors: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         构建变量提取器列表
 
@@ -462,7 +458,7 @@ class YAMLGenerator:
 
 
 # 便捷函数
-def generate_yaml_from_config(config: Dict[str, Any]) -> str:
+def generate_yaml_from_config(config: dict[str, Any]) -> str:
     """
     从配置生成 YAML（便捷函数）
 

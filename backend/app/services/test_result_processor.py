@@ -2,10 +2,11 @@
 测试结果处理器 - 解析 API Engine 输出并存储到数据库
 """
 
-from typing import Dict, Any, Optional, List
 from datetime import datetime
+from typing import Any
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+
 from app.models.api_test_case import ApiTestExecution, ApiTestStepResult
 
 
@@ -16,10 +17,7 @@ class TestResultProcessor:
         """初始化处理器"""
 
     async def process_result(
-        self,
-        execution_id: int,
-        raw_result: Dict[str, Any],
-        session: AsyncSession
+        self, execution_id: int, raw_result: dict[str, Any], session: AsyncSession
     ) -> None:
         """
         处理 API Engine 返回的结果并存储到数据库
@@ -69,7 +67,7 @@ class TestResultProcessor:
         # 保存到数据库
         await session.commit()
 
-    def extract_statistics(self, raw_result: Dict[str, Any]) -> Dict[str, int]:
+    def extract_statistics(self, raw_result: dict[str, Any]) -> dict[str, int]:
         """
         提取统计信息
 
@@ -88,7 +86,7 @@ class TestResultProcessor:
             "skipped_steps": statistics.get("skipped_steps", 0),
         }
 
-    def extract_performance_metrics(self, raw_result: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def extract_performance_metrics(self, raw_result: dict[str, Any]) -> list[dict[str, Any]]:
         """
         提取性能指标
 
@@ -104,20 +102,22 @@ class TestResultProcessor:
         for step in steps:
             performance = step.get("performance", {})
             if performance:
-                metrics_list.append({
-                    "step_name": step.get("name", ""),
-                    "total_time": performance.get("total_time", 0),
-                    "dns_time": performance.get("dns_time", 0),
-                    "tcp_time": performance.get("tcp_time", 0),
-                    "tls_time": performance.get("tls_time", 0),
-                    "server_time": performance.get("server_time", 0),
-                    "download_time": performance.get("download_time", 0),
-                    "size": performance.get("size", 0),
-                })
+                metrics_list.append(
+                    {
+                        "step_name": step.get("name", ""),
+                        "total_time": performance.get("total_time", 0),
+                        "dns_time": performance.get("dns_time", 0),
+                        "tcp_time": performance.get("tcp_time", 0),
+                        "tls_time": performance.get("tls_time", 0),
+                        "server_time": performance.get("server_time", 0),
+                        "download_time": performance.get("download_time", 0),
+                        "size": performance.get("size", 0),
+                    }
+                )
 
         return metrics_list
 
-    def extract_error_info(self, raw_result: Dict[str, Any]) -> Optional[Dict[str, str]]:
+    def extract_error_info(self, raw_result: dict[str, Any]) -> dict[str, str] | None:
         """
         提取错误信息
 
@@ -156,10 +156,7 @@ class TestResultProcessor:
         return None
 
     async def _process_step_results(
-        self,
-        execution_id: int,
-        raw_result: Dict[str, Any],
-        session: AsyncSession
+        self, execution_id: int, raw_result: dict[str, Any], session: AsyncSession
     ) -> None:
         """
         处理并存储步骤结果
@@ -209,7 +206,7 @@ class TestResultProcessor:
             # 添加到数据库
             session.add(step_result)
 
-    def _infer_step_type(self, step: Dict[str, Any]) -> str:
+    def _infer_step_type(self, step: dict[str, Any]) -> str:
         """
         推断步骤类型
 
@@ -267,7 +264,7 @@ class TestResultProcessor:
         }
         return status_mapping.get(status, "error")
 
-    def _parse_datetime(self, datetime_str: str) -> Optional[datetime]:
+    def _parse_datetime(self, datetime_str: str) -> datetime | None:
         """
         解析 datetime 字符串
 
@@ -279,8 +276,8 @@ class TestResultProcessor:
         """
         try:
             # 处理带时区的格式
-            if 'T' in datetime_str:
-                return datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+            if "T" in datetime_str:
+                return datetime.fromisoformat(datetime_str.replace("Z", "+00:00"))
             else:
                 return datetime.fromisoformat(datetime_str)
         except (ValueError, AttributeError):
@@ -289,9 +286,7 @@ class TestResultProcessor:
 
 # 便捷函数
 async def process_test_result(
-    execution_id: int,
-    raw_result: Dict[str, Any],
-    session: AsyncSession
+    execution_id: int, raw_result: dict[str, Any], session: AsyncSession
 ) -> None:
     """
     处理测试结果（便捷函数）

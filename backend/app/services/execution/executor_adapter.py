@@ -4,14 +4,21 @@
 负责调用 Sisyphus-api-engine CLI，传递参数，解析返回结果
 """
 
-import subprocess
-import json
-import tempfile
-import os
 import asyncio
-from typing import Optional, List
-from . import ExecutionRequest, ExecutionResult, TestCaseInfo, StepResult, Statistics, PerformanceMetrics
-from .exceptions import ExecutorException, ExecutionTimeoutException
+import json
+import os
+import subprocess
+import tempfile
+
+from . import (
+    ExecutionRequest,
+    ExecutionResult,
+    PerformanceMetrics,
+    Statistics,
+    StepResult,
+    TestCaseInfo,
+)
+from .exceptions import ExecutionTimeoutException, ExecutorException
 
 
 class ExecutorAdapter:
@@ -63,16 +70,18 @@ class ExecutorAdapter:
     def _create_temp_file(self, content: str) -> str:
         """创建临时YAML文件"""
         fd, path = tempfile.mkstemp(suffix=".yaml", text=True)
-        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write(content)
         return path
 
-    def _build_command(self, yaml_path: str, request: ExecutionRequest) -> List[str]:
+    def _build_command(self, yaml_path: str, request: ExecutionRequest) -> list[str]:
         """构建执行命令"""
         cmd = [
             self.EXECUTOR_CMD,
-            "--cases", yaml_path,
-            "--format", request.output_format  # json
+            "--cases",
+            yaml_path,
+            "--format",
+            request.output_format,  # json
         ]
 
         # 添加基础URL
@@ -87,14 +96,11 @@ class ExecutorAdapter:
         if request.dynamic_keywords:
             # 注意：这里假设执行器支持 --dynamic-keywords 参数
             # 如果不支持，需要通过其他方式传递（如临时文件）
-            cmd.extend([
-                "--dynamic-keywords",
-                json.dumps(request.dynamic_keywords)
-            ])
+            cmd.extend(["--dynamic-keywords", json.dumps(request.dynamic_keywords)])
 
         return cmd
 
-    async def _run_executor(self, cmd: List[str], timeout: int) -> subprocess.CompletedProcess:
+    async def _run_executor(self, cmd: list[str], timeout: int) -> subprocess.CompletedProcess:
         """
         运行执行器
 
@@ -111,26 +117,21 @@ class ExecutorAdapter:
         try:
             # 使用 asyncio 运行子进程
             proc = await asyncio.create_subprocess_exec(
-                *cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE
+                *cmd, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
 
-            stdout, stderr = await asyncio.wait_for(
-                proc.communicate(),
-                timeout=timeout
-            )
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
 
             return subprocess.CompletedProcess(
                 args=cmd,
                 returncode=proc.returncode,
-                stdout=stdout.decode('utf-8'),
-                stderr=stderr.decode('utf-8')
+                stdout=stdout.decode("utf-8"),
+                stderr=stderr.decode("utf-8"),
             )
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             # 超时则杀死进程
-            if 'proc' in locals():
+            if "proc" in locals():
                 proc.kill()
                 await proc.wait()
             raise ExecutionTimeoutException(f"Execution timeout after {timeout} seconds")
@@ -153,22 +154,14 @@ class ExecutorAdapter:
             return ExecutionResult(
                 success=False,
                 test_case=TestCaseInfo(
-                    name="Unknown",
-                    status="error",
-                    start_time="",
-                    end_time="",
-                    duration=0
+                    name="Unknown", status="error", start_time="", end_time="", duration=0
                 ),
                 steps=[],
                 statistics=Statistics(
-                    total_steps=0,
-                    passed_steps=0,
-                    failed_steps=0,
-                    skipped_steps=0,
-                    pass_rate=0.0
+                    total_steps=0, passed_steps=0, failed_steps=0, skipped_steps=0, pass_rate=0.0
                 ),
                 final_variables={},
-                error=stderr or "No output from executor"
+                error=stderr or "No output from executor",
             )
 
         try:
@@ -182,7 +175,7 @@ class ExecutorAdapter:
                 status=tc_data.get("status", "error"),
                 start_time=tc_data.get("start_time", ""),
                 end_time=tc_data.get("end_time", ""),
-                duration=tc_data.get("duration", 0)
+                duration=tc_data.get("duration", 0),
             )
 
             # 提取步骤结果
@@ -200,7 +193,7 @@ class ExecutorAdapter:
                         tls_time=perf_data.get("tls_time"),
                         server_time=perf_data.get("server_time"),
                         download_time=perf_data.get("download_time"),
-                        size=perf_data.get("size")
+                        size=perf_data.get("size"),
                     )
 
                 step = StepResult(
@@ -208,10 +201,12 @@ class ExecutorAdapter:
                     status=step_data.get("status", "error"),
                     start_time=step_data.get("start_time", ""),
                     end_time=step_data.get("end_time", ""),
-                    duration=step_data.get("duration", 0) / 1000 if step_data.get("duration") else 0,  # ms -> s
+                    duration=step_data.get("duration", 0) / 1000
+                    if step_data.get("duration")
+                    else 0,  # ms -> s
                     error=step_data.get("error") or step_data.get("message"),
                     performance=performance,
-                    response=step_data.get("response")
+                    response=step_data.get("response"),
                 )
                 steps.append(step)
 
@@ -222,7 +217,7 @@ class ExecutorAdapter:
                 passed_steps=stats_data.get("passed_steps", 0),
                 failed_steps=stats_data.get("failed_steps", 0),
                 skipped_steps=stats_data.get("skipped_steps", 0),
-                pass_rate=stats_data.get("pass_rate", 0.0)
+                pass_rate=stats_data.get("pass_rate", 0.0),
             )
 
             # 判断是否成功
@@ -236,13 +231,13 @@ class ExecutorAdapter:
                 final_variables=data.get("final_variables", {}),
                 performance_metrics=data.get("performance_metrics"),
                 error=None if success else self._extract_error(steps),
-                duration=test_case_info.duration
+                duration=test_case_info.duration,
             )
 
         except json.JSONDecodeError as e:
             raise ExecutorException(f"Failed to parse executor output: {e}\nOutput: {stdout[:500]}")
 
-    def _extract_error(self, steps: List[StepResult]) -> Optional[str]:
+    def _extract_error(self, steps: list[StepResult]) -> str | None:
         """从步骤中提取错误信息"""
         for step in steps:
             if step.status == "failed" or step.status == "error":

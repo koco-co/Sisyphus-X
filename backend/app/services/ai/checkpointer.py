@@ -2,15 +2,14 @@
 Checkpointer配置 - LangGraph状态持久化
 支持Memory和PostgreSQL两种存储方式
 """
-from typing import Optional
+
 from langgraph.checkpoint.memory import MemorySaver
-from app.core.config import settings
 
 
 class CheckpointConfig:
     """Checkpointer配置类"""
 
-    _instance: Optional[MemorySaver] = None
+    _instance: MemorySaver | None = None
 
     @classmethod
     def get_checkpointer(cls):

@@ -2,10 +2,9 @@
 关键字注入器 - 管理动态关键字的收集和注入
 """
 
-import json
-from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
+
 from app.models.keyword import Keyword
 
 
@@ -13,11 +12,8 @@ class KeywordInjector:
     """关键字动态注入管理"""
 
     async def collect_keywords(
-        self,
-        session: AsyncSession,
-        project_id: int,
-        category: Optional[str] = None
-    ) -> List[Keyword]:
+        self, session: AsyncSession, project_id: int, category: str | None = None
+    ) -> list[Keyword]:
         """
         收集项目的活跃关键字
 
@@ -29,10 +25,7 @@ class KeywordInjector:
         Returns:
             关键字实例列表
         """
-        query = select(Keyword).where(
-            Keyword.project_id == project_id,
-            Keyword.is_active == True
-        )
+        query = select(Keyword).where(Keyword.project_id == project_id, Keyword.is_active)
 
         if category:
             query = query.where(Keyword.category == category)
@@ -54,17 +47,11 @@ class KeywordInjector:
             compile(code, "<string>", "exec")
             return {"valid": True, "error": None}
         except SyntaxError as e:
-            return {
-                "valid": False,
-                "error": f"Line {e.lineno}: {e.msg}"
-            }
+            return {"valid": False, "error": f"Line {e.lineno}: {e.msg}"}
         except Exception as e:
-            return {
-                "valid": False,
-                "error": str(e)
-            }
+            return {"valid": False, "error": str(e)}
 
-    def inject_to_executor(self, keywords: List[Keyword]) -> List[str]:
+    def inject_to_executor(self, keywords: list[Keyword]) -> list[str]:
         """
         将关键字代码序列化为列表，供执行器加载
 
@@ -77,10 +64,8 @@ class KeywordInjector:
         return [kw.function_code for kw in keywords if kw.is_active]
 
     async def prepare_keywords_for_execution(
-        self,
-        session: AsyncSession,
-        project_id: int
-    ) -> List[str]:
+        self, session: AsyncSession, project_id: int
+    ) -> list[str]:
         """
         为执行准备关键字代码
 

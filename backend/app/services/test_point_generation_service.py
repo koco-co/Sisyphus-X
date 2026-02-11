@@ -2,19 +2,19 @@
 测试点生成服务 - 功能测试模块
 基于需求文档生成测试点
 """
-from typing import List, Dict, Any, Optional
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+
 import json
 
-from app.models.requirement import Requirement
-from app.models.functional_test_point import TestPoint
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
+
 from app.models.functional_test_case import FunctionalTestCase
+from app.models.functional_test_point import TestPoint
 from app.schemas.test_point_generation import (
-    TestPointCategory,
+    GeneratedTestPoints,
     TestPointBase,
+    TestPointCategory,
     TestPointGenerate,
-    GeneratedTestPoints
 )
 from app.services.ai.llm_service import MultiVendorLLMService
 
@@ -105,10 +105,7 @@ class TestPointGenerationService:
         self.session = session
         self.user_id = user_id
 
-    async def generate_test_points(
-        self,
-        data: TestPointGenerate
-    ) -> GeneratedTestPoints:
+    async def generate_test_points(self, data: TestPointGenerate) -> GeneratedTestPoints:
         """
         生成测试点
 
@@ -134,7 +131,7 @@ class TestPointGenerationService:
         # 4. 构建prompt
         prompt = self.GENERATE_TEST_POINTS_PROMPT.format(
             requirement_text=data.requirement_text,
-            related_cases=related_cases_text or "（无历史参考用例）"
+            related_cases=related_cases_text or "（无历史参考用例）",
         )
 
         # 添加分类筛选说明
@@ -142,18 +139,13 @@ class TestPointGenerationService:
             prompt += f"\n\n## 重点关注的测试分类\n{category_filter}"
 
         # 5. 调用LLM生成
-        response = await llm.ainvoke([
-            {"role": "user", "content": prompt}
-        ])
+        response = await llm.ainvoke([{"role": "user", "content": prompt}])
 
         # 6. 解析响应
         test_points = self._parse_llm_response(response)
 
         # 7. 保存到数据库
-        saved_points = await self._save_test_points(
-            data.requirement_id,
-            test_points
-        )
+        saved_points = await self._save_test_points(data.requirement_id, test_points)
 
         return GeneratedTestPoints(
             requirement_id=data.requirement_id,
@@ -162,8 +154,8 @@ class TestPointGenerationService:
             generation_metadata={
                 "categories": [c.value for c in data.categories],
                 "used_knowledge": data.include_knowledge,
-                "llm_used": "default"
-            }
+                "llm_used": "default",
+            },
         )
 
     async def _get_related_test_cases(self, requirement_text: str) -> str:
@@ -180,12 +172,11 @@ class TestPointGenerationService:
         # 暂时使用简单的关键词匹配
 
         # 提取关键词
-        keywords = self._extract_keywords(requirement_text)
+        # keywords = self._extract_keywords(requirement_text)
 
         # 搜索相关的测试用例
         result = await self.session.execute(
-            select(FunctionalTestCase)
-            .limit(5)  # 暂时返回最近的5个用例
+            select(FunctionalTestCase).limit(5)  # 暂时返回最近的5个用例
         )
         cases = result.scalars().all()
 
@@ -204,18 +195,20 @@ class TestPointGenerationService:
 
         return "\n".join(formatted)
 
-    def _extract_keywords(self, text: str) -> List[str]:
+    def _extract_keywords(self, text: str) -> list[str]:
         """提取关键词"""
         # 简单实现：提取中文词汇
         import re
+
         # 匹配2-4个字的中文词汇
-        words = re.findall(r'[\u4e00-\u9fa5]{2,4}', text)
+        words = re.findall(r"[\u4e00-\u9fa5]{2,4}", text)
         # 返回出现频率最高的词
         from collections import Counter
+
         word_counts = Counter(words)
         return [word for word, count in word_counts.most_common(10)]
 
-    def _build_category_filter(self, categories: List[TestPointCategory]) -> str:
+    def _build_category_filter(self, categories: list[TestPointCategory]) -> str:
         """构建分类筛选说明"""
         if not categories:
             return ""
@@ -225,13 +218,13 @@ class TestPointGenerationService:
             TestPointCategory.PERFORMANCE: "性能测试",
             TestPointCategory.SECURITY: "安全测试",
             TestPointCategory.COMPATIBILITY: "兼容性测试",
-            TestPointCategory.USABILITY: "易用性测试"
+            TestPointCategory.USABILITY: "易用性测试",
         }
 
         names = [category_names.get(c, c.value) for c in categories]
         return "重点关注：" + "、".join(names)
 
-    def _parse_llm_response(self, response: str) -> List[TestPointBase]:
+    def _parse_llm_response(self, response: str) -> list[TestPointBase]:
         """解析LLM响应"""
         try:
             # 尝试直接解析JSON
@@ -255,7 +248,8 @@ class TestPointGenerationService:
         except json.JSONDecodeError:
             # 尝试提取JSON代码块
             import re
-            match = re.search(r'```json\n(.*?)\n```', response, re.DOTALL)
+
+            match = re.search(r"```json\n(.*?)\n```", response, re.DOTALL)
             if match:
                 return self._parse_llm_response(match.group(1))
 
@@ -264,10 +258,8 @@ class TestPointGenerationService:
             return []
 
     async def _save_test_points(
-        self,
-        requirement_id: int,
-        test_points: List[TestPointBase]
-    ) -> List[TestPointBase]:
+        self, requirement_id: int, test_points: list[TestPointBase]
+    ) -> list[TestPointBase]:
         """保存测试点到数据库"""
         saved_points = []
 
@@ -282,7 +274,7 @@ class TestPointGenerationService:
                 risk_level=point_data.risk_level,
                 is_ai_generated=True,
                 confidence_score=0.85,  # AI生成的默认置信度
-                status="draft"  # 草稿状态，待审核
+                status="draft",  # 草稿状态，待审核
             )
 
             self.session.add(test_point)

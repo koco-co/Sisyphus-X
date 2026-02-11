@@ -5,7 +5,7 @@
 
 from datetime import datetime
 
-from sqlmodel import ARRAY, JSON, Column, Field, Float, SQLModel
+from sqlmodel import JSON, Column, Field, Float, SQLModel
 
 
 class TestCaseKnowledge(SQLModel, table=True):
@@ -16,9 +16,9 @@ class TestCaseKnowledge(SQLModel, table=True):
     id: int = Field(primary_key=True)
     test_case_id: int = Field(unique=True, index=True)  # 关联test_cases
 
-    # 向量化数据
+    # 向量化数据（SQLite不支持ARRAY，使用JSON存储）
     embedding: list[float] = Field(
-        default=[], sa_column=Column(ARRAY(Float, as_tuple=True))
+        default=[], sa_column=Column(JSON)
     )  # 1536维向量
 
     # 元数据 (用于过滤)

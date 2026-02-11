@@ -63,4 +63,4 @@ class UserRole(SQLModel, table=True):
 
     id: int | None = Field(default=None, primary_key=True)
     user_id: int = Field(foreign_key="users.id")
-    role_id: int = Field(foreign_key="role.id")
+    role_id: int = Field(foreign_key="roles.id")

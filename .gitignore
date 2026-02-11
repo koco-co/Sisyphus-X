@@ -1,82 +1,108 @@
-# 依赖目录
+# =========================
+# Dependencies
+# =========================
 node_modules/
-__pycache__/
-*.pyc
-*.pyo
+frontend/node_modules/
 .pnpm-store/
-venv/
-.venv/
-env/
-frontend/@/
 
-# 构建输出
+# =========================
+# Python artifacts
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+
+# Virtual environments
+.venv/
+venv/
+env/
+backend/.venv/
+
+# =========================
+# Build outputs
+# =========================
 dist/
 build/
 *.egg-info/
 .eggs/
+frontend/dist/
 
-# IDE 配置
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-
-# 环境变量
-.env
-.env.local
-.env.*.local
-.env.backup
-.env *
-
-# 日志文件
-*.log
-logs/
-
-# 测试覆盖率
+# =========================
+# Coverage / test cache
+# =========================
 coverage/
 .coverage
 htmlcov/
 .pytest_cache/
 
-# 临时文件
+# =========================
+# Linters / type checkers
+# =========================
+.ruff_cache/
+.pyright_cache/
+report.json
+
+# =========================
+# IDE / editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# =========================
+# Environment files
+# =========================
+.env
+.env.local
+.env.*.local
+.env.backup
+
+# =========================
+# Logs
+# =========================
+*.log
+logs/
+
+# =========================
+# Temp / cache
+# =========================
 tmp/
 temp/
 *.tmp
-
-# 数据库文件
-*.db
-*.sqlite
-*.sqlite3
-
-# 上传文件目录
-uploads/
-
-# 缓存
 .cache/
 .parcel-cache/
 
-# 系统文件
-Thumbs.db
-ehthumbs.db
+# =========================
+# Databases / uploads
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+uploads/
 
-# 编译输出
-*.o
-*.so
-*.dylib
-
-# Jupyter
-.ipynb_checkpoints/
-
-# 秘钥文件
+# =========================
+# Secrets / certs
+# =========================
 *.pem
 *.key
 *.crt
 
-.agent
+# =========================
+# System files
+# =========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
 
-.claude
+# =========================
+# Local tool metadata
+# =========================
+.agent
+.claude/
+.codex/
 .mcp.json
 .mcp-memory.json
 AGENTS.md
@@ -84,10 +110,3 @@ AGENTS.md
 # UV
 .uv/
 uv.lock
-
-# Ruff
-.ruff_cache/
-
-# Pyright
-.pyright_cache/
-report.json

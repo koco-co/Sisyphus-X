@@ -1,36 +1,42 @@
+"""Alembic 环境配置
+
+这个文件配置 Alembic 以支持 SQLAlchemy 2.0 异步迁移。
+"""
+
 import asyncio
-from logging.config import fileConfig
 import os
 import sys
+from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
-from sqlmodel import SQLModel
 
-# Add the directory containing the app to the python path
+# 添加项目根目录到 Python 路径
 sys.path.append(os.getcwd())
-
-from app.core.config import settings
-# Import models to register them with SQLModel
-from app.models import *  # noqa: F401, F403
 
 from alembic import context
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# 导入 SQLAlchemy Base 和配置
+from app.core.base import Base
+from app.core.config import settings
+
+# 导入所有模型以确保它们被注册到 Base.metadata
+# 这对于 Alembic 自动生成迁移至关重要
+from app import models  # noqa: F401
+
+# Alembic Config 对象，提供对 .ini 文件值的访问
 config = context.config
 
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
+# 配置 Python 日志
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Set the database URL in the config
+# 设置数据库 URL
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
-target_metadata = SQLModel.metadata
+# 添加模型的 MetaData 对象，用于 'autogenerate' 支持
+# 使用 SQLAlchemy 2.0 的 Base.metadata 而不是 SQLModel.metadata
+target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:

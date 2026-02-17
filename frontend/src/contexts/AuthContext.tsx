@@ -24,20 +24,30 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
+    // 开发模式：检查是否跳过登录
+    const devModeSkipLogin = import.meta.env.VITE_DEV_MODE_SKIP_LOGIN === 'true' || import.meta.env.VITE_AUTH_DISABLED === 'true'
 
-    useEffect(() => {
-        // 开发模式跳过登录
-        const devModeSkipLogin = import.meta.env.VITE_DEV_MODE_SKIP_LOGIN === 'true' || import.meta.env.VITE_AUTH_DISABLED === 'true'
+    // 初始化用户状态（开发模式下直接设置默认用户，避免闪烁）
+    const [user, setUser] = useState<User | null>(() => {
         if (devModeSkipLogin) {
-            setUser({
+            return {
                 id: 0,
                 username: 'Dev User',
                 email: 'dev@sisyphus.local',
                 avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=DevUser'
-            })
-            setIsLoading(false)
+            }
+        }
+        return null
+    })
+
+    const [isLoading, setIsLoading] = useState(() => {
+        // 开发模式下不显示加载状态
+        return !devModeSkipLogin
+    })
+
+    useEffect(() => {
+        // 开发模式跳过后续登录逻辑
+        if (devModeSkipLogin) {
             return
         }
 

@@ -6,7 +6,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 
-from sqlalchemy import ForeignKey, Index, Integer, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
@@ -68,7 +68,7 @@ class TestReport(Base):
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), nullable=False
+        default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     def __repr__(self) -> str:

@@ -29,9 +29,9 @@ class FunctionalTestCase(SQLModel, table=True):
     case_type: str  # functional/performance/security/compatibility
 
     # 用例内容
-    preconditions: list[str] = Field(default=list, sa_column=Column(JSON))  # 前置条件
-    steps: list[dict] = Field(default=list, sa_column=Column(JSON))  # 测试步骤
-    tags: list[str] = Field(default=list, sa_column=Column(JSON))  # 标签数组
+    preconditions: List[str] = Field(default=list, sa_column=Column(JSON))  # 前置条件
+    steps: List[Dict[str, Any]] = Field(default=list, sa_column=Column(JSON))  # 测试步骤
+    tags: List[str] = Field(default=list, sa_column=Column(JSON))  # 标签数组
 
     # 元数据
     is_automated: bool = Field(default=False)
@@ -47,8 +47,8 @@ class FunctionalTestCase(SQLModel, table=True):
 
     # 创建信息
     created_by: int
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     version: int = Field(default=1)
 
     class Config:

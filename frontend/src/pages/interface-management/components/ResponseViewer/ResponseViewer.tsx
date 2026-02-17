@@ -41,14 +41,6 @@ const RESPONSE_TABS = [
 export function ResponseViewer({ response, isLoading = false }: ResponseViewerProps) {
   const [activeTab, setActiveTab] = useState<typeof RESPONSE_TABS[number]['id']>('body')
   const [bodyFormat, setBodyFormat] = useState<'pretty' | 'raw'>('pretty')
-  const [showLog, setShowLog] = useState(false)
-
-  // 当收到新响应时，自动显示日志（如果有错误日志）
-  useEffect(() => {
-    if (response?.logs && response.logs.some(log => log.type === 'error')) {
-      setShowLog(true)
-    }
-  }, [response])
 
   if (isLoading) {
     return (
@@ -164,14 +156,6 @@ export function ResponseViewer({ response, isLoading = false }: ResponseViewerPr
           </div>
         )}
       </div>
-
-      {/* 执行日志（默认隐藏，可展开） */}
-      {response.logs && response.logs.length > 0 && (
-        <ExecutionLog
-          logs={response.logs}
-          defaultExpanded={response.logs.some(log => log.type === 'error')}
-        />
-      )}
     </div>
   )
 }

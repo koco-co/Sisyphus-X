@@ -5,8 +5,10 @@
 import asyncio
 import os
 import pytest
+import uuid
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from fastapi import Depends
 
 from app.core.base import Base
 # 导入所有模型以确保 metadata.create_all() 能创建所有表
@@ -168,13 +170,53 @@ async def sample_test_scenario(db_session: AsyncSession, sample_project: Project
 
 
 @pytest.fixture(scope="function")
-async def async_client(db_session: AsyncSession):
+async def async_client(async_engine, db_session: AsyncSession):
     """创建异步 HTTP 测试客户端"""
     from fastapi import FastAPI
     from httpx import AsyncClient
     from app.api.v1.api import api_router
     from app.core.config import settings
-    from app.core.db import get_session
+    from app.core.db import get_session, async_session_maker, sync_session_maker, engine
+
+    # 保存原始的 session makers 和引擎
+    original_async_session_maker = async_session_maker
+    original_sync_session_maker = sync_session_maker
+    original_engine = engine
+
+    # 创建测试用的同步引擎
+    from sqlalchemy import create_engine
+    test_sync_engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+    )
+
+    # 在同步引擎上创建所有表
+    from app.core.base import Base
+    from sqlalchemy import text
+    with test_sync_engine.begin() as conn:
+        conn.execute(text("PRAGMA foreign_keys = ON"))
+        Base.metadata.create_all(conn)
+
+    # 创建测试用的 session makers
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+    from sqlalchemy.orm import sessionmaker
+
+    test_async_session_maker = async_sessionmaker(
+        async_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+
+    test_sync_session_maker = sessionmaker(
+        bind=test_sync_engine,
+        expire_on_commit=False,
+    )
+
+    # 替换全局 session makers 和引擎
+    import app.core.db as db_module
+    db_module.async_session_maker = test_async_session_maker
+    db_module.sync_session_maker = test_sync_session_maker
+    db_module.engine = async_engine
 
     # 创建测试应用
     app = FastAPI(redirect_slashes=False)  # 禁用自动重定向
@@ -186,8 +228,29 @@ async def async_client(db_session: AsyncSession):
 
     app.dependency_overrides[get_session] = override_get_session
 
-    # 开发模式:禁用认证
-    app.state.settings = settings
+    # 禁用认证: 创建默认测试用户
+    from app.api.deps import get_current_user
+    from app.core.security import get_password_hash
+
+    async def override_get_current_user(session: AsyncSession = Depends(get_session)):
+        # 查找或创建测试用户
+        from sqlalchemy import select
+        result = await session.execute(select(User).limit(1))
+        user = result.scalar_one_or_none()
+        if not user:
+            user = User(
+                id=str(uuid.uuid4()),
+                username="test_user",
+                email="test@example.com",
+                hashed_password=get_password_hash("test123"),
+                is_active=True,
+            )
+            session.add(user)
+            await session.commit()
+            await session.refresh(user)
+        return user
+
+    app.dependency_overrides[get_current_user] = override_get_current_user
 
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
@@ -196,3 +259,11 @@ async def async_client(db_session: AsyncSession):
 
     # 清理依赖覆盖
     app.dependency_overrides.clear()
+
+    # 恢复原始 session makers 和引擎
+    db_module.async_session_maker = original_async_session_maker
+    db_module.sync_session_maker = original_sync_session_maker
+    db_module.engine = original_engine
+
+    # 清理测试同步引擎
+    test_sync_engine.dispose()

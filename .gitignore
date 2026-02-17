@@ -101,7 +101,7 @@ ehthumbs.db
 # Local tool metadata
 # =========================
 .agent
-.claude/
+.agents
 .codex/
 .mcp.json
 .mcp-memory.json

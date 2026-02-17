@@ -3,7 +3,7 @@
 import json
 import re
 import shlex
-from typing import Any
+from typing import Any, Optional
 
 
 class CurlParser:
@@ -15,7 +15,7 @@ class CurlParser:
         self.url: str = ""
         self.headers: dict[str, str] = {}
         self.params: dict[str, str] = {}
-        self.body: dict[str, Any] | str | None = None
+        self.body: dict[str, Any] | Optional[str] = None
         self.body_type: str = "none"
         self.auth: dict[str, Any] = {"type": "none"}
 

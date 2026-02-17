@@ -24,16 +24,16 @@ export function WelcomeCards({ recentInterfaces = [], projectId }: WelcomeCardsP
   const navigate = useNavigate()
 
   const handleNewRequest = () => {
-    navigate(`/api/interfaces/new?projectId=${projectId}`)
+    navigate(`/interface-management/new?projectId=${projectId}`)
   }
 
   const handleImportCurl = () => {
     // TODO: 触发 cURL 导入弹窗
-    navigate(`/api/interfaces/new?projectId=${projectId}&mode=curl`)
+    navigate(`/interface-management/new?projectId=${projectId}&mode=curl`)
   }
 
   const handleOpenInterface = (id: number) => {
-    navigate(`/api/interfaces/${id}`)
+    navigate(`/interface-management/${id}?projectId=${projectId}`)
   }
 
   return (
@@ -137,7 +137,7 @@ export function WelcomeCards({ recentInterfaces = [], projectId }: WelcomeCardsP
             </div>
 
             <button
-              onClick={() => navigate(`/api/interfaces?projectId=${projectId}`)}
+              onClick={() => navigate(`/interface-management?projectId=${projectId}`)}
               className="mt-4 text-center w-full py-3 text-cyan-400 hover:text-cyan-300 text-sm font-medium"
             >
               查看全部接口 →

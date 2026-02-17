@@ -19,7 +19,7 @@ class TestCaseTemplate(SQLModel, table=True):
     category: Optional[str] = None  # form_submission/list_query/file_upload等
 
     # 模板内容
-    template_structure: dict[str, Any] = Field(default=dict, sa_column=Column(JSON))
+    template_structure: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON))
 
     # 统计
     usage_count: int = Field(default=0)
@@ -27,8 +27,8 @@ class TestCaseTemplate(SQLModel, table=True):
     # 元数据
     is_system: bool = Field(default=False)  # 系统模板/用户自定义
     created_by: Optional[int] = None
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Config:
         indexes = [

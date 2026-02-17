@@ -2,10 +2,11 @@
 
 按照 docs/数据库设计.md §3.17 定义
 """
-from datetime import datetime, timezone
-from typing import Optional, Dict, Any, List
 
-from sqlalchemy import ForeignKey, Index, String, Text
+import uuid
+from datetime import UTC, datetime
+
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
@@ -28,6 +29,7 @@ class GlobalParam(Base):
     __table_args__ = (
         Index("idx_global_params_class_name", "class_name"),
         Index("idx_global_params_created_by", "created_by"),
+        UniqueConstraint("class_name", "method_name", name="uq_global_params_class_method"),
     )
 
     # 主键
@@ -39,15 +41,11 @@ class GlobalParam(Base):
 
     # 代码和描述
     code: Mapped[str] = mapped_column(Text, nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # JSONB 字段（JSON 存储，SQLite 兼容）
-    parameters: Mapped[Optional[dict]] = mapped_column(
-        Text, nullable=True
-    )  # 入参释义
-    return_value: Mapped[Optional[dict]] = mapped_column(
-        Text, nullable=True
-    )  # 出参释义
+    parameters: Mapped[dict | None] = mapped_column(Text, nullable=True)  # 入参释义
+    return_value: Mapped[dict | None] = mapped_column(Text, nullable=True)  # 出参释义
 
     # 外键
     created_by: Mapped[str] = mapped_column(
@@ -57,16 +55,13 @@ class GlobalParam(Base):
     )
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False),
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
     )
 
     def __repr__(self) -> str:
         return f"<GlobalParam(id={self.id}, class_name={self.class_name}, method_name={self.method_name})>"
-
-
-# 导入 uuid
-import uuid

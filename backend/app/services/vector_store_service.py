@@ -3,7 +3,7 @@
 使用pgvector进行语义搜索
 """
 
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, select
@@ -249,7 +249,7 @@ class VectorStoreService:
 
         await self.session.commit()
 
-    async def get_knowledge_stats(self, module_name: str | None = None) -> dict[str, Any]:
+    async def get_knowledge_stats(self, module_name: Optional[str] = None) -> dict[str, Any]:
         """
         获取知识库统计信息
 

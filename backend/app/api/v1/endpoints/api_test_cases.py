@@ -2,7 +2,7 @@
 API 测试用例相关的 API 端点
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import func
@@ -30,6 +30,7 @@ from app.schemas.api_test_case import (
 from app.services.api_engine_adapter import APIEngineAdapter
 from app.services.test_result_processor import TestResultProcessor
 from app.services.yaml_generator import YAMLGenerator
+from typing import Optional
 
 router = APIRouter()
 
@@ -39,7 +40,7 @@ router = APIRouter()
 # ============================================================================
 
 
-async def get_test_case(test_case_id: int, session: AsyncSession) -> ApiTestCase:
+async def get_test_case(test_case_id: str, session: AsyncSession) -> ApiTestCase:
     """获取测试用例（辅助函数）"""
     test_case = await session.get(ApiTestCase, test_case_id)
     if not test_case:
@@ -50,7 +51,7 @@ async def get_test_case(test_case_id: int, session: AsyncSession) -> ApiTestCase
 
 
 async def verify_project_access(
-    project_id: int, current_user: User, session: AsyncSession
+    project_id: str, current_user: User, session: AsyncSession
 ) -> Project:
     """验证项目访问权限（辅助函数）"""
     project = await session.get(Project, project_id)
@@ -68,7 +69,7 @@ async def verify_project_access(
 
 @router.post("/projects/{project_id}/api-test-cases", response_model=ApiTestCaseResponse)
 async def create_api_test_case(
-    project_id: int,
+    project_id: str,
     test_case: ApiTestCaseCreate,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(deps.get_current_user),
@@ -112,11 +113,11 @@ async def create_api_test_case(
 
 @router.get("/projects/{project_id}/api-test-cases", response_model=ApiTestCaseListResponse)
 async def list_api_test_cases(
-    project_id: int,
+    project_id: str,
     page: int = 1,
     size: int = 10,
-    search: str | None = None,
-    tags: str | None = None,
+    search: Optional[str] = None,
+    tags: Optional[str] = None,
     enabled_only: bool = False,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(deps.get_current_user),
@@ -177,7 +178,7 @@ async def list_api_test_cases(
 
 @router.get("/api-test-cases/{test_case_id}", response_model=ApiTestCaseResponse)
 async def get_api_test_case(
-    test_case_id: int,
+    test_case_id: str,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(deps.get_current_user),
 ):
@@ -192,7 +193,7 @@ async def get_api_test_case(
 
 @router.put("/api-test-cases/{test_case_id}", response_model=ApiTestCaseResponse)
 async def update_api_test_case(
-    test_case_id: int,
+    test_case_id: str,
     test_case_update: ApiTestCaseUpdate,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(deps.get_current_user),
@@ -225,7 +226,7 @@ async def update_api_test_case(
         if field != "config_data":
             setattr(test_case, field, value)
 
-    test_case.updated_at = datetime.utcnow()
+    test_case.updated_at = datetime.now(timezone.utc)
 
     await session.commit()
     await session.refresh(test_case)
@@ -235,7 +236,7 @@ async def update_api_test_case(
 
 @router.delete("/api-test-cases/{test_case_id}")
 async def delete_api_test_case(
-    test_case_id: int,
+    test_case_id: str,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(deps.get_current_user),
 ):
@@ -258,7 +259,7 @@ async def delete_api_test_case(
 
 
 async def execute_test_case_background(
-    test_case_id: int, execution_request: ApiTestExecutionRequest, session: AsyncSession
+    test_case_id: str, execution_request: ApiTestExecutionRequest, session: AsyncSession
 ):
     """
     后台执行测试用例
@@ -279,7 +280,7 @@ async def execute_test_case_background(
         environment_id=execution_request.environment_id,
         status="running",
         execution_options=execution_request.execution_options,
-        started_at=datetime.utcnow(),
+        started_at=datetime.now(timezone.utc),
     )
 
     session.add(execution)
@@ -295,21 +296,22 @@ async def execute_test_case_background(
 
         # 处理结果
         processor = TestResultProcessor()
-        if execution.id is None:
+        execution_id = execution.id
+        if execution_id is None:
             raise ValueError("执行记录 ID 不存在")
-        await processor.process_result(execution.id, result, session)
+        await processor.process_result(execution_id, result, session)
 
     except Exception as e:
         # 错误处理
         execution.status = "error"
         execution.error_message = str(e)
-        execution.completed_at = datetime.utcnow()
+        execution.completed_at = datetime.now(timezone.utc)
         await session.commit()
 
 
 @router.post("/api-test-cases/{test_case_id}/execute", response_model=ApiTestExecutionResponse)
 async def execute_api_test_case(
-    test_case_id: int,
+    test_case_id: str,
     execution_request: ApiTestExecutionRequest,
     background_tasks: BackgroundTasks,
     session: AsyncSession = Depends(get_session),
@@ -378,7 +380,7 @@ async def list_test_executions(
 
 @router.get("/api-test-executions/{execution_id}", response_model=ApiTestExecutionDetail)
 async def get_execution_detail(
-    execution_id: int,
+    execution_id: str,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(deps.get_current_user),
 ):
@@ -401,7 +403,7 @@ async def get_execution_detail(
     "/api-test-executions/{execution_id}/steps", response_model=list[ApiTestStepResultResponse]
 )
 async def get_execution_step_results(
-    execution_id: int,
+    execution_id: str,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(deps.get_current_user),
 ):

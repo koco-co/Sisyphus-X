@@ -2,7 +2,7 @@
 文档中心 API 端点
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,6 +11,7 @@ from sqlmodel import col, func, select
 from app.core.db import get_session
 from app.models.document import Document, DocumentVersion
 from app.schemas.pagination import PageResponse
+from typing import Optional
 
 router = APIRouter()
 
@@ -19,8 +20,8 @@ router = APIRouter()
 async def list_documents(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    project_id: int | None = Query(None),
-    doc_type: str | None = Query(None),
+    project_id: Optional[int] = Query(None),
+    doc_type: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """获取文档列表"""
@@ -50,7 +51,7 @@ async def list_documents(
 @router.get("/tree")
 async def get_document_tree(
     project_id: int = Query(...),
-    doc_type: str | None = Query(None),
+    doc_type: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """获取文档树形结构"""
@@ -125,7 +126,7 @@ async def update_document(
         if hasattr(document, key) and key != "change_note":
             setattr(document, key, value)
 
-    document.updated_at = datetime.utcnow()
+    document.updated_at = datetime.now(timezone.utc)
     await session.commit()
     await session.refresh(document)
     return document
@@ -188,7 +189,7 @@ async def restore_document_version(
 
     # 恢复内容
     document.content = doc_version.content
-    document.updated_at = datetime.utcnow()
+    document.updated_at = datetime.now(timezone.utc)
 
     await session.commit()
     return {"restored_to_version": version}
@@ -197,7 +198,7 @@ async def restore_document_version(
 @router.post("/ai/search")
 async def ai_search_documents(
     query: str = Body(..., embed=True),
-    project_id: int | None = Body(None, embed=True),
+    project_id: Optional[int] = Body(None, embed=True),
     session: AsyncSession = Depends(get_session),
 ):
     """AI文档检索"""

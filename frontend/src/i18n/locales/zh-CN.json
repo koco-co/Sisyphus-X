@@ -81,6 +81,7 @@
         "operationDocs": "操作文档",
         "requirementDocs": "需求文档",
         "systemSettings": "系统设置",
+        "environments": "环境管理",
         "globalParams": "全局参数",
         "notifications": "消息通知",
         "accountManagement": "账号管理",

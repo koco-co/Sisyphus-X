@@ -6,7 +6,7 @@
  * 原始组件位置: frontend/src/pages/api-automation/ProjectManagement.tsx
  */
 
-import React, { memo, useCallback } from 'react'
+import { memo, useCallback } from 'react'
 import { MoreVertical, Clock, User } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -155,7 +155,7 @@ export const ProjectCard = memo<ProjectCardProps>(({ project, onDelete, onEdit }
               <MoreVertical className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent>
             <DropdownMenuItem onClick={() => { handleEdit() }}>
               编辑
             </DropdownMenuItem>
@@ -227,14 +227,10 @@ export const OptimizedProjectCard = memo(ProjectCard, arePropsEqual)
 /**
  * 在列表中使用优化后的组件
  */
-import { useState } from 'react'
-
 export const OptimizedProjectList = ({ projects }: { projects: Project[] }) => {
-  const [editingId, setEditingId] = useState<number | null>(null)
-
   // 使用 useCallback 稳定回调函数
   const handleEdit = useCallback((id: number) => {
-    setEditingId(id)
+    console.log('Edit:', id)
   }, [])
 
   const handleDelete = useCallback((id: number) => {

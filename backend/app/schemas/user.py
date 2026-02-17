@@ -49,8 +49,7 @@ class UserResponse(UserBase):
     # OAuth 字段(仅展示)
     oauth_provider: Optional[str] = Field(None, description="OAuth 提供商")
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class UserWithToken(UserResponse):

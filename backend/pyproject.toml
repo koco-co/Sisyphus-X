@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
-    "sqlmodel>=0.0.22",
+    "sqlalchemy>=2.0.0",
     "alembic>=1.14.0",
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
@@ -26,6 +26,8 @@ dependencies = [
     "cryptography>=43.0.0",
     "aiosqlite>=0.20.0",
     "asyncpg>=0.30.0",
+    "pymysql>=1.1.0",
+    "psycopg2-binary>=2.9.0",
     "python-multipart>=0.0.9",
     "email-validator>=2.0.0",
     "minio>=7.2.20",
@@ -58,6 +60,9 @@ dev = [
     "ruff>=0.15.0",
     "pyright>=1.1.0",
     "rich>=13.0.0",
+    "pytest-cov>=7.0.0",
+    "requests>=2.32.5",
+    "websockets>=16.0",
 ]
 
 # Ruff配置
@@ -86,5 +91,19 @@ reportMissingTypeStubs = false
 # Pytest配置
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["../tests"]
+testpaths = ["tests"]
 python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "api: API tests",
+    "slow: Slow running tests",
+    "asyncio: Async tests",
+]

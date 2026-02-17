@@ -9,23 +9,38 @@
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
+interface StepParams {
+  url?: string
+  method?: string
+  body?: Record<string, unknown>
+  sql?: string
+  operation_type?: string
+  wait_type?: string
+  seconds?: number
+  keyword_name?: string
+  keyword_params?: Record<string, unknown>
+  [key: string]: unknown
+}
+
+interface Step {
+  id: string
+  type: string
+  name: string
+  params: StepParams
+  validations?: Array<Record<string, unknown>>
+}
+
 interface StepItemProps {
-  step: {
-    id: string
-    type: string
-    name: string
-    params: Record<string, any>
-    validations?: Array<Record<string, any>>
-  }
-  onChange: (step: any) => void
+  step: Step
+  onChange: (step: Step) => void
 }
 
 export function StepItem({ step, onChange }: StepItemProps) {
-  const updateStep = (updates: Partial<typeof step>) => {
+  const updateStep = (updates: Partial<Step>) => {
     onChange({ ...step, ...updates })
   }
 
-  const updateParam = (key: string, value: any) => {
+  const updateParam = (key: string, value: unknown) => {
     onChange({
       ...step,
       params: { ...step.params, [key]: value }
@@ -40,7 +55,7 @@ export function StepItem({ step, onChange }: StepItemProps) {
           <label className="block text-sm font-medium mb-1">步骤类型</label>
           <Select
             value={step.type}
-            onValueChange={(value) => updateStep({ type: value })}
+            onChange={(e) => updateStep({ type: e.target.value })}
           >
             <SelectTrigger>
               <SelectValue />
@@ -82,7 +97,7 @@ export function StepItem({ step, onChange }: StepItemProps) {
               <label className="block text-sm font-medium mb-1">请求方法</label>
               <Select
                 value={step.params.method || 'GET'}
-                onValueChange={(value) => updateParam('method', value)}
+                onChange={(e) => updateParam('method', e.target.value)}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue />
@@ -114,7 +129,7 @@ export function StepItem({ step, onChange }: StepItemProps) {
               <label className="block text-sm font-medium mb-1">操作类型</label>
               <Select
                 value={step.params.operation_type || 'query'}
-                onValueChange={(value) => updateParam('operation_type', value)}
+                onChange={(e) => updateParam('operation_type', e.target.value)}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue />
@@ -134,7 +149,7 @@ export function StepItem({ step, onChange }: StepItemProps) {
               <label className="block text-sm font-medium mb-1">等待类型</label>
               <Select
                 value={step.params.wait_type || 'fixed'}
-                onValueChange={(value) => updateParam('wait_type', value)}
+                onChange={(e) => updateParam('wait_type', e.target.value)}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue />

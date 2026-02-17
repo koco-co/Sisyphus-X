@@ -1,0 +1,31 @@
+# 测试覆盖率报告
+htmlcov/
+.coverage
+.coverage.*
+*.cover
+
+# Pytest 缓存
+.pytest_cache/
+__pycache__/
+
+# 测试数据库
+*.db
+*.db-journal
+
+# 测试日志
+test_logs/
+
+# 测试临时文件
+temp/
+tmp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

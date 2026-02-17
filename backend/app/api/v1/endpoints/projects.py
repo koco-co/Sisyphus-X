@@ -1,13 +1,23 @@
-from datetime import datetime
+"""项目管理 API 端点"""
+import uuid
+from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, func, select
+from sqlmodel import col
 
-from app.api import deps
+from app.api.deps import get_current_user, require_user_id
 from app.core.db import get_session
 from app.core.security import get_password_hash
+from app.models.env_variable import EnvVariable
 from app.models.project import Project, ProjectDataSource, ProjectEnvironment
+from app.models.user import User
+from app.schemas.env_variable import (
+    EnvVariableCreate,
+    EnvVariableResponse,
+    EnvVariableUpdate,
+)
 from app.schemas.environment import (
     DataSourceCreate,
     DataSourceResponse,
@@ -19,7 +29,7 @@ from app.schemas.environment import (
     EnvironmentUpdate,
 )
 from app.schemas.pagination import PageResponse
-from app.schemas.project import ProjectCreate, ProjectUpdate
+from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 
 router = APIRouter()
 
@@ -27,109 +37,229 @@ router = APIRouter()
 # ============================================
 # Project CRUD
 # ============================================
-@router.get("/", response_model=PageResponse[Project])
-async def read_projects(
-    page: int = Query(1, ge=1),
-    size: int = Query(10, ge=1, le=100),
-    name: str | None = Query(None, description="Project name search term"),
+
+
+@router.get("/", response_model=PageResponse[ProjectResponse])
+async def list_projects(
+    page: int = Query(1, ge=1, description="页码"),
+    size: int = Query(10, ge=1, le=100, description="每页条数"),
+    search: str | None = Query(None, description="项目名称搜索关键词"),
     session: AsyncSession = Depends(get_session),
-):
-    # Base query
+) -> PageResponse[ProjectResponse]:
+    """获取项目列表(支持搜索和分页)"""
+    # 构建基础查询
     query = select(Project)
-    if name:
-        query = query.where(col(Project.name).contains(name))
 
-    # Count
+    # 搜索过滤
+    if search:
+        query = query.where(col(Project.name).contains(search))
+
+    # 获取总数
     count_statement = select(func.count()).select_from(query.subquery())
-    total = int((await session.execute(count_statement)).scalar_one() or 0)
+    total_result = await session.execute(count_statement)
+    total = int(total_result.scalar_one() or 0)
 
-    # Pagination
+    # 分页查询
     skip = (page - 1) * size
     statement = query.order_by(col(Project.updated_at).desc()).offset(skip).limit(size)
     result = await session.execute(statement)
-    projects = list(result.scalars().all())
+    projects = result.scalars().all()
 
-    # Calculate pages
-    pages = (total + size - 1) // size
+    # 计算总页数
+    pages = (total + size - 1) // size if total > 0 else 1
 
-    return PageResponse(items=projects, total=total, page=page, size=size, pages=pages)
-
-
-@router.post("/", response_model=Project)
-async def create_project(
-    project: ProjectCreate,
-    session: AsyncSession = Depends(get_session),
-    current_user=Depends(deps.get_current_user),
-):
-    """创建新项目
-
-    - **name**: 项目名称，1-50个字符
-    - **key**: 项目标识
-    - **description**: 项目描述，最多200个字符
-    """
-    # Auto-assign owner from current user
-    new_project = Project(
-        name=project.name.strip(),
-        key=project.key.strip(),
-        description=project.description.strip() if project.description else None,
-        owner=current_user.username,
+    return PageResponse(
+        items=list(projects),
+        total=total,
+        page=page,
+        size=size,
+        pages=pages,
     )
 
-    session.add(new_project)
-    await session.commit()
-    await session.refresh(new_project)
-    return new_project
 
+@router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
+async def create_project(
+    project_in: ProjectCreate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> ProjectResponse:
+    """创建新项目
 
-@router.put("/{project_id}", response_model=Project)
-async def update_project(
-    project_id: int, project_update: ProjectUpdate, session: AsyncSession = Depends(get_session)
-):
-    """更新项目信息
+    Args:
+        project_in: 项目创建请求
+        current_user: 当前登录用户
+        session: 数据库会话
 
-    - **name**: 项目名称，1-50个字符
-    - **description**: 项目描述，最多200个字符
+    Returns:
+        创建的项目信息
+
+    Raises:
+        HTTPException 409: 项目名称已存在
     """
-    project = await session.get(Project, project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="项目不存在")
+    user_id = require_user_id(current_user)
 
-    # Update fields
-    update_data = project_update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        if hasattr(project, key) and key not in ["id", "created_at", "updated_at"]:
-            setattr(project, key, value)
+    # 检查项目名称是否重复
+    existing_statement = select(Project).where(
+        col(Project.created_by) == user_id, col(Project.name) == project_in.name
+    )
+    existing_result = await session.execute(existing_statement)
+    if existing_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="该项目名称已存在",
+        )
 
-    project.updated_at = datetime.utcnow()
+    # 创建新项目
+    # 自动生成项目唯一标识 key (使用 UUID 去掉连字符)
+    project_key = f"PROJ-{uuid.uuid4().hex[:8].upper()}"
+    project = Project(
+        id=str(uuid.uuid4()),
+        name=project_in.name,
+        key=project_key,
+        description=project_in.description,
+        created_by=user_id,
+    )
     session.add(project)
     await session.commit()
     await session.refresh(project)
-    return project
+
+    return ProjectResponse.model_validate(project)
 
 
-@router.get("/{project_id}", response_model=Project)
-async def read_project(project_id: int, session: AsyncSession = Depends(get_session)):
+@router.get("/{project_id}", response_model=ProjectResponse)
+async def get_project(
+    project_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> ProjectResponse:
+    """获取项目详情
+
+    Args:
+        project_id: 项目 ID (UUID)
+        session: 数据库会话
+
+    Returns:
+        项目详细信息
+
+    Raises:
+        HTTPException 404: 项目不存在
+    """
     project = await session.get(Project, project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return project
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在",
+        )
+
+    return ProjectResponse.model_validate(project)
 
 
-@router.delete("/{project_id}")
-async def delete_project(project_id: int, session: AsyncSession = Depends(get_session)):
+@router.put("/{project_id}", response_model=ProjectResponse)
+async def update_project(
+    project_id: str,
+    project_in: ProjectUpdate,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+) -> ProjectResponse:
+    """更新项目信息
+
+    Args:
+        project_id: 项目 ID (UUID)
+        project_in: 项目更新请求
+        current_user: 当前登录用户
+        session: 数据库会话
+
+    Returns:
+        更新后的项目信息
+
+    Raises:
+        HTTPException 404: 项目不存在
+        HTTPException 409: 项目名称已存在
+    """
+    user_id = require_user_id(current_user)
+
+    # 获取项目
     project = await session.get(Project, project_id)
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在",
+        )
+
+    # 检查名称是否重复(如果修改了名称)
+    if project_in.name and project_in.name != project.name:
+        existing_statement = select(Project).where(
+            col(Project.created_by) == user_id,
+            col(Project.name) == project_in.name,
+            col(Project.id) != project_id,
+        )
+        existing_result = await session.execute(existing_statement)
+        if existing_result.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="该项目名称已存在",
+            )
+
+    # 更新字段
+    update_data = project_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(project, field, value)
+
+    project.updated_at = datetime.now(timezone.utc)
+    session.add(project)
+    await session.commit()
+    await session.refresh(project)
+
+    return ProjectResponse.model_validate(project)
+
+
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_project(
+    project_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> None:
+    """删除项目
+
+    Args:
+        project_id: 项目 ID (UUID)
+        session: 数据库会话
+
+    Raises:
+        HTTPException 404: 项目不存在
+        HTTPException 403: 项目下存在关联数据
+
+    注意:
+        - 如果项目下存在场景、接口等关联数据,将返回 403 错误
+        - 删除操作是级联的,会删除所有关联数据
+    """
+    project = await session.get(Project, project_id)
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="项目不存在",
+        )
+
+    # TODO: 检查项目下是否存在关联数据
+    # 如果存在,返回 403 错误
+    # from app.models.interface import Interface
+    # from app.models.scenario import Scenario
+    # interface_exists = await session.execute(
+    #     select(Interface).where(col(Interface.project_id) == project_id).limit(1)
+    # )
+    # if interface_exists.scalar_one_or_none():
+    #     raise HTTPException(
+    #         status_code=status.HTTP_403_FORBIDDEN,
+    #         detail="项目下存在关联数据,无法删除",
+    #     )
+
     await session.delete(project)
     await session.commit()
-    return {"message": "Project deleted"}
 
 
 # ============================================
 # Environment CRUD
 # ============================================
 @router.get("/{project_id}/environments", response_model=list[EnvironmentResponse])
-async def list_environments(project_id: int, session: AsyncSession = Depends(get_session)):
+async def list_environments(project_id: str, session: AsyncSession = Depends(get_session)):
     """获取项目的所有环境配置"""
     statement = select(ProjectEnvironment).where(ProjectEnvironment.project_id == project_id)
     result = await session.execute(statement)
@@ -138,7 +268,7 @@ async def list_environments(project_id: int, session: AsyncSession = Depends(get
 
 @router.post("/{project_id}/environments", response_model=EnvironmentResponse)
 async def create_environment(
-    project_id: int, env: EnvironmentCreate, session: AsyncSession = Depends(get_session)
+    project_id: str, env: EnvironmentCreate, session: AsyncSession = Depends(get_session)
 ):
     """创建新环境配置"""
     # 检查项目是否存在
@@ -161,7 +291,7 @@ async def create_environment(
 
 @router.get("/{project_id}/environments/{env_id}", response_model=EnvironmentResponse)
 async def get_environment(
-    project_id: int, env_id: int, session: AsyncSession = Depends(get_session)
+    project_id: str, env_id: str, session: AsyncSession = Depends(get_session)
 ):
     """获取单个环境配置"""
     env = await session.get(ProjectEnvironment, env_id)
@@ -172,8 +302,8 @@ async def get_environment(
 
 @router.put("/{project_id}/environments/{env_id}", response_model=EnvironmentResponse)
 async def update_environment(
-    project_id: int,
-    env_id: int,
+    project_id: str,
+    env_id: str,
     env_update: EnvironmentUpdate,
     session: AsyncSession = Depends(get_session),
 ):
@@ -185,7 +315,7 @@ async def update_environment(
     update_data = env_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(env, key, value)
-    env.updated_at = datetime.utcnow()
+    env.updated_at = datetime.now(timezone.utc)
 
     session.add(env)
     await session.commit()
@@ -195,7 +325,7 @@ async def update_environment(
 
 @router.delete("/{project_id}/environments/{env_id}")
 async def delete_environment(
-    project_id: int, env_id: int, session: AsyncSession = Depends(get_session)
+    project_id: str, env_id: str, session: AsyncSession = Depends(get_session)
 ):
     """删除环境配置"""
     env = await session.get(ProjectEnvironment, env_id)
@@ -209,7 +339,7 @@ async def delete_environment(
 
 @router.post("/{project_id}/environments/{env_id}/copy", response_model=EnvironmentResponse)
 async def copy_environment(
-    project_id: int, env_id: int, session: AsyncSession = Depends(get_session)
+    project_id: str, env_id: str, session: AsyncSession = Depends(get_session)
 ):
     """深拷贝环境配置"""
     env = await session.get(ProjectEnvironment, env_id)
@@ -234,7 +364,7 @@ async def copy_environment(
 # DataSource CRUD
 # ============================================
 @router.get("/{project_id}/datasources", response_model=list[DataSourceResponse])
-async def list_datasources(project_id: int, session: AsyncSession = Depends(get_session)):
+async def list_datasources(project_id: str, session: AsyncSession = Depends(get_session)):
     """获取项目的所有数据源"""
     statement = select(ProjectDataSource).where(ProjectDataSource.project_id == project_id)
     result = await session.execute(statement)
@@ -243,7 +373,7 @@ async def list_datasources(project_id: int, session: AsyncSession = Depends(get_
 
 @router.post("/{project_id}/datasources", response_model=DataSourceResponse)
 async def create_datasource(
-    project_id: int, ds: DataSourceCreate, session: AsyncSession = Depends(get_session)
+    project_id: str, ds: DataSourceCreate, session: AsyncSession = Depends(get_session)
 ):
     """创建新数据源"""
     from datetime import datetime
@@ -260,7 +390,7 @@ async def create_datasource(
     # 尝试测试连接以确定初始状态
     status = "unchecked"
     error_msg = None
-    last_test_at = datetime.utcnow()
+    last_test_at = datetime.now(timezone.utc)
 
     if ds.username and ds.password:
         success, message = await test_mysql_connection(
@@ -296,8 +426,8 @@ async def create_datasource(
 
 @router.put("/{project_id}/datasources/{ds_id}", response_model=DataSourceResponse)
 async def update_datasource(
-    project_id: int,
-    ds_id: int,
+    project_id: str,
+    ds_id: str,
     ds_update: DataSourceUpdate,
     session: AsyncSession = Depends(get_session),
 ):
@@ -326,7 +456,7 @@ async def update_datasource(
 
     for key, value in update_data.items():
         setattr(ds, key, value)
-    ds.updated_at = datetime.utcnow()
+    ds.updated_at = datetime.now(timezone.utc)
 
     # 如果连接配置发生变化，重新测试连接
     if should_retest and ds.username and ds.password_hash:
@@ -339,7 +469,30 @@ async def update_datasource(
             # 这里简化处理：只在提供了新密码或相关配置变更时标记为unchecked
             ds.status = "unchecked"
             ds.error_msg = None
-            ds.last_test_at = datetime.utcnow()
+            ds.last_test_at = datetime.now(timezone.utc)
+
+    session.add(ds)
+    await session.commit()
+    await session.refresh(ds)
+    return ds
+
+
+@router.patch("/{project_id}/datasources/{ds_id}", response_model=DataSourceResponse)
+async def patch_datasource(
+    project_id: str,
+    ds_id: str,
+    ds_patch: DataSourceUpdate,
+    session: AsyncSession = Depends(get_session),
+):
+    """部分更新数据源（用于启用/禁用等操作）"""
+    ds = await session.get(ProjectDataSource, ds_id)
+    if not ds or ds.project_id != project_id:
+        raise HTTPException(status_code=404, detail="DataSource not found")
+
+    update_data = ds_patch.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(ds, key, value)
+    ds.updated_at = datetime.now(timezone.utc)
 
     session.add(ds)
     await session.commit()
@@ -349,7 +502,7 @@ async def update_datasource(
 
 @router.delete("/{project_id}/datasources/{ds_id}")
 async def delete_datasource(
-    project_id: int, ds_id: int, session: AsyncSession = Depends(get_session)
+    project_id: str, ds_id: str, session: AsyncSession = Depends(get_session)
 ):
     """删除数据源"""
     ds = await session.get(ProjectDataSource, ds_id)
@@ -391,3 +544,136 @@ async def test_datasource_connection(test_req: DataSourceTestRequest):
     )
 
     return DataSourceTestResponse(success=success, message=message)
+
+
+# ============================================
+# Environment Variable CRUD
+# ============================================
+@router.get("/{project_id}/environments/{env_id}/variables", response_model=list[EnvVariableResponse])
+async def list_env_variables(
+    project_id: str, env_id: str, session: AsyncSession = Depends(get_session)
+):
+    """获取环境的所有变量"""
+    # 验证环境是否存在
+    env = await session.get(ProjectEnvironment, env_id)
+    if not env or env.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Environment not found")
+
+    statement = select(EnvVariable).where(EnvVariable.environment_id == env_id)
+    result = await session.execute(statement)
+    return result.scalars().all()
+
+
+@router.post("/{project_id}/environments/{env_id}/variables", response_model=EnvVariableResponse)
+async def create_env_variable(
+    project_id: str,
+    env_id: str,
+    data: EnvVariableCreate,
+    session: AsyncSession = Depends(get_session),
+):
+    """创建环境变量"""
+    # 验证环境是否存在
+    env = await session.get(ProjectEnvironment, env_id)
+    if not env or env.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Environment not found")
+
+    # 检查变量名是否已存在
+    existing = await session.execute(
+        select(EnvVariable).where(
+            EnvVariable.environment_id == env_id,
+            EnvVariable.name == data.name,
+            EnvVariable.is_global == data.is_global
+        )
+    )
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Variable name already exists")
+
+    var = EnvVariable(
+        id=str(uuid.uuid4()),
+        environment_id=env_id,
+        name=data.name,
+        value=data.value,
+        description=data.description,
+        is_global=data.is_global,
+    )
+    session.add(var)
+    await session.commit()
+    await session.refresh(var)
+    return var
+
+
+@router.get("/{project_id}/environments/{env_id}/variables/{var_id}", response_model=EnvVariableResponse)
+async def get_env_variable(
+    project_id: str, env_id: str, var_id: str, session: AsyncSession = Depends(get_session)
+):
+    """获取单个环境变量"""
+    var = await session.get(EnvVariable, var_id)
+    if not var or var.environment_id != env_id:
+        raise HTTPException(status_code=404, detail="Variable not found")
+
+    # 验证环境是否存在
+    env = await session.get(ProjectEnvironment, env_id)
+    if not env or env.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Environment not found")
+
+    return var
+
+
+@router.put("/{project_id}/environments/{env_id}/variables/{var_id}", response_model=EnvVariableResponse)
+async def update_env_variable(
+    project_id: str,
+    env_id: str,
+    var_id: str,
+    data: EnvVariableUpdate,
+    session: AsyncSession = Depends(get_session),
+):
+    """更新环境变量"""
+    var = await session.get(EnvVariable, var_id)
+    if not var or var.environment_id != env_id:
+        raise HTTPException(status_code=404, detail="Variable not found")
+
+    # 验证环境是否存在
+    env = await session.get(ProjectEnvironment, env_id)
+    if not env or env.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Environment not found")
+
+    # 如果更新name，检查是否冲突
+    if data.name and data.name != var.name:
+        existing = await session.execute(
+            select(EnvVariable).where(
+                EnvVariable.environment_id == env_id,
+                EnvVariable.name == data.name,
+                EnvVariable.is_global == (data.is_global if data.is_global is not None else var.is_global)
+            )
+        )
+        if existing.scalar_one_or_none():
+            raise HTTPException(status_code=400, detail="Variable name already exists")
+
+    update_data = data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(var, key, value)
+    var.updated_at = datetime.now(timezone.utc)
+
+    session.add(var)
+    await session.commit()
+    await session.refresh(var)
+    return var
+
+
+@router.delete("/{project_id}/environments/{env_id}/variables/{var_id}")
+async def delete_env_variable(
+    project_id: str, env_id: str, var_id: str, session: AsyncSession = Depends(get_session)
+):
+    """删除环境变量"""
+    var = await session.get(EnvVariable, var_id)
+    if not var or var.environment_id != env_id:
+        raise HTTPException(status_code=404, detail="Variable not found")
+
+    # 验证环境是否存在
+    env = await session.get(ProjectEnvironment, env_id)
+    if not env or env.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Environment not found")
+
+    await session.delete(var)
+    await session.commit()
+    return {"message": "Variable deleted"}

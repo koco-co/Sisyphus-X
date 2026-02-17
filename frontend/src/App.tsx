@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { SidebarProvider } from '@/contexts/SidebarContext'
 import { ToastProvider } from '@/components/ui/Toast'
+import { Toaster } from 'sonner'
 import AppLayout from '@/components/layout/AppLayout'
 import Dashboard from '@/pages/Dashboard'
 import InterfaceManagementPage from '@/pages/interface-management'
@@ -20,6 +21,12 @@ import RequirementClarification from '@/pages/functional-test/RequirementClarifi
 import TestPointManagement from '@/pages/functional-test/TestPointManagement'
 import TestCaseManagement from '@/pages/functional-test/TestCaseManagement'
 import GenerateTestCases from '@/pages/functional-test/GenerateTestCases'
+import GlobalParamsPage from '@/pages/global-params'
+import EnvironmentManagement from '@/pages/environments/index'
+import KeywordsPage from '@/pages/keywords'
+import ProjectManagement from '@/pages/api-automation/ProjectManagement'
+import ProjectSettings from '@/pages/api-automation/ProjectSettings'
+import DatabaseConfigList from '@/pages/api-automation/DatabaseConfigList'
 import '@/i18n'
 
 const queryClient = new QueryClient({
@@ -67,9 +74,10 @@ function AppRoutes() {
         <Route path="/" element={<Dashboard />} />
 
         {/* 接口管理模块 */}
-        <Route path="/api/interfaces" element={<InterfaceManagementPage />} />
-        <Route path="/api/interfaces/new" element={<InterfaceManagementPage />} />
-        <Route path="/api/interfaces/:id" element={<InterfaceManagementPage />} />
+        {/* ⚠️ 重要: 更具体的路由必须在前面,否则会被部分匹配 */}
+        <Route path="/interface-management/new" element={<InterfaceManagementPage key="interface-new" />} />
+        <Route path="/interface-management/:id" element={<InterfaceManagementPage />} />
+        <Route path="/interface-management" element={<InterfaceManagementPage key="interface-list" />} />
 
         {/* 场景编排 */}
         <Route path="/scenarios" element={<ScenarioListPage />} />
@@ -93,6 +101,20 @@ function AppRoutes() {
         <Route path="/functional-test/test-points/:requirementId" element={<TestPointManagement />} />
         <Route path="/functional-test/test-cases/:requirementId" element={<TestCaseManagement />} />
         <Route path="/functional-test/test-cases/generate" element={<GenerateTestCases />} />
+
+        {/* 全局参数管理 */}
+        <Route path="/global-params" element={<GlobalParamsPage />} />
+
+        {/* 环境管理 */}
+        <Route path="/environments" element={<EnvironmentManagement />} />
+
+        {/* 关键字配置 */}
+        <Route path="/keywords" element={<KeywordsPage />} />
+
+        {/* API 自动化模块 */}
+        <Route path="/api/projects" element={<ProjectManagement />} />
+        <Route path="/api/projects/:projectId/settings" element={<ProjectSettings />} />
+        <Route path="/api/projects/:projectId/database-configs" element={<DatabaseConfigList />} />
       </Route>
     </Routes>
   )
@@ -107,6 +129,7 @@ function App() {
             <BrowserRouter>
               <AppRoutes />
             </BrowserRouter>
+            <Toaster position="top-right" theme="dark" richColors />
           </ToastProvider>
         </AuthProvider>
       </ThemeProvider>

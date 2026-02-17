@@ -4,6 +4,7 @@ import logging
 
 from rich.console import Console
 from rich.logging import RichHandler
+from typing import Optional
 
 console = Console()
 
@@ -11,7 +12,7 @@ console = Console()
 def setup_rich_logger(
     name: str = "sisyphus",
     level: int = logging.INFO,
-    log_file: str | None = None,
+    log_file: Optional[str] = None,
 ) -> logging.Logger:
     """
     设置 Rich 日志记录器

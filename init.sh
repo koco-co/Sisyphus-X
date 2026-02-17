@@ -1,9 +1,12 @@
 #!/bin/bash
 # Sisyphus-X 一键启动脚本
-# 版本: v1.0.0
-# 更新时间: 2026-02-15
+# 版本: v1.1.0
+# 更新时间: 2026-02-17
+# 改进: 增强错误处理和环境检查
 
 set -e  # 遇到错误立即退出
+set -u  # 使用未定义变量时报错
+set -o pipefail  # 管道命令失败时退出
 
 # 颜色输出
 RED='\033[0;31m'
@@ -28,6 +31,27 @@ log_warning() {
 log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
+
+# 错误处理函数
+error_handler() {
+    local line_number=$1
+    local error_code=$2
+    log_error "脚本在第 $line_number 行出错 (退出码: $error_code)"
+    log_error "请查看日志文件获取详细信息:"
+    log_error "  - logs/init.log"
+    log_error "  - logs/backend.log"
+    log_error "  - logs/frontend.log"
+    log_error ""
+    log_error "常见问题排查:"
+    log_error "1. 确保所有依赖已安装 (Docker, Node.js, Python, uv)"
+    log_error "2. 确保端口 8000 和 5173 未被占用"
+    log_error "3. 检查 backend/.env 配置是否正确"
+    log_error "4. 查看日志文件获取详细错误信息"
+    exit $error_code
+}
+
+# 设置错误陷阱
+trap 'error_handler ${LINENO} $?' ERR
 
 # 检查依赖
 check_dependencies() {
@@ -64,6 +88,20 @@ check_dependencies() {
         exit 1
     fi
     log_success "uv 已安装: $(uv --version)"
+
+    # 检查 uvicorn 是否可用 (在 backend 目录中检查)
+    log_info "检查 uvicorn 可用性..."
+    cd backend
+    if ! uv run uvicorn --help &> /dev/null; then
+        log_warning "uvicorn 未安装,正在安装..."
+        if ! uv add uvicorn[standard] 2>&1 | tee -a ../logs/init.log; then
+            log_error "uvicorn 安装失败"
+            cd ..
+            exit 1
+        fi
+    fi
+    cd ..
+    log_success "uvicorn 可用"
 
     # 确保在项目根目录
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -117,28 +155,72 @@ init_backend() {
 
     cd backend
 
+    # 检查 pyproject.toml 是否存在
+    if [ ! -f "pyproject.toml" ]; then
+        log_error "backend/pyproject.toml 文件不存在"
+        log_error "请确保在正确的项目目录"
+        cd ..
+        exit 1
+    fi
+
     # 检查 .env 文件
     if [ ! -f ".env" ]; then
         log_warning "backend/.env 文件不存在,从 .env.example 复制..."
         if [ -f ".env.example" ]; then
             cp .env.example .env
-            log_info "请编辑 backend/.env 配置数据库连接等"
+            log_info "已创建 backend/.env 文件"
         else
             log_error ".env.example 文件不存在"
+            cd ..
             exit 1
         fi
     fi
 
     # 安装依赖 (使用 uv)
     log_info "安装 Python 依赖..."
-    uv sync
+    if ! uv sync 2>&1 | tee -a ../logs/init.log; then
+        log_error "依赖安装失败,请查看日志: logs/init.log"
+        cd ..
+        exit 1
+    fi
 
     # 运行数据库迁移
     log_info "运行数据库迁移..."
 
-    # 直接使用完整架构迁移（避免多head问题）
-    log_info "应用完整数据库架构..."
-    uv run alembic upgrade 999_complete
+    # 保存当前迁移状态
+    CURRENT=$(uv run alembic current 2>&1 | grep -oE "[a-f0-9]{13}|[a-z_]+")
+
+    # 应用所有数据库迁移 (使用 heads 以支持多个分支)
+    log_info "应用数据库迁移 (使用 heads)..."
+    MIGRATION_OUTPUT=$(uv run alembic upgrade heads 2>&1)
+    echo "$MIGRATION_OUTPUT" | tee -a ../logs/init.log
+
+    if [ $? -ne 0 ]; then
+        log_warning "数据库迁移失败,这可能是因为数据库状态不一致"
+
+        # 检查是否是表已存在的错误
+        if echo "$MIGRATION_OUTPUT" | grep -q "already exists"; then
+            log_warning "检测到表已存在错误,尝试标记所有迁移为已完成..."
+            # 直接标记所有 head
+            uv run alembic stamp heads >> ../logs/init.log 2>&1
+            if [ $? -eq 0 ]; then
+                log_success "已标记所有迁移为已完成"
+            else
+                log_error "标记迁移失败,请查看日志: logs/init.log"
+                cd ..
+                exit 1
+            fi
+        else
+            log_error "数据库迁移失败,请查看日志: logs/init.log"
+            log_error "提示: 如果迁移失败,可以尝试重置数据库:"
+            log_error "  删除 PostgreSQL 数据库并重新创建"
+            log_error "  或者: cd backend && uv run alembic stamp heads"
+            cd ..
+            exit 1
+        fi
+    else
+        log_success "数据库迁移完成"
+    fi
 
     cd ..
     log_success "后端服务初始化完成"
@@ -157,20 +239,38 @@ start_backend() {
         return
     fi
 
+    # 检查必要文件是否存在
+    if [ ! -f "app/main.py" ]; then
+        log_error "backend/app/main.py 文件不存在"
+        log_error "请确保在正确的目录运行此脚本"
+        cd ..
+        exit 1
+    fi
+
+    # 清空旧日志
+    > ../logs/backend.log
+
     # 后台启动后端服务
+    log_info "执行命令: uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
     nohup uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000 > ../logs/backend.log 2>&1 &
     BACKEND_PID=$!
     echo $BACKEND_PID > ../logs/backend.pid
 
     # 等待后端启动
-    log_info "等待后端服务启动..."
+    log_info "等待后端服务启动 (PID: $BACKEND_PID)..."
     sleep 5
 
     # 检查后端是否启动成功
     if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null 2>&1; then
         log_success "后端服务启动成功 (PID: $BACKEND_PID)"
+        # 显示最后几行日志以确认启动
+        log_info "后端启动日志:"
+        tail -3 ../logs/backend.log | sed 's/^/  /'
     else
         log_error "后端服务启动失败,请查看日志: logs/backend.log"
+        log_error "最后10行日志:"
+        tail -10 ../logs/backend.log | sed 's/^/  /'
+        cd ..
         exit 1
     fi
 
@@ -183,10 +283,22 @@ init_frontend() {
 
     cd frontend
 
+    # 检查 package.json 是否存在
+    if [ ! -f "package.json" ]; then
+        log_error "frontend/package.json 文件不存在"
+        log_error "请确保在正确的项目目录"
+        cd ..
+        exit 1
+    fi
+
     # 检查 node_modules
     if [ ! -d "node_modules" ]; then
         log_info "安装前端依赖..."
-        npm install
+        if ! npm install 2>&1 | tee -a ../logs/init.log; then
+            log_error "前端依赖安装失败,请查看日志: logs/init.log"
+            cd ..
+            exit 1
+        fi
     fi
 
     cd ..
@@ -206,20 +318,38 @@ start_frontend() {
         return
     fi
 
+    # 检查必要文件是否存在
+    if [ ! -f "package.json" ]; then
+        log_error "frontend/package.json 文件不存在"
+        log_error "请确保在正确的目录运行此脚本"
+        cd ..
+        exit 1
+    fi
+
+    # 清空旧日志
+    > ../logs/frontend.log
+
     # 后台启动前端服务
+    log_info "执行命令: npm run dev"
     nohup npm run dev > ../logs/frontend.log 2>&1 &
     FRONTEND_PID=$!
     echo $FRONTEND_PID > ../logs/frontend.pid
 
     # 等待前端启动
-    log_info "等待前端服务启动..."
+    log_info "等待前端服务启动 (PID: $FRONTEND_PID)..."
     sleep 5
 
     # 检查前端是否启动成功
     if lsof -Pi :5173 -sTCP:LISTEN -t >/dev/null 2>&1; then
         log_success "前端服务启动成功 (PID: $FRONTEND_PID)"
+        # 显示最后几行日志以确认启动
+        log_info "前端启动日志:"
+        tail -3 ../logs/frontend.log | sed 's/^/  /'
     else
         log_error "前端服务启动失败,请查看日志: logs/frontend.log"
+        log_error "最后10行日志:"
+        tail -10 ../logs/frontend.log | sed 's/^/  /'
+        cd ..
         exit 1
     fi
 
@@ -294,7 +424,7 @@ main() {
     echo ""
     echo "=========================================="
     echo "    Sisyphus-X 一键启动脚本"
-    echo "    版本: v1.0.0"
+    echo "    版本: v1.1.0"
     echo "=========================================="
     echo ""
 

@@ -5,7 +5,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 class EngineExecutor:
@@ -26,7 +26,7 @@ class EngineExecutor:
     def execute(
         self,
         yaml_content: str,
-        base_url: str | None = None,
+        base_url: Optional[str] = None,
         timeout: int = 300,
     ) -> dict[str, Any]:
         """Execute YAML test case using sisyphus-api-engine.
@@ -192,7 +192,7 @@ class EngineExecutor:
 
 def execute_yaml(
     yaml_content: str,
-    base_url: str | None = None,
+    base_url: Optional[str] = None,
     timeout: int = 300,
 ) -> dict[str, Any]:
     """Execute YAML using sisyphus-api-engine (convenience function).

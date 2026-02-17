@@ -5,8 +5,8 @@ CRUD 工具函数 - 消除重复的数据库操作代码
 """
 
 from collections.abc import Sequence
-from datetime import datetime
-from typing import Any, Generic, TypeVar, cast
+from datetime import datetime, timezone
+from typing import Any, Generic, Optional, TypeVar, cast
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,7 @@ async def get_or_404(
     session: AsyncSession,
     model: type[ModelType],
     item_id: int,
-    resource_name: str | None = None,
+    resource_name: Optional[str] = None,
 ) -> ModelType:
     """
     获取对象或抛出 404 错误
@@ -104,7 +104,7 @@ async def update_item(
 
     # 如果有 updated_at 字段，自动更新
     if hasattr(item, "updated_at"):
-        item.updated_at = datetime.utcnow()
+        item.updated_at = datetime.now(timezone.utc)
 
     if auto_commit:
         session.add(item)
@@ -235,7 +235,7 @@ async def list_items(
     page: int = 1,
     size: int = 10,
     filters: dict[str, Any] | None = None,
-    order_by: Any | None = None,
+    order_by: Optional[Any] = None,
     load_relations: Sequence[str] | None = None,
 ) -> PageResponse[ModelType]:
     """
@@ -370,7 +370,7 @@ class CRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         page: int = 1,
         size: int = 10,
         filters: dict[str, Any] | None = None,
-        order_by: Any | None = None,
+        order_by: Optional[Any] = None,
     ) -> PageResponse[ModelType]:
         """列表查询（带分页）"""
         return await list_items(session, self.model, page, size, filters, order_by)

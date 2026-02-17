@@ -3,7 +3,7 @@
 """
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +17,7 @@ class TestResultProcessor:
         """初始化处理器"""
 
     async def process_result(
-        self, execution_id: int, raw_result: dict[str, Any], session: AsyncSession
+        self, execution_id: str, raw_result: dict[str, Any], session: AsyncSession
     ) -> None:
         """
         处理 API Engine 返回的结果并存储到数据库
@@ -156,7 +156,7 @@ class TestResultProcessor:
         return None
 
     async def _process_step_results(
-        self, execution_id: int, raw_result: dict[str, Any], session: AsyncSession
+        self, execution_id: str, raw_result: dict[str, Any], session: AsyncSession
     ) -> None:
         """
         处理并存储步骤结果
@@ -264,7 +264,7 @@ class TestResultProcessor:
         }
         return status_mapping.get(status, "error")
 
-    def _parse_datetime(self, datetime_str: str) -> datetime | None:
+    def _parse_datetime(self, datetime_str: str) -> Optional[datetime]:
         """
         解析 datetime 字符串
 

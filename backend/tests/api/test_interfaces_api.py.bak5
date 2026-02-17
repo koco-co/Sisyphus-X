@@ -1,0 +1,674 @@
+"""接口定义模块接口自动化测试
+
+测试接口目录、接口CRUD、cURL导入、环境管理接口
+"""
+import pytest
+import uuid
+from httpx import AsyncClient
+from sqlalchemy import select
+
+from app.models.project import Project, ProjectEnvironment, InterfaceFolder, Interface
+
+
+@pytest.mark.asyncio
+class TestInterfaceFolders:
+    """接口目录接口自动化测试"""
+
+    async def test_create_folder_success(self, async_client: AsyncClient, sample_project):
+        """测试成功创建目录"""
+        response = await async_client.post(
+            f"/api/v1/projects/{sample_project.id}/interface-folders",
+            json={
+                "name": "API接口",
+                "parent_id": None,
+                "project_id": sample_project.id
+            },
+        )
+        assert response.status_code in [200, 201]
+        data = response.json()
+        assert data["name"] == "API接口"
+        assert data["project_id"] == sample_project.id
+
+    async def test_create_nested_folder(self, async_client: AsyncClient, db_session, sample_project):
+        """测试创建嵌套目录"""
+        # 创建父目录
+        parent = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="父目录",
+            parent_id=None
+        )
+        db_session.add(parent)
+        await db_session.commit()
+
+        # 创建子目录
+        response = await async_client.post(
+            f"/api/v1/projects/{sample_project.id}/interface-folders",
+            json={
+                "name": "子目录",
+                "parent_id": parent.id,
+                "project_id": sample_project.id
+            },
+        )
+        assert response.status_code in [200, 201]
+        data = response.json()
+        assert data["name"] == "子目录"
+        assert data["parent_id"] == parent.id
+
+    async def test_list_folders(self, async_client: AsyncClient, sample_project):
+        """测试获取目录列表"""
+        response = await async_client.get(
+            f"/api/v1/projects/{sample_project.id}/interface-folders"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
+    async def test_update_folder(self, async_client: AsyncClient, db_session, sample_project):
+        """测试更新目录"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="原始名称",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        # 更新目录
+        response = await async_client.put(
+            f"/api/v1/projects/{sample_project.id}/interface-folders/{folder.id}",
+            json={"name": "更新后的名称"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "更新后的名称"
+
+    async def test_delete_folder(self, async_client: AsyncClient, db_session, sample_project):
+        """测试删除目录"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="待删除目录",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        # 删除目录
+        response = await async_client.delete(
+            f"/api/v1/projects/{sample_project.id}/interface-folders/{folder.id}"
+        )
+        assert response.status_code == 204
+
+        # 验证已删除
+        result = await db_session.execute(
+            select(InterfaceFolder).where(InterfaceFolder.id == folder.id)
+        )
+        assert result.scalar_one_or_none() is None
+
+
+@pytest.mark.asyncio
+class TestInterfaces:
+    """接口CRUD接口自动化测试"""
+
+    async def test_create_interface_success(self, async_client: AsyncClient, db_session, sample_project):
+        """测试成功创建接口"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="API目录",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        # 创建接口
+        response = await async_client.post(
+            f"/api/v1/interfaces",
+            json={
+                "name": "获取用户列表",
+                "method": "GET",
+                "url": "/api/users",
+                "folder_id": folder.id,
+                "project_id": sample_project.id
+            },
+        )
+        assert response.status_code in [200, 201]
+        data = response.json()
+        assert data["name"] == "获取用户列表"
+        assert data["method"] == "GET"
+        assert data["url"] == "/api/users"
+
+    async def test_create_interface_with_headers(self, async_client: AsyncClient, db_session, sample_project):
+        """测试创建带请求头的接口"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="API目录",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        # 创建接口
+        response = await async_client.post(
+            f"/api/v1/interfaces",
+            json={
+                "name": "创建用户",
+                "method": "POST",
+                "url": "/api/users",
+                "folder_id": folder.id,
+                "project_id": sample_project.id,
+                "headers": {"Content-Type": "application/json"},
+                "body": {"username": "test", "password": "123456"}
+            },
+        )
+        assert response.status_code in [200, 201]
+        data = response.json()
+        assert data["method"] == "POST"
+        assert "headers" in data
+
+    async def test_list_interfaces(self, async_client: AsyncClient, sample_project):
+        """测试获取接口列表"""
+        response = await async_client.get(
+            f"/api/v1/interfaces"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+
+    async def test_get_interface_detail(self, async_client: AsyncClient, db_session, sample_project):
+        """测试获取接口详情"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="API目录",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        # 创建接口
+        interface = Interface(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            folder_id=folder.id,
+            name="详情测试",
+            method="GET",
+            url="/api/test"
+        )
+        db_session.add(interface)
+        await db_session.commit()
+
+        # 获取详情
+        response = await async_client.get(
+            f"/api/v1/interfaces{interface.id}"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "详情测试"
+
+    async def test_update_interface(self, async_client: AsyncClient, db_session, sample_project):
+        """测试更新接口"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="API目录",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        # 创建接口
+        interface = Interface(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            folder_id=folder.id,
+            name="原始接口",
+            method="GET",
+            url="/api/original"
+        )
+        db_session.add(interface)
+        await db_session.commit()
+
+        # 更新接口
+        response = await async_client.put(
+            f"/api/v1/interfaces{interface.id}",
+            json={
+                "name": "更新后的接口",
+                "url": "/api/updated"
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "更新后的接口"
+        assert data["url"] == "/api/updated"
+
+    async def test_delete_interface(self, async_client: AsyncClient, db_session, sample_project):
+        """测试删除接口"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="API目录",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        # 创建接口
+        interface = Interface(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            folder_id=folder.id,
+            name="待删除接口",
+            method="DELETE",
+            url="/api/delete"
+        )
+        db_session.add(interface)
+        await db_session.commit()
+
+        # 删除接口
+        response = await async_client.delete(
+            f"/api/v1/interfaces{interface.id}"
+        )
+        assert response.status_code == 200
+
+        # 验证已删除
+        result = await db_session.execute(
+            select(Interface).where(Interface.id == interface.id)
+        )
+        assert result.scalar_one_or_none() is None
+
+
+@pytest.mark.asyncio
+class TestCurlImport:
+    """cURL导入接口自动化测试"""
+
+    async def test_import_simple_curl(self, async_client: AsyncClient, db_session, sample_project):
+        """测试导入简单cURL命令"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="导入测试",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        curl_command = """curl -X POST https://api.example.com/users -H "Content-Type: application/json" -d '{"name":"test"}'"""
+
+        response = await async_client.post(
+            f"/api/v1/interfacesimport",
+            json={
+                "curl_command": curl_command,
+                "folder_id": folder.id,
+                "name": "导入的接口"
+            },
+        )
+        # 可能返回200(成功)或501(未实现)
+        assert response.status_code in [200, 201, 501]
+
+        if response.status_code in [200, 201]:
+            data = response.json()
+            assert "name" in data or "url" in data
+
+    async def test_import_curl_with_headers(self, async_client: AsyncClient, db_session, sample_project):
+        """测试导入带请求头的cURL"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="导入测试",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        curl_command = """curl -H "Authorization: Bearer token123" https://api.example.com/profile"""
+
+        response = await async_client.post(
+            f"/api/v1/interfacesimport",
+            json={
+                "curl_command": curl_command,
+                "folder_id": folder.id,
+            },
+        )
+        assert response.status_code in [200, 201, 501]
+
+    async def test_import_invalid_curl(self, async_client: AsyncClient, sample_project):
+        """测试导入无效cURL命令"""
+        invalid_curl = "not a curl command"
+
+        response = await async_client.post(
+            f"/api/v1/interfacesimport",
+            json={"curl_command": invalid_curl},
+        )
+        # 应该返回错误或未实现
+        assert response.status_code in [400, 422, 501]
+
+
+@pytest.mark.asyncio
+class TestEnvironments:
+    """环境管理接口自动化测试"""
+
+    async def test_create_environment_success(self, async_client: AsyncClient, sample_project):
+        """测试成功创建环境"""
+        response = await async_client.post(
+            f"/api/v1/projects/{sample_project.id}/environments/",
+            json={
+                "name": "开发环境",
+                "domain": "https://dev.example.com",
+                "project_id": sample_project.id
+            },
+        )
+        assert response.status_code in [200, 201]
+        data = response.json()
+        assert data["name"] == "开发环境"
+        assert data["domain"] == "https://dev.example.com"
+
+    async def test_list_environments(self, async_client: AsyncClient, sample_project):
+        """测试获取环境列表"""
+        # 创建多个环境
+        for env_name in ["开发环境", "测试环境", "生产环境"]:
+            await async_client.post(
+                f"/api/v1/projects/{sample_project.id}/environments/",
+                json={
+                    "name": env_name,
+                    "domain": f"https://{env_name}.example.com",
+                    "project_id": sample_project.id
+                },
+            )
+
+        # 获取列表
+        response = await async_client.get(
+            f"/api/v1/projects/{sample_project.id}/environments/"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) >= 3
+
+    async def test_update_environment(self, async_client: AsyncClient, db_session, sample_project):
+        """测试更新环境"""
+        # 创建环境
+        env = ProjectEnvironment(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="原始环境",
+            domain="https://original.example.com"
+        )
+        db_session.add(env)
+        await db_session.commit()
+
+        # 更新环境
+        response = await async_client.put(
+            f"/api/v1/projects/{sample_project.id}/environments/{env.id}",
+            json={
+                "name": "更新环境",
+                "domain": "https://updated.example.com"
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["name"] == "更新环境"
+
+    async def test_delete_environment(self, async_client: AsyncClient, db_session, sample_project):
+        """测试删除环境"""
+        # 创建环境
+        env = ProjectEnvironment(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="待删除环境",
+            domain="https://delete.example.com"
+        )
+        db_session.add(env)
+        await db_session.commit()
+
+        # 删除环境
+        response = await async_client.delete(
+            f"/api/v1/projects/{sample_project.id}/environments/{env.id}"
+        )
+        assert response.status_code == 200
+
+    async def test_clone_environment(self, async_client: AsyncClient, db_session, sample_project):
+        """测试克隆环境"""
+        # 创建环境
+        env = ProjectEnvironment(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="源环境",
+            domain="https://source.example.com"
+        )
+        db_session.add(env)
+        await db_session.commit()
+
+        # 克隆环境
+        response = await async_client.post(
+            f"/api/v1/projects/{sample_project.id}/environments/{env.id}/clone",
+            json={"name": "克隆环境"}
+        )
+        # 可能返回200(成功)或501(未实现)
+        assert response.status_code in [200, 201, 501]
+
+
+@pytest.mark.asyncio
+class TestEnvVariables:
+    """环境变量接口自动化测试"""
+
+    async def test_create_env_variable(self, async_client: AsyncClient, db_session, sample_project):
+        """测试创建环境变量"""
+        # 创建环境
+        env = ProjectEnvironment(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="测试环境",
+            domain="https://test.example.com"
+        )
+        db_session.add(env)
+        await db_session.commit()
+
+        # 创建变量
+        response = await async_client.post(
+            f"/api/v1/projects/{sample_project.id}/environments/{env.id}/variables",
+            json={
+                "name": "API_KEY",
+                "value": "secret_key_123",
+                "description": "API密钥"
+            },
+        )
+        if response.status_code not in [200, 201]:
+            print(f"Error response: {response.text}")
+        assert response.status_code in [200, 201]
+        data = response.json()
+        assert data["name"] == "API_KEY"
+
+    async def test_list_env_variables(self, async_client: AsyncClient, db_session, sample_project):
+        """测试获取环境变量列表"""
+        # 创建环境
+        env = ProjectEnvironment(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="变量测试环境",
+            domain="https://test.example.com"
+        )
+        db_session.add(env)
+        await db_session.commit()
+
+        # 创建多个变量
+        for i in range(3):
+            await async_client.post(
+                f"/api/v1/projects/{sample_project.id}/environments/{env.id}/variables",
+                json={
+                    "name": f"VAR_{i}",
+                    "value": f"value_{i}"
+                },
+            )
+
+        # 获取变量列表
+        response = await async_client.get(
+            f"/api/v1/projects/{sample_project.id}/environments/{env.id}/variables"
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert isinstance(data, list)
+        assert len(data) >= 3
+
+    async def test_update_env_variable(self, async_client: AsyncClient, db_session, sample_project):
+        """测试更新环境变量"""
+        from app.models.env_variable import EnvVariable
+
+        # 创建环境
+        env = ProjectEnvironment(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="更新测试环境",
+            domain="https://test.example.com"
+        )
+        db_session.add(env)
+        await db_session.commit()
+
+        # 创建变量
+        var = EnvVariable(
+            id=str(uuid.uuid4()),
+            environment_id=env.id,
+            name="UPDATE_KEY",
+            value="original_value"
+        )
+        db_session.add(var)
+        await db_session.commit()
+
+        # 更新变量
+        response = await async_client.put(
+            f"/api/v1/projects/{sample_project.id}/environments/{env.id}/variables/{var.id}",
+            json={"value": "updated_value"}
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["value"] == "updated_value"
+
+    async def test_delete_env_variable(self, async_client: AsyncClient, db_session, sample_project):
+        """测试删除环境变量"""
+        from app.models.env_variable import EnvVariable
+
+        # 创建环境
+        env = ProjectEnvironment(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="删除测试环境",
+            domain="https://test.example.com"
+        )
+        db_session.add(env)
+        await db_session.commit()
+
+        # 创建变量
+        var = EnvVariable(
+            id=str(uuid.uuid4()),
+            environment_id=env.id,
+            name="DELETE_KEY",
+            value="delete_value"
+        )
+        db_session.add(var)
+        await db_session.commit()
+
+        # 删除变量
+        response = await async_client.delete(
+            f"/api/v1/projects/{sample_project.id}/environments/{env.id}/variables/{var.id}"
+        )
+        assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+class TestInterfaceEdgeCases:
+    """接口模块边界情况测试"""
+
+    async def test_create_interface_without_folder(self, async_client: AsyncClient, sample_project):
+        """测试创建无目录的接口"""
+        response = await async_client.post(
+            f"/api/v1/interfaces",
+            json={
+                "name": "独立接口",
+                "method": "GET",
+                "url": "/api/standalone",
+                "folder_id": None,
+                "project_id": sample_project.id
+            },
+        )
+        # 应该能创建或返回验证错误
+        assert response.status_code in [200, 201, 422]
+
+    async def test_create_interface_with_invalid_method(self, async_client: AsyncClient, db_session, sample_project):
+        """测试创建使用无效HTTP方法的接口"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="测试目录",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        response = await async_client.post(
+            f"/api/v1/interfaces",
+            json={
+                "name": "无效方法接口",
+                "method": "INVALID",  # 无效的HTTP方法
+                "url": "/api/test",
+                "folder_id": folder.id,
+                "project_id": sample_project.id
+            },
+        )
+        # 应该被验证拒绝
+        assert response.status_code in [400, 422]
+
+    async def test_bulk_delete_interfaces(self, async_client: AsyncClient, db_session, sample_project):
+        """测试批量删除接口"""
+        # 创建目录
+        folder = InterfaceFolder(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            name="批量删除测试",
+            parent_id=None
+        )
+        db_session.add(folder)
+        await db_session.commit()
+
+        # 创建多个接口
+        interface_ids = []
+        for i in range(3):
+            interface = Interface(
+                id=str(uuid.uuid4()),
+                project_id=sample_project.id,
+                folder_id=folder.id,
+                name=f"接口{i}",
+                method="GET",
+                url=f"/api/test{i}"
+            )
+            db_session.add(interface)
+            await db_session.commit()
+            interface_ids.append(interface.id)
+
+        # 批量删除
+        response = await async_client.post(
+            f"/api/v1/interfacesbulk-delete",
+            json={"ids": interface_ids}
+        )
+        # 可能返回200(成功)或501(未实现)
+        assert response.status_code in [200, 501]
+
+        if response.status_code == 200:
+            # 验证已删除
+            for interface_id in interface_ids:
+                result = await db_session.execute(
+                    select(Interface).where(Interface.id == interface_id)
+                )
+                assert result.scalar_one_or_none() is None

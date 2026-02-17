@@ -2,7 +2,7 @@
 测试执行模块
 """
 
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -13,12 +13,12 @@ class PerformanceMetrics(BaseModel):
     """性能指标"""
 
     total_time: float = 0
-    dns_time: float | None = None
-    tcp_time: float | None = None
-    tls_time: float | None = None
-    server_time: float | None = None
-    download_time: float | None = None
-    size: int | None = None
+    dns_time: Optional[float] = None
+    tcp_time: Optional[float] = None
+    tls_time: Optional[float] = None
+    server_time: Optional[float] = None
+    download_time: Optional[float] = None
+    size: Optional[int] = None
 
 
 class StepResult(BaseModel):
@@ -29,22 +29,22 @@ class StepResult(BaseModel):
     start_time: str = ""
     end_time: str = ""
     duration: float = 0
-    error: str | None = None
-    performance: PerformanceMetrics | None = None
+    error: Optional[str] = None
+    performance: Optional[PerformanceMetrics] = None
     response: dict[str, Any] | None = None
 
 
 class TestCaseInfo(BaseModel):
     """测试用例信息"""
 
-    id: int | None = None
+    id: Optional[int] = None
     name: str
     status: str = "unknown"
     start_time: str = ""
     end_time: str = ""
     duration: float = 0
-    project_id: int | None = None
-    test_type: str | None = None
+    project_id: Optional[int] = None
+    test_type: Optional[str] = None
 
 
 class Statistics(BaseModel):
@@ -66,8 +66,8 @@ class ExecutionResult(BaseModel):
     statistics: Statistics = Field(default_factory=Statistics)
     final_variables: dict[str, Any] = Field(default_factory=dict)
     performance_metrics: dict[str, Any] | None = None
-    error: str | None = None
-    duration: float | None = None
+    error: Optional[str] = None
+    duration: Optional[float] = None
 
 
 class ExecutionRequest(BaseModel):
@@ -75,20 +75,20 @@ class ExecutionRequest(BaseModel):
 
     yaml_content: str
     output_format: str = "json"
-    base_url: str | None = None
+    base_url: Optional[str] = None
     variables: dict[str, Any] | None = None
     dynamic_keywords: list[str] | None = None
-    timeout: int | None = None
+    timeout: Optional[int] = None
 
 
 class TestCaseForm(BaseModel):
     """测试用例表单"""
 
-    id: int | None = None
+    id: Optional[int] = None
     name: str
-    project_id: int | None = None
-    yaml_content: str | None = None
-    description: str | None = None
+    project_id: Optional[int] = None
+    yaml_content: Optional[str] = None
+    description: Optional[str] = None
     variables: dict[str, Any] = Field(default_factory=dict)
     config: dict[str, Any] = Field(default_factory=dict)
     steps: list[dict[str, Any]] = Field(default_factory=list)

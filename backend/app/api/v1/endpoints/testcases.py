@@ -6,15 +6,16 @@ from sqlmodel import col, func, select
 from app.core.db import get_session
 from app.models.test_case import TestCase
 from app.schemas.pagination import PageResponse
+from typing import Optional
 
 router = APIRouter()
 
 
 class TestCaseCreate(BaseModel):
-    interface_id: int | None = None
+    interface_id: Optional[int] = None
     title: str
     priority: str = "P1"
-    pre_conditions: str | None = None
+    pre_conditions: Optional[str] = None
     steps_data: list = []
     engine_type: str = "api"
     tags: list = []
@@ -24,7 +25,7 @@ class TestCaseCreate(BaseModel):
 async def list_testcases(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    interface_id: int | None = Query(None),
+    interface_id: Optional[int] = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     skip = (page - 1) * size

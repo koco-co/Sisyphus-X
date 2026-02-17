@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -12,25 +13,28 @@ class Settings(BaseSettings):
     # Auth
     AUTH_DISABLED: bool = False
 
+    # Debug
+    DEBUG: bool = True
+
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./sisyphus.db"
 
     # Redis
-    REDIS_URL: str | None = "redis://localhost:6379/0"
+    REDIS_URL: Optional[str] = "redis://localhost:6379/0"
 
     # MinIO
-    MINIO_ENDPOINT: str | None = "localhost:9000"
-    MINIO_ACCESS_KEY: str | None = "minioadmin"
-    MINIO_SECRET_KEY: str | None = "minioadmin"
-    MINIO_BUCKET: str | None = "sisyphus-assets"
+    MINIO_ENDPOINT: Optional[str] = "localhost:9000"
+    MINIO_ACCESS_KEY: Optional[str] = "minioadmin"
+    MINIO_SECRET_KEY: Optional[str] = "minioadmin"
+    MINIO_BUCKET: Optional[str] = "sisyphus-assets"
 
     # OAuth - GitHub
-    GITHUB_CLIENT_ID: str | None = None
-    GITHUB_CLIENT_SECRET: str | None = None
+    GITHUB_CLIENT_ID: Optional[str] = None
+    GITHUB_CLIENT_SECRET: Optional[str] = None
 
     # OAuth - Google
-    GOOGLE_CLIENT_ID: str | None = None
-    GOOGLE_CLIENT_SECRET: str | None = None
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
 
     # Frontend URL (用于 OAuth 回调重定向)
     FRONTEND_URL: str = "http://localhost:5173"

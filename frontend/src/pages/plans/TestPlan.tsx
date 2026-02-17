@@ -1,11 +1,12 @@
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { Calendar, Plus, Search, Play, Pause, Edit, Trash2, Clock, Loader2 } from 'lucide-react'
+import { Calendar, Plus, Search, Play, Pause, Edit, Trash2, Clock, Loader2, Square, RotateCcw } from 'lucide-react'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { plansApi, scenariosApi } from '@/api/client'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CustomSelect } from '@/components/ui/CustomSelect'
+import { useToast } from '@/hooks/use-toast'
 
 interface TestPlanItem {
     id: number
@@ -21,9 +22,11 @@ interface TestPlanItem {
 export default function TestPlan() {
     const { t } = useTranslation()
     const queryClient = useQueryClient()
+    const { toast } = useToast()
     const [showModal, setShowModal] = useState(false)
     const [searchTerm, setSearchTerm] = useState('')
     const [deleteTarget, setDeleteTarget] = useState<TestPlanItem | null>(null)
+    const [executingPlanId, setExecutingPlanId] = useState<number | null>(null)
 
     // 表单状态
     const [formData, setFormData] = useState({
@@ -79,6 +82,38 @@ export default function TestPlan() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] })
             setDeleteTarget(null)
+            toast({
+                title: '删除成功',
+                description: '测试计划已删除'
+            })
+        }
+    })
+
+    // 执行测试计划
+    const executeMutation = useMutation({
+        mutationFn: (id: number) => plansApi.execute(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['plans'] })
+            toast({
+                title: '执行开始',
+                description: '测试计划已开始执行'
+            })
+            setExecutingPlanId(null)
+        },
+        onError: () => {
+            setExecutingPlanId(null)
+        }
+    })
+
+    // 终止执行
+    const terminateMutation = useMutation({
+        mutationFn: (id: number) => plansApi.terminate(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['plans'] })
+            toast({
+                title: '已终止',
+                description: '测试执行已终止'
+            })
         }
     })
 
@@ -107,6 +142,7 @@ export default function TestPlan() {
                     <p className="text-slate-400 mt-1">配置定时执行任务，自动化运行测试</p>
                 </div>
                 <motion.button
+                    data-testid="create-plan-button"
                     onClick={() => setShowModal(true)}
                     className="h-10 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all flex items-center gap-2 text-sm font-medium"
                     whileHover={{ scale: 1.02 }}
@@ -147,6 +183,8 @@ export default function TestPlan() {
                     {filteredPlans.map((plan, i) => (
                         <motion.div
                             key={plan.id}
+                            data-testid={`plan-card-${plan.id}`}
+                            data-testid-plan={plan.id}
                             className="p-6 rounded-2xl glass border border-white/5 hover:border-cyan-500/30 transition-all group"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -156,14 +194,28 @@ export default function TestPlan() {
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <h3 className="text-white font-semibold text-lg">{plan.name}</h3>
-                                        {plan.status === 'active' ? (
-                                            <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
+                                        {plan.status === 'active' || plan.status === 'running' ? (
+                                            <span
+                                                data-testid={`execution-status-${plan.id}`}
+                                                className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400"
+                                            >
                                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                                 运行中
                                             </span>
-                                        ) : (
-                                            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500">
+                                        ) : plan.status === 'paused' ? (
+                                            <span
+                                                data-testid={`execution-status-${plan.id}`}
+                                                className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400"
+                                            >
+                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                                                 已暂停
+                                            </span>
+                                        ) : (
+                                            <span
+                                                data-testid={`execution-status-${plan.id}`}
+                                                className="text-xs px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500"
+                                            >
+                                                待执行
                                             </span>
                                         )}
                                     </div>
@@ -172,27 +224,60 @@ export default function TestPlan() {
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {plan.status === 'active' ? (
+                                    {/* 执行按钮 */}
+                                    <button
+                                        data-testid="execute-button"
+                                        onClick={() => {
+                                            setExecutingPlanId(plan.id)
+                                            executeMutation.mutate(plan.id)
+                                        }}
+                                        className="p-2 rounded-lg text-cyan-400 hover:bg-white/5 transition-colors"
+                                        disabled={executeMutation.isPending || executingPlanId === plan.id}
+                                    >
+                                        <Play className="w-4 h-4" />
+                                    </button>
+
+                                    {/* 暂停/恢复按钮 */}
+                                    {plan.status === 'active' || plan.status === 'running' ? (
                                         <button
+                                            data-testid="pause-button"
                                             onClick={() => pauseMutation.mutate(plan.id)}
                                             className="p-2 rounded-lg text-amber-400 hover:bg-white/5 transition-colors"
                                             disabled={pauseMutation.isPending}
                                         >
                                             <Pause className="w-4 h-4" />
                                         </button>
-                                    ) : (
+                                    ) : plan.status === 'paused' ? (
                                         <button
+                                            data-testid="resume-button"
                                             onClick={() => resumeMutation.mutate(plan.id)}
                                             className="p-2 rounded-lg text-emerald-400 hover:bg-white/5 transition-colors"
                                             disabled={resumeMutation.isPending}
                                         >
-                                            <Play className="w-4 h-4" />
+                                            <RotateCcw className="w-4 h-4" />
+                                        </button>
+                                    ) : null}
+
+                                    {/* 终止按钮 */}
+                                    {(plan.status === 'active' || plan.status === 'running' || plan.status === 'paused') && (
+                                        <button
+                                            data-testid="terminate-button"
+                                            onClick={() => terminateMutation.mutate(plan.id)}
+                                            className="p-2 rounded-lg text-red-400 hover:bg-white/5 transition-colors"
+                                            disabled={terminateMutation.isPending}
+                                        >
+                                            <Square className="w-4 h-4" />
                                         </button>
                                     )}
-                                    <button className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+
+                                    <button
+                                        data-testid="edit-plan-button"
+                                        className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
+                                    >
                                         <Edit className="w-4 h-4" />
                                     </button>
                                     <button
+                                        data-testid="delete-plan-button"
                                         onClick={() => setDeleteTarget(plan)}
                                         className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/5 transition-colors"
                                     >

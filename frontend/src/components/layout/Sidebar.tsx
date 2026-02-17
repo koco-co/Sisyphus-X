@@ -29,7 +29,8 @@ import {
     Bell,
     Users,
     Shield,
-    Sliders
+    Sliders,
+    Server
 } from 'lucide-react'
 import Logo from '@/assets/logo.svg'
 import { cn } from '@/lib/utils'
@@ -61,8 +62,8 @@ const navItems: NavItem[] = [
         labelKey: 'nav.apiAutomation',
         children: [
             { icon: FolderKanban, labelKey: 'nav.projectManagement', href: '/api/projects' },
-            { icon: Key, labelKey: 'nav.keywordManagement', href: '/api/keywords' },
-            { icon: Network, labelKey: 'nav.apiManagement', href: '/api/interfaces' },
+            { icon: Key, labelKey: 'nav.keywordManagement', href: '/keywords' },
+            { icon: Network, labelKey: 'nav.apiManagement', href: '/interface-management' },
         ]
     },
     { icon: Workflow, labelKey: 'nav.testScenarios', href: '/scenarios' },
@@ -80,7 +81,8 @@ const navItems: NavItem[] = [
         icon: Settings,
         labelKey: 'nav.systemSettings',
         children: [
-            { icon: Sliders, labelKey: 'nav.globalParams', href: '/settings/config' },
+            { icon: Server, labelKey: 'nav.environments', href: '/environments' },
+            { icon: Sliders, labelKey: 'nav.globalParams', href: '/global-params' },
             { icon: Bell, labelKey: 'nav.notifications', href: '/settings/notifications' },
             { icon: Users, labelKey: 'nav.accountManagement', href: '/settings/accounts' },
             { icon: Shield, labelKey: 'nav.permissions', href: '/settings/permissions' },
@@ -100,20 +102,8 @@ export function Sidebar() {
 
     // Auto-collapse on smaller screens
     useEffect(() => {
-        const handleResize = () => {
-            if (window.innerWidth < 1280 && !isCollapsed) {
-                // We need access to setCollapsed from context, but context only exposes toggle.
-                // Assuming toggle works based on current state, this might be tricky if we don't know current state inside effect without dep.
-                // However, SidebarContext probably exposes setSeparately? 
-                // Let's just check the exposed methods. Context definition not fully visible here. I will just rely on manual toggle by user for now, 
-                // OR better, I'll adding a check here. Actually, to do this properly I should modify SidebarContext. 
-                // For now, I will skip auto-collapse logic modification here as it requires context change. 
-                // Instead, I'll rely on the user to collapse it, or check if I can modify the sidebar width to be more fluid.
-            }
-        }
-        // handleResize();
-        // window.addEventListener('resize', handleResize);
-        // return () => window.removeEventListener('resize', handleResize);
+        // TODO: Implement auto-collapse logic for smaller screens
+        // This requires modifying SidebarContext to expose setCollapsed
     }, [])
 
     const themeOptions = [

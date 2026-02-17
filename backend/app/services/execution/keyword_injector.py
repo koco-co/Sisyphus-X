@@ -6,13 +6,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
 from app.models.keyword import Keyword
+from typing import Optional
 
 
 class KeywordInjector:
     """关键字动态注入管理"""
 
     async def collect_keywords(
-        self, session: AsyncSession, project_id: int, category: str | None = None
+        self, session: AsyncSession, project_id: str, category: Optional[str] = None
     ) -> list[Keyword]:
         """
         收集项目的活跃关键字
@@ -20,15 +21,15 @@ class KeywordInjector:
         Args:
             session: 数据库会话
             project_id: 项目ID
-            category: 可选的分类过滤
+            category: 可选的分类过滤（当前未实现，保留以备未来扩展）
 
         Returns:
             关键字实例列表
         """
-        query = select(Keyword).where(Keyword.project_id == project_id, Keyword.is_active)
+        query = select(Keyword).where(Keyword.project_id == project_id, Keyword.is_enabled)
 
-        if category:
-            query = query.where(Keyword.category == category)
+        # Note: category filtering not implemented in current Keyword model
+        # Future enhancement: add category field to Keyword model
 
         result = await session.execute(query)
         return list(result.scalars().all())
@@ -61,10 +62,10 @@ class KeywordInjector:
         Returns:
             关键字代码列表
         """
-        return [kw.function_code for kw in keywords if kw.is_active]
+        return [kw.code for kw in keywords if kw.is_enabled]
 
     async def prepare_keywords_for_execution(
-        self, session: AsyncSession, project_id: int
+        self, session: AsyncSession, project_id: str
     ) -> list[str]:
         """
         为执行准备关键字代码

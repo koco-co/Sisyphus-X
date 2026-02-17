@@ -20,7 +20,7 @@ from app.schemas.auth import TokenResponse, UserLogin, UserRegister, UserRespons
 router = APIRouter()
 
 
-def _user_id_or_raise(user: User) -> int:
+def _user_id_or_raise(user: User) -> str:
     if user.id is None:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="用户ID缺失")
     return user.id
@@ -46,7 +46,7 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_sessi
 
     # 创建新用户
     user = User(
-        username=data.username, email=data.email, password_hash=get_password_hash(data.password)
+        username=data.username, email=data.email, hashed_password=get_password_hash(data.password)
     )
     session.add(user)
     await session.commit()
@@ -73,7 +73,7 @@ async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
     result = await session.execute(select(User).where(col(User.email) == data.email))
     user = result.scalar_one_or_none()
 
-    if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
+    if not user or not user.hashed_password or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="邮箱或密码错误")
 
     if not user.is_active:

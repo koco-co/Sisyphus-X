@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
 from app.services.execution.execution_scheduler import ExecutionScheduler
+from typing import Optional
 
 router = APIRouter()
 scheduler = ExecutionScheduler()
@@ -16,7 +17,7 @@ scheduler = ExecutionScheduler()
 class ExecuteRequest(BaseModel):
     """执行请求"""
 
-    environment_id: int | None = None
+    environment_id: Optional[int] = None
 
 
 class ExecutionResponse(BaseModel):
@@ -26,8 +27,8 @@ class ExecutionResponse(BaseModel):
     test_case: dict
     steps: list
     statistics: dict
-    duration: float | None = None
-    error: str | None = None
+    duration: Optional[float] = None
+    error: Optional[str] = None
 
 
 @router.post("/testcases/{test_case_id}/execute", response_model=ExecutionResponse)

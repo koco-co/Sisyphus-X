@@ -14,6 +14,8 @@ from app.models.user_management import (
     AuditLog,
     Permission,
 )
+from typing import Optional
+
 from app.schemas.user_management import (
     AuditLogResponse,
     PermissionCreate,
@@ -98,7 +100,7 @@ async def create_user(
     user = User(
         username=user_data.username,
         email=user_data.email,
-        password_hash=get_password_hash(user_data.password),
+        hashed_password=get_password_hash(user_data.password),
         is_active=user_data.is_active,
     )
 
@@ -140,7 +142,7 @@ async def update_user(
         if field == "password" and value:
             from app.core.security import get_password_hash
 
-            user.password_hash = get_password_hash(value)
+            user.hashed_password = get_password_hash(value)
         elif field == "role_ids":
             # 当前 User 模型未建立角色关系，暂不在此处直接更新。
             continue
@@ -252,8 +254,8 @@ async def create_permission(
 async def list_audit_logs(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    user_id: int | None = None,
-    resource_type: str | None = None,
+    user_id: Optional[int] = None,
+    resource_type: Optional[str] = None,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(deps.get_current_superuser),
 ):

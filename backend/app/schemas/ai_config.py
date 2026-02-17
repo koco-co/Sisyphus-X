@@ -6,7 +6,7 @@ AI配置相关Schemas - 功能测试模块
 from datetime import datetime
 from enum import Enum
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 
@@ -31,13 +31,15 @@ class AIProviderConfigBase(BaseModel):
     is_enabled: bool = Field(default=True, description="是否启用")
     is_default: bool = Field(default=False, description="是否为默认配置")
 
-    @validator("provider_name")
+    @field_validator("provider_name")
+    @classmethod
     def validate_provider_name(cls, v):  # noqa: N805
         if not v or len(v.strip()) == 0:
             raise ValueError("厂商名称不能为空")
         return v.strip()
 
-    @validator("model_name")
+    @field_validator("model_name")
+    @classmethod
     def validate_model_name(cls, v):  # noqa: N805
         if not v or len(v.strip()) == 0:
             raise ValueError("模型名称不能为空")
@@ -74,8 +76,7 @@ class AIProviderConfigResponse(AIProviderConfigBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class AIProviderConfigTest(BaseModel):

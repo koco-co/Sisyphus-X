@@ -2,7 +2,7 @@
 执行调度器 - 统一管理测试执行
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,7 @@ from app.models.test_execution import TestExecution
 from . import ExecutionResult
 from .executor_adapter import ExecutorAdapter
 from .parameter_parser import ParameterParser
+from typing import Optional
 
 
 class ExecutionScheduler:
@@ -22,7 +23,7 @@ class ExecutionScheduler:
         self.parser = ParameterParser()
 
     async def execute_test_case(
-        self, session: AsyncSession, test_case_id: int, environment_id: int | None = None
+        self, session: AsyncSession, test_case_id: int, environment_id: Optional[int] = None
     ) -> ExecutionResult:
         """
         执行单个测试用例（同步）
@@ -48,7 +49,7 @@ class ExecutionScheduler:
             test_case_id=test_case_id,
             environment_id=environment_id,
             status="running",
-            started_at=datetime.utcnow(),
+            started_at=datetime.now(timezone.utc),
         )
         session.add(execution)
         await session.commit()
@@ -65,7 +66,7 @@ class ExecutionScheduler:
             execution.status = "success" if result.success else "failed"
             execution.result_data = result.model_dump()
             execution.duration = result.duration
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = datetime.now(timezone.utc)
 
             await session.commit()
 
@@ -75,6 +76,6 @@ class ExecutionScheduler:
             # 错误处理
             execution.status = "error"
             execution.result_data = {"error": str(e)}
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = datetime.now(timezone.utc)
             await session.commit()
             raise

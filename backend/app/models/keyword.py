@@ -25,7 +25,7 @@
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 
-from sqlalchemy import Boolean, ForeignKey, Index, String, Text
+from sqlalchemy import DateTime, Boolean, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
@@ -67,10 +67,10 @@ class Keyword(Base):
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), nullable=False
+        default=lambda: datetime.now(timezone.utc), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     # 复合唯一索引: class_name + method_name 必须唯一

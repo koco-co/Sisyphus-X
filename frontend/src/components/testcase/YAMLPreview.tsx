@@ -6,7 +6,7 @@
  * - 语法高亮
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 
 interface YAMLPreviewProps {
   formData: {
@@ -21,7 +21,8 @@ export function YAMLPreview({ formData }: YAMLPreviewProps) {
   const [yaml, setYaml] = useState('')
   const [error, setError] = useState('')
 
-  useEffect(() => {
+  // 使用 useCallback 生成 YAML,避免在 useEffect 中直接调用 setState
+  const generateYAML = useCallback(() => {
     try {
       // 简化的 YAML 生成逻辑
       let yaml = `name: "${formData.name}"\n`
@@ -40,7 +41,7 @@ export function YAMLPreview({ formData }: YAMLPreviewProps) {
 
       yaml += `steps:\n`
 
-      formData.steps.forEach((step, index) => {
+      formData.steps.forEach((step) => {
         yaml += `  - ${step.name}:\n`
         yaml += `      type: ${step.type}\n`
 
@@ -68,13 +69,26 @@ export function YAMLPreview({ formData }: YAMLPreviewProps) {
         }
       })
 
-      setYaml(yaml)
-      setError('')
+      return yaml
     } catch (err) {
       setError('生成 YAML 失败')
       console.error(err)
+      return ''
     }
   }, [formData])
+
+  useEffect(() => {
+    // 使用 setTimeout 避免同步 setState 警告
+    const timer = setTimeout(() => {
+      const newYaml = generateYAML()
+      if (newYaml) {
+        setYaml(newYaml)
+        setError('')
+      }
+    }, 0)
+
+    return () => clearTimeout(timer)
+  }, [generateYAML])
 
   return (
     <div className="yaml-preview">

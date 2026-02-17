@@ -1,10 +1,11 @@
 """Environment management API endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, func, select
+from datetime import UTC
 
-from app.api.deps import get_current_user
+from fastapi import APIRouter, Depends, HTTPException, Path
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import col, select
+
 from app.core.db import get_session
 from app.models.project import ProjectEnvironment
 from app.schemas.environment import (
@@ -60,15 +61,43 @@ async def create_environment(
     Raises:
         HTTPException: If environment name already exists
     """
-    # Use sync session for service
-    from app.core.db import sync_session_maker
+    # Check for duplicate name
+    from sqlmodel import select
 
-    with sync_session_maker() as sync_session:
-        service = EnvironmentService(sync_session)
-        try:
-            return service.create(project_id, data)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+    statement = select(ProjectEnvironment).where(
+        ProjectEnvironment.project_id == project_id,
+        ProjectEnvironment.name == data.name
+    )
+    result = await session.execute(statement)
+    existing = result.first()
+
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Environment '{data.name}' already exists"
+        )
+
+    # Create new environment
+    import uuid
+    from datetime import datetime
+
+    environment = ProjectEnvironment(
+        id=str(uuid.uuid4()),
+        project_id=project_id,
+        name=data.name,
+        domain=data.domain or "",
+        variables=data.variables or {},
+        headers=data.headers or {},
+        is_preupload=data.is_preupload if hasattr(data, 'is_preupload') else False,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+
+    session.add(environment)
+    await session.commit()
+    await session.refresh(environment)
+
+    return environment
 
 
 @router.get("/{environment_id}", response_model=EnvironmentResponse)
@@ -113,24 +142,54 @@ async def update_environment(
     Raises:
         HTTPException: If environment not found or name conflicts
     """
-    from app.core.db import sync_session_maker
+    from datetime import datetime
 
-    with sync_session_maker() as sync_session:
-        service = EnvironmentService(sync_session)
-        try:
-            result = service.update(environment_id, data)
-            if not result:
-                raise HTTPException(status_code=404, detail="Environment not found")
-            return result
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+    from sqlmodel import select
+
+    # Get environment
+    environment = await session.get(ProjectEnvironment, environment_id)
+    if not environment:
+        raise HTTPException(status_code=404, detail="Environment not found")
+
+    # Check for name conflict (if name is being updated)
+    if data.name and data.name != environment.name:
+        statement = select(ProjectEnvironment).where(
+            ProjectEnvironment.project_id == environment.project_id,
+            ProjectEnvironment.name == data.name
+        )
+        result = await session.execute(statement)
+        existing = result.first()
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Environment '{data.name}' already exists"
+            )
+
+    # Update fields
+    if data.name:
+        environment.name = data.name
+    if hasattr(data, 'domain') and data.domain is not None:
+        environment.domain = data.domain
+    if hasattr(data, 'variables') and data.variables is not None:
+        environment.variables = data.variables
+    if hasattr(data, 'headers') and data.headers is not None:
+        environment.headers = data.headers
+    if hasattr(data, 'is_preupload') and data.is_preupload is not None:
+        environment.is_preupload = data.is_preupload
+
+    environment.updated_at = datetime.now(UTC)
+
+    await session.commit()
+    await session.refresh(environment)
+
+    return environment
 
 
 @router.delete("/{environment_id}")
 async def delete_environment(
     environment_id: str,
     session: AsyncSession = Depends(get_session),
-) -> dict[str, int]:
+) -> dict[str, str]:
     """Delete environment.
 
     Args:
@@ -143,14 +202,14 @@ async def delete_environment(
     Raises:
         HTTPException: If environment not found
     """
-    from app.core.db import sync_session_maker
+    environment = await session.get(ProjectEnvironment, environment_id)
+    if not environment:
+        raise HTTPException(status_code=404, detail="Environment not found")
 
-    with sync_session_maker() as sync_session:
-        service = EnvironmentService(sync_session)
-        success = service.delete(environment_id)
-        if not success:
-            raise HTTPException(status_code=404, detail="Environment not found")
-        return {"deleted": environment_id}
+    await session.delete(environment)
+    await session.commit()
+
+    return {"deleted": environment_id}
 
 
 @router.post("/{environment_id}/copy", response_model=EnvironmentResponse)
@@ -172,14 +231,112 @@ async def copy_environment(
     Raises:
         HTTPException: If source not found or name conflicts
     """
-    from app.core.db import sync_session_maker
+    import uuid
+    from datetime import datetime
 
-    with sync_session_maker() as sync_session:
-        service = EnvironmentService(sync_session)
-        try:
-            return service.copy(environment_id, data)
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=str(e))
+    from sqlmodel import select
+
+    # Get source environment
+    source = await session.get(ProjectEnvironment, environment_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Source environment not found")
+
+    # Check for name conflict
+    statement = select(ProjectEnvironment).where(
+        ProjectEnvironment.project_id == source.project_id,
+        ProjectEnvironment.name == data.name
+    )
+    result = await session.execute(statement)
+    existing = result.first()
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Environment '{data.name}' already exists"
+        )
+
+    # Create copy
+    new_env = ProjectEnvironment(
+        id=str(uuid.uuid4()),
+        project_id=source.project_id,
+        name=data.name,
+        domain=source.domain,
+        variables=source.variables.copy() if source.variables else {},
+        headers=source.headers.copy() if source.headers else {},
+        is_preupload=source.is_preupload,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+
+    session.add(new_env)
+    await session.commit()
+    await session.refresh(new_env)
+
+    return new_env
+
+
+@router.post("/{environment_id}/clone", response_model=EnvironmentResponse)
+async def clone_environment(
+    environment_id: str,
+    data: dict[str, str] | None = None,
+    session: AsyncSession = Depends(get_session),
+) -> ProjectEnvironment:
+    """Clone environment (alias for copy with simpler API).
+
+    Args:
+        environment_id: Source environment ID
+        data: Dictionary with 'name' key for the new environment
+        session: Database session
+
+    Returns:
+        New environment
+
+    Raises:
+        HTTPException: If source not found or name conflicts
+    """
+    import uuid
+    from datetime import datetime
+
+    from sqlmodel import select
+
+    # Get source environment
+    source = await session.get(ProjectEnvironment, environment_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Source environment not found")
+
+    # Get new name
+    new_name = data.get('name') if data else f"{source.name} (copy)"
+
+    # Check for name conflict
+    statement = select(ProjectEnvironment).where(
+        ProjectEnvironment.project_id == source.project_id,
+        ProjectEnvironment.name == new_name
+    )
+    result = await session.execute(statement)
+    existing = result.first()
+    if existing:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Environment '{new_name}' already exists"
+        )
+
+    # Create clone
+    new_env = ProjectEnvironment(
+        id=str(uuid.uuid4()),
+        project_id=source.project_id,
+        name=new_name,
+        domain=source.domain,
+        variables=source.variables.copy() if source.variables else {},
+        headers=source.headers.copy() if source.headers else {},
+        is_preupload=source.is_preupload,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+
+    session.add(new_env)
+    await session.commit()
+    await session.refresh(new_env)
+
+    return new_env
 
 
 @router.post("/{environment_id}/replace", response_model=VariableReplaceResponse)
@@ -201,13 +358,10 @@ async def replace_variables(
     Raises:
         HTTPException: If environment not found
     """
-    from app.core.db import sync_session_maker
-
-    with sync_session_maker() as sync_session:
-        service = EnvironmentService(sync_session)
-        try:
-            return service.replace_variables(
-                environment_id, data.text, data.additional_vars
-            )
-        except ValueError as e:
-            raise HTTPException(status_code=404, detail=str(e))
+    service = EnvironmentService(session)
+    try:
+        return await service.replace_variables(
+            environment_id, data.text, data.additional_vars
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))

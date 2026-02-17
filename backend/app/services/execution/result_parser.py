@@ -129,8 +129,8 @@ class ResultParser:
         }
 
     async def save_to_database(
-        self, result: ExecutionResult, test_case_id: int, environment_id: int, session: AsyncSession
-    ) -> int:
+        self, result: ExecutionResult, test_case_id: str, environment_id: str, session: AsyncSession
+    ) -> str:
         """
         保存结果到数据库
 

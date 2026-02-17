@@ -19,7 +19,6 @@ import { Play, Save } from 'lucide-react'
 
 interface TestCaseEditorProps {
   testCaseId?: number
-  projectId: number
   initialData?: {
     name?: string
     description?: string
@@ -27,18 +26,17 @@ interface TestCaseEditorProps {
       id: string
       type: string
       name: string
-      params: Record<string, any>
-      validations?: Array<Record<string, any>>
+      params: Record<string, unknown>
+      validations?: Array<Record<string, unknown>>
     }>
-    variables?: Record<string, any>
+    variables?: Record<string, unknown>
   }
-  onSave?: (data: any) => Promise<void>
-  onExecute?: (result: any) => void
+  onSave?: (data: unknown) => Promise<void>
+  onExecute?: (result: unknown) => void
 }
 
 export function TestCaseEditor({
   testCaseId,
-  projectId,
   initialData,
   onSave,
   onExecute

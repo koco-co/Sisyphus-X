@@ -2,6 +2,7 @@
 API 依赖注入模块
 """
 
+
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, select
@@ -32,7 +33,7 @@ async def get_current_user(
         default_user = User(
             username="admin",
             email="admin@sisyphus.dev",
-            password_hash=get_password_hash("admin123"),
+            hashed_password=get_password_hash("admin123"),
             is_active=True,
         )
         session.add(default_user)
@@ -77,7 +78,7 @@ async def get_current_user_optional(
         return None
 
 
-def require_user_id(user: User) -> int:
+def require_user_id(user: User) -> str:
     """确保用户对象包含可用 ID。"""
     if user.id is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="无效用户上下文")

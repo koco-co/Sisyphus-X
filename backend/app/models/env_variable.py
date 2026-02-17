@@ -4,7 +4,7 @@
 """
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, ForeignKey, String, Text, Index
+from sqlalchemy import DateTime, Boolean, ForeignKey, String, Text, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -40,9 +40,9 @@ class EnvVariable(Base):
     is_global: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # 是否全局变量
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     __table_args__ = (

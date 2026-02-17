@@ -4,7 +4,7 @@ curl 命令解析模块
 
 import re
 import shlex
-from typing import Any
+from typing import Any, Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -126,7 +126,7 @@ def parse_curl_command(curl_command: str) -> dict[str, Any]:
 async def import_curl(
     project_id: int = Body(..., embed=True),
     curl_command: str = Body(..., embed=True),
-    name: str | None = Body(None, embed=True),
+    name: Optional[str] = Body(None, embed=True),
     session: AsyncSession = Depends(get_session),
 ):
     """导入 curl 命令创建接口"""

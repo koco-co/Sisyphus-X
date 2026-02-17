@@ -18,7 +18,7 @@ export interface DropdownMenuTriggerProps {
 export function DropdownMenuTrigger({ children, asChild = false, onClick }: DropdownMenuTriggerProps) {
   if (asChild && React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement, {
-      onClick: onClick as any,
+      onClick: onClick || (children.props as any).onClick,
     })
   }
   return <div onClick={onClick}>{children}</div>
@@ -26,10 +26,9 @@ export function DropdownMenuTrigger({ children, asChild = false, onClick }: Drop
 
 export interface DropdownMenuContentProps {
   children: React.ReactNode
-  align?: 'start' | 'end' | 'center'
 }
 
-export function DropdownMenuContent({ children, align = 'start' }: DropdownMenuContentProps) {
+export function DropdownMenuContent({ children }: DropdownMenuContentProps) {
   return (
     <div className="absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-popover border border-border z-50">
       <div className="py-1">{children}</div>
@@ -41,15 +40,17 @@ export interface DropdownMenuItemProps {
   children: React.ReactNode
   onClick?: () => void
   className?: string
+  disabled?: boolean
 }
 
-export function DropdownMenuItem({ children, onClick, className }: DropdownMenuItemProps) {
+export function DropdownMenuItem({ children, onClick, className, disabled = false }: DropdownMenuItemProps) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={cn(
-        "block w-full text-left px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground",
+        "block w-full text-left px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground disabled:opacity-50 disabled:cursor-not-allowed",
         className
       )}
     >

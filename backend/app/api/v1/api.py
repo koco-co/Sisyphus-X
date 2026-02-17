@@ -31,6 +31,7 @@ from app.api.v1.endpoints import (
     # swagger,  # TEMP: 暂时禁用
     testcases,
     upload,
+    websocket,
 )
 
 api_router = APIRouter()
@@ -182,6 +183,12 @@ api_router.include_router(
     prefix="/global-params",
     tags=["global-params"],
     dependencies=[Depends(deps.get_current_user)],
+)
+# WebSocket endpoints
+api_router.include_router(
+    websocket.router,
+    prefix="/ws",
+    tags=["websocket"],
 )
 # TODO: user_management - 需要修复导入问题后重新启用
 # api_router.include_router(user_management.router, prefix="/admin", tags=["用户权限管理"], dependencies=[Depends(deps.get_current_user)])

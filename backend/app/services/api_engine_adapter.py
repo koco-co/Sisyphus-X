@@ -8,13 +8,13 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 
 class APIEngineAdapter:
     """Sisyphus-api-engine 执行适配器"""
 
-    def __init__(self, temp_dir: str | None = None):
+    def __init__(self, temp_dir: Optional[str] = None):
         """
         初始化适配器
 
@@ -30,7 +30,7 @@ class APIEngineAdapter:
     def execute_test_case(
         self,
         yaml_content: str,
-        environment: str | None = None,
+        environment: Optional[str] = None,
         verbose: bool = True,
         output_format: str = "json",
     ) -> dict[str, Any]:
@@ -140,7 +140,7 @@ class APIEngineAdapter:
     def _build_command(
         self,
         yaml_file: str,
-        environment: str | None = None,
+        environment: Optional[str] = None,
         verbose: bool = True,
         output_format: str = "json",
     ) -> list:
@@ -307,7 +307,7 @@ class APIEngineAdapter:
                 except Exception:
                     pass
 
-    def get_engine_version(self) -> str | None:
+    def get_engine_version(self) -> Optional[str]:
         """
         获取 sisyphus-api-engine 版本
 
@@ -328,7 +328,7 @@ class APIEngineAdapter:
 
 # 便捷函数
 def execute_test_case(
-    yaml_content: str, environment: str | None = None, verbose: bool = True
+    yaml_content: str, environment: Optional[str] = None, verbose: bool = True
 ) -> dict[str, Any]:
     """
     执行测试用例（便捷函数）

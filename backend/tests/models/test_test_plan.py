@@ -168,6 +168,7 @@ async def test_create_plan_scenario(db_session):
     scenario = Scenario(
         id=str(uuid.uuid4()),
         project_id=project.id,
+        created_by=user.id,
         name="测试场景1",
     )
     db_session.add(scenario)
@@ -224,11 +225,13 @@ async def test_plan_scenario_unique_constraint(db_session):
     scenario1 = Scenario(
         id=str(uuid.uuid4()),
         project_id=project.id,
+        created_by=user.id,
         name="测试场景1",
     )
     scenario2 = Scenario(
         id=str(uuid.uuid4()),
         project_id=project.id,
+        created_by=user.id,
         name="测试场景2",
     )
     db_session.add_all([scenario1, scenario2])
@@ -289,6 +292,7 @@ async def test_cascade_delete_test_plan_scenarios(db_session):
     scenario = Scenario(
         id=str(uuid.uuid4()),
         project_id=project.id,
+        created_by=user.id,
         name="测试场景1",
     )
     db_session.add(scenario)
@@ -567,6 +571,7 @@ async def test_create_execution_step(db_session):
     scenario = Scenario(
         id=str(uuid.uuid4()),
         project_id=project.id,
+        created_by=user.id,
         name="测试场景1",
     )
     db_session.add(scenario)
@@ -632,6 +637,7 @@ async def test_execution_step_status(db_session):
     scenario = Scenario(
         id=str(uuid.uuid4()),
         project_id=project.id,
+        created_by=user.id,
         name="测试场景1",
     )
     db_session.add(scenario)
@@ -698,6 +704,7 @@ async def test_execution_step_error_message(db_session):
     scenario = Scenario(
         id=str(uuid.uuid4()),
         project_id=project.id,
+        created_by=user.id,
         name="测试场景1",
     )
     db_session.add(scenario)
@@ -757,6 +764,7 @@ async def test_execution_step_relationship(db_session):
     scenario = Scenario(
         id=str(uuid.uuid4()),
         project_id=project.id,
+        created_by=user.id,
         name="测试场景1",
     )
     db_session.add(scenario)
@@ -815,11 +823,13 @@ async def test_full_test_plan_workflow(db_session):
     scenario1 = Scenario(
         id=str(uuid.uuid4()),
         project_id=project.id,
+        created_by=user.id,
         name="场景1",
     )
     scenario2 = Scenario(
         id=str(uuid.uuid4()),
         project_id=project.id,
+        created_by=user.id,
         name="场景2",
     )
     db_session.add_all([scenario1, scenario2])
@@ -922,6 +932,7 @@ async def test_execution_with_multiple_steps(db_session):
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=project.id,
+            created_by=user.id,
             name=f"场景{i}",
         )
         db_session.add(scenario)

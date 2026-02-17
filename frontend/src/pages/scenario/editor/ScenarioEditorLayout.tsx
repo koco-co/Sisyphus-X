@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import ReactFlow, {
     Background,
     Controls,
@@ -8,19 +8,33 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useScenarioEditor } from './ScenarioEditorContext';
 import { NodeSidebar } from './components/NodeSidebar';
+import { DatasetSidebar } from './components/DatasetSidebar';
 import { ConfigPanel } from './components/ConfigPanel';
 import { FlowToolbar } from './components/FlowToolbar';
 import { ApiNode } from './components/nodes/ApiNode';
 import { ConditionNode } from './components/nodes/ConditionNode';
 import { WaitNode } from './components/nodes/WaitNode';
+import { SQLNode } from './components/nodes/SQLNode';
+import { LoopNode } from './components/nodes/LoopNode';
+import { ScriptNode } from './components/nodes/ScriptNode';
+import { Workflow, Database } from 'lucide-react';
+import { useParams } from 'react-router-dom';
 
 const nodeTypes = {
     api: ApiNode,
     condition: ConditionNode,
     wait: WaitNode,
+    sql: SQLNode,
+    loop: LoopNode,
+    script: ScriptNode,
 };
 
+type SidebarMode = 'nodes' | 'datasets';
+
 export default function ScenarioEditor() {
+    const { id } = useParams();
+    const scenarioId = parseInt(id || '0');
+    const [sidebarMode, setSidebarMode] = useState<SidebarMode>('nodes');
     const {
         nodes,
         edges,
@@ -73,9 +87,50 @@ export default function ScenarioEditor() {
 
     return (
         <div className="flex h-[calc(100vh-64px)] w-full overflow-hidden bg-slate-950">
-            {/* 组件库 */}
-            <div className="w-64 border-r border-white/5 bg-slate-900/50 backdrop-blur-xl">
-                <NodeSidebar />
+            {/* 左侧边栏 */}
+            <div className="w-64 border-r border-white/5 bg-slate-900/50 backdrop-blur-xl flex flex-col">
+                {/* 切换按钮 */}
+                <div className="flex border-b border-white/5">
+                    <button
+                        onClick={() => setSidebarMode('nodes')}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all ${
+                            sidebarMode === 'nodes'
+                                ? 'text-cyan-400 bg-cyan-500/10 border-b-2 border-cyan-500'
+                                : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                        data-testid="sidebar-tab-nodes"
+                    >
+                        <Workflow className="w-4 h-4" />
+                        节点
+                    </button>
+                    <button
+                        onClick={() => setSidebarMode('datasets')}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all ${
+                            sidebarMode === 'datasets'
+                                ? 'text-cyan-400 bg-cyan-500/10 border-b-2 border-cyan-500'
+                                : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                        data-testid="sidebar-tab-datasets"
+                    >
+                        <Database className="w-4 h-4" />
+                        数据集
+                    </button>
+                </div>
+
+                {/* 侧边栏内容 */}
+                <div className="flex-1 overflow-hidden">
+                    {sidebarMode === 'nodes' ? (
+                        <NodeSidebar />
+                    ) : (
+                        <DatasetSidebar
+                            scenarioId={scenarioId}
+                            onDatasetSelect={(dataset) => {
+                                // Handle dataset selection if needed
+                                console.log('Selected dataset:', dataset);
+                            }}
+                        />
+                    )}
+                </div>
             </div>
 
             {/* 画布区域 */}

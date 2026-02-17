@@ -22,12 +22,12 @@ class AIConversation(SQLModel, table=True):
     ai_model_used: Optional[str] = None
 
     # 消息存储 (JSON)
-    messages: dict[str, Any] = Field(default=dict, sa_column=Column(JSON))  # LangGraph State
+    messages: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON))  # LangGraph State
 
     # 元数据
     created_by: int
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Config:
         indexes = [

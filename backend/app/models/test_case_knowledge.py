@@ -18,7 +18,7 @@ class TestCaseKnowledge(SQLModel, table=True):
     test_case_id: int = Field(unique=True, index=True)  # 关联test_cases
 
     # 向量化数据（SQLite不支持ARRAY，使用JSON存储）
-    embedding: list[float] = Field(
+    embedding: List[float] = Field(
         default=list, sa_column=Column(JSON)
     )  # 1536维向量
 
@@ -27,13 +27,13 @@ class TestCaseKnowledge(SQLModel, table=True):
     module_name: str
     priority: str
     case_type: str
-    tags: list[str] = Field(default=list, sa_column=Column(JSON))
+    tags: List[str] = Field(default=list, sa_column=Column(JSON))
 
     # 质量指标
     quality_score: float = Field(default=0.0)  # 0.0-10.0
     usage_count: int = Field(default=0)  # 被引用次数
 
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     class Config:
         indexes = [

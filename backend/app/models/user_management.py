@@ -4,7 +4,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import Column, ForeignKey, Integer, Table, Text
+from sqlalchemy import DateTime, Column, ForeignKey, Integer, Table, Text
 from sqlmodel import Field, SQLModel
 from typing import Optional, Dict, Any, List
 

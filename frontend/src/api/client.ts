@@ -109,18 +109,75 @@ export const interfacesApi = {
     importSwagger: (formData: FormData) => api.post('/interfaces/import/swagger', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
+    importCurl: (data: { curl: string }) => api.post('/interfaces/import/curl', data),
 }
 
 // 场景相关 API
 export const scenariosApi = {
-    list: () => api.get('/scenarios/'),
+    list: (params?: { project_id?: number; page?: number; size?: number }) =>
+        api.get('/scenarios/', { params }),
     get: (id: number) => api.get(`/scenarios/${id}`),
-    create: (data: { project_id: number; name: string; graph_data: Record<string, any> }) =>
-        api.post('/scenarios/', data),
-    update: (id: number, data: { project_id: number; name: string; graph_data: Record<string, any> }) =>
-        api.put(`/scenarios/${id}`, data),
-    run: (graph_data: { nodes: any[]; edges: any[] }) =>
-        api.post('/scenarios/run', { graph_data }),
+    create: (data: {
+        project_id: number
+        name: string
+        description?: string
+        priority?: string
+        tags?: string[]
+        created_by: string
+    }) => api.post('/scenarios/', data),
+    update: (id: number, data: {
+        project_id?: number
+        name?: string
+        description?: string
+        priority?: string
+        tags?: string[]
+        graph_data?: Record<string, any>
+    }) => api.put(`/scenarios/${id}`, data),
+    delete: (id: number) => api.delete(`/scenarios/${id}`),
+
+    // 步骤管理
+    createStep: (scenarioId: number, data: {
+        description?: string
+        keyword_type: string
+        keyword_name: string
+        parameters?: Record<string, any>
+        sort_order?: number
+    }) => api.post(`/scenarios/${scenarioId}/steps`, data),
+    updateStep: (scenarioId: number, stepId: number, data: {
+        description?: string
+        keyword_type?: string
+        keyword_name?: string
+        parameters?: Record<string, any>
+        sort_order?: number
+    }) => api.put(`/scenarios/${scenarioId}/steps/${stepId}`, data),
+    deleteStep: (scenarioId: number, stepId: number) =>
+        api.delete(`/scenarios/${scenarioId}/steps/${stepId}`),
+    batchUpdateSteps: (scenarioId: number, steps: Array<{ id: number; sort_order: number }>) =>
+        api.put(`/scenarios/${scenarioId}/steps/batch`, { steps }),
+
+    // 数据集管理
+    listDatasets: (scenarioId: number) =>
+        api.get(`/scenarios/${scenarioId}/datasets`),
+    createDataset: (scenarioId: number, data: { name: string; csv_data?: string }) =>
+        api.post(`/scenarios/${scenarioId}/datasets`, data),
+    getDataset: (scenarioId: number, datasetId: number) =>
+        api.get(`/scenarios/${scenarioId}/datasets/${datasetId}`),
+    updateDataset: (scenarioId: number, datasetId: number, data: { name?: string; csv_data?: string }) =>
+        api.put(`/scenarios/${scenarioId}/datasets/${datasetId}`, data),
+    deleteDataset: (scenarioId: number, datasetId: number) =>
+        api.delete(`/scenarios/${scenarioId}/datasets/${datasetId}`),
+    importDataset: (scenarioId: number, formData: FormData) =>
+        api.post(`/scenarios/${scenarioId}/datasets/import`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }),
+    exportDataset: (scenarioId: number, datasetId: number) =>
+        api.get(`/scenarios/${scenarioId}/datasets/${datasetId}/export`, { responseType: 'blob' }),
+
+    // 场景调试
+    debug: (scenarioId: number, data: {
+        environment_id?: number
+        dataset_id?: number
+    }) => api.post(`/scenarios/${scenarioId}/debug`, data),
 }
 
 // Dashboard 统计 API
@@ -143,26 +200,64 @@ export const reportsApi = {
 export const plansApi = {
     list: (params?: { page?: number; size?: number }) =>
         api.get('/plans/', { params }),
-    create: (data: { name: string; scenario_id: number; cron_expression: string; status?: string }) =>
-        api.post('/plans/', data),
+    create: (data: {
+        name: string
+        project_id: number
+        description?: string
+        created_by: string
+    }) => api.post('/plans/', data),
     get: (id: number) => api.get(`/plans/${id}`),
-    update: (id: number, data: any) => api.put(`/plans/${id}`, data),
+    update: (id: number, data: {
+        name?: string
+        project_id?: number
+        description?: string
+    }) => api.put(`/plans/${id}`, data),
     delete: (id: number) => api.delete(`/plans/${id}`),
+
+    // 场景编排
+    addScenario: (planId: number, data: {
+        scenario_id: number
+        dataset_id?: number
+        environment_id?: number
+        variables?: Record<string, any>
+        sort_order?: number
+    }) => api.post(`/plans/${planId}/scenarios`, data),
+    listScenarios: (planId: number) =>
+        api.get(`/plans/${planId}/scenarios`),
+    updateScenario: (planId: number, planScenarioId: number, data: {
+        scenario_id?: number
+        dataset_id?: number
+        environment_id?: number
+        variables?: Record<string, any>
+        sort_order?: number
+    }) => api.put(`/plans/${planId}/scenarios/${planScenarioId}`, data),
+    removeScenario: (planId: number, planScenarioId: number) =>
+        api.delete(`/plans/${planId}/scenarios/${planScenarioId}`),
+    batchUpdateScenarios: (planId: number, scenarios: Array<{ id: number; sort_order: number }>) =>
+        api.put(`/plans/${planId}/scenarios/batch`, { scenarios }),
+
+    // 执行控制
+    execute: (id: number) => api.post(`/plans/${id}/execute`),
+    terminate: (id: number) => api.post(`/plans/${id}/terminate`),
     pause: (id: number) => api.post(`/plans/${id}/pause`),
     resume: (id: number) => api.post(`/plans/${id}/resume`),
-    trigger: (id: number) => api.post(`/plans/${id}/trigger`),
+
+    // 执行记录
+    listExecutions: (planId: number) => api.get(`/plans/${planId}/executions`),
+    getExecution: (planId: number, executionId: number) =>
+        api.get(`/plans/${planId}/executions/${executionId}`),
 }
 
 // 关键字 API
 export const keywordsApi = {
-    list: (params?: { page?: number; size?: number; project_id?: number }) =>
+    list: (params?: { page?: number; size?: number; project_id?: string }) =>
         api.get('/keywords/', { params }),
     create: (data: any) => api.post('/keywords/', data),
-    get: (id: number) => api.get(`/keywords/${id}`),
-    update: (id: number, data: any) => api.put(`/keywords/${id}`, data),
-    delete: (id: number) => api.delete(`/keywords/${id}`),
-    toggle: (id: number) => api.put(`/keywords/${id}/toggle`),
-    generateFile: (id: number) => api.post(`/keywords/${id}/generate-file`),
+    get: (id: string) => api.get(`/keywords/${id}`),
+    update: (id: string, data: any) => api.put(`/keywords/${id}`, data),
+    delete: (id: string) => api.delete(`/keywords/${id}`),
+    toggle: (id: string) => api.put(`/keywords/${id}/toggle`),
+    generateFile: (id: string) => api.post(`/keywords/${id}/generate-file`),
 }
 
 // API 测试用例 API
@@ -259,6 +354,16 @@ export const requirementsApi = {
     update: (id: number, data: { title?: string; description?: string; priority?: string; status?: string }) =>
         api.put(`/functional/requirements/${id}`, data),
     delete: (id: number) => api.delete(`/functional/requirements/${id}`),
+}
+
+// 全局参数管理 API
+export const globalParamsApi = {
+    list: () => api.get('/global-params/'),
+    get: (id: string) => api.get(`/global-params/${id}`),
+    create: (data: { code: string }) => api.post('/global-params/', data),
+    update: (id: string, data: { code?: string; description?: string }) =>
+        api.put(`/global-params/${id}`, data),
+    delete: (id: string) => api.delete(`/global-params/${id}`),
 }
 
 export default api

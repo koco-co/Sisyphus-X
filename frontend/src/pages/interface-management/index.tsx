@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -41,11 +41,71 @@ const keyValueArrayToObject = (pairs: KeyValuePair[]): Record<string, string> =>
 export default function InterfaceManagementPage() {
   const { id, projectId } = useParams<{ id?: string; projectId?: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
 
-  const interfaceId = id ? parseInt(id) : null
+  // 🔧 终极修复: 直接从window.location解析路径参数,绕过useParams可能的问题
+  const pathSegments = location.pathname.split('/')
+  console.log('Path segments:', pathSegments)
+
+  // 路径格式: /interface-management -> ["", "interface-management"] -> 无ID
+  // 路径格式: /interface-management/new -> ["", "interface-management", "new"] -> ID = "new"
+  // 路径格式: /interface-management/123 -> ["", "interface-management", "123"] -> ID = "123"
+  const pathId = pathSegments.length >= 3 ? pathSegments[2] : undefined
+
+  const effectiveId = pathId !== undefined ? pathId : id // 优先使用从路径解析的值
+
+  console.log('Path analysis:', {
+    pathname: location.pathname,
+    pathSegments,
+    pathSegments_length: pathSegments.length,
+    pathId,
+    useParams_id: id,
+    effectiveId,
+    final_decision: effectiveId === 'new' ? 'NEW MODE' : effectiveId ? `EDIT MODE (${effectiveId})` : 'WELCOME MODE'
+  })
+
+  const interfaceId = effectiveId && effectiveId !== 'new' ? parseInt(effectiveId) : null
   const currentProjectId = projectId ? parseInt(projectId) : 1
-  const isNew = id === 'new' || !id
+  const isNew = effectiveId === 'new'
+
+  // 状态机模式: 明确管理页面状态
+  const [pageMode, setPageMode] = useState<'welcome' | 'new' | 'edit'>('welcome')
+
+  // 根据路由参数更新页面模式
+  useEffect(() => {
+    console.log('Route changed, updating page mode:', {
+      useParams_id: id,
+      pathId,
+      effectiveId,
+      isNew,
+      currentMode: pageMode,
+      pathname: location.pathname
+    })
+
+    if (!effectiveId) {
+      console.log('Setting mode: welcome')
+      setPageMode('welcome')
+    } else if (effectiveId === 'new') {
+      console.log('Setting mode: new')
+      setPageMode('new')
+    } else {
+      console.log('Setting mode: edit')
+      setPageMode('edit')
+    }
+  }, [effectiveId])
+
+  // 调试日志
+  console.log('InterfaceManagementPage render:', {
+    useParams_id: id,
+    pathId,
+    effectiveId,
+    projectId,
+    interfaceId,
+    isNew,
+    pageMode,
+    pathname: location.pathname
+  })
 
   // UI 状态
   const [showEnvironmentDialog, setShowEnvironmentDialog] = useState(false)
@@ -115,8 +175,30 @@ export default function InterfaceManagementPage() {
         bodyType: interfaceData.body_type || 'none',
         formDataPairs: [], // TODO: 加载 form-data
       })
+    } else if (isNew) {
+      // 新建模式时重置表单为默认值
+      setRequestData({
+        name: '',
+        url: '',
+        method: 'GET',
+        params: [],
+        headers: [],
+        auth: { type: 'no_auth' },
+        body: '',
+        bodyType: 'none',
+        formDataPairs: [],
+      })
     }
-  }, [interfaceData])
+  }, [interfaceData, isNew])
+
+  // 监听路由变化,当从欢迎界面跳转到新建页面时确保状态正确
+  useEffect(() => {
+    console.log('Route changed:', { id, isNew, pathname: location.pathname })
+    if (isNew) {
+      console.log('Resetting form for new interface')
+      setResponse(null) // 清除之前的响应
+    }
+  }, [id, isNew, location.pathname])
 
   // cURL 导入
   useEffect(() => {
@@ -150,7 +232,7 @@ export default function InterfaceManagementPage() {
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['interfaces'] })
       if (isNew && res.data?.id) {
-        navigate(`/api/interfaces/${res.data.id}`, { replace: true })
+        navigate(`/interface-management/${res.data.id}?projectId=${currentProjectId}`, { replace: true })
       }
     }
   })
@@ -305,11 +387,11 @@ export default function InterfaceManagementPage() {
 
   // 选择接口
   const handleSelectInterface = (id: number) => {
-    navigate(`/api/interfaces/${id}?projectId=${currentProjectId}`)
+    navigate(`/interface-management/${id}?projectId=${currentProjectId}`)
   }
 
   // 加载中
-  if (isLoading && !isNew) {
+  if (isLoading && pageMode === 'edit') {
     return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
@@ -317,8 +399,9 @@ export default function InterfaceManagementPage() {
     )
   }
 
-  // 欢迎页面（未选择接口时）
-  if (!interfaceId && isNew) {
+  // 状态机模式: 根据pageMode决定渲染什么
+  if (pageMode === 'welcome') {
+    console.log('Rendering welcome page')
     return (
       <div className="flex h-screen bg-slate-950">
         <InterfaceTree
@@ -333,6 +416,8 @@ export default function InterfaceManagementPage() {
     )
   }
 
+  // pageMode === 'new' 或 'edit'
+  console.log('Rendering editor page, mode:', pageMode)
   return (
     <div className="flex h-screen bg-slate-950">
       {/* 左侧目录树 */}
@@ -347,7 +432,7 @@ export default function InterfaceManagementPage() {
         {/* 顶部工具栏 */}
         <header className="flex items-center gap-4 px-6 py-4 border-b border-white/5 bg-slate-900/50">
           <button
-            onClick={() => navigate(`/api/interfaces?projectId=${currentProjectId}`)}
+            onClick={() => navigate(`/interface-management?projectId=${currentProjectId}`)}
             className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />

@@ -1,7 +1,7 @@
 """Test case generator service."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 import yaml
 from sqlmodel import Session
@@ -35,11 +35,11 @@ class TestCaseGenerator:
 
     def generate(
         self,
-        interface_id: int,
+        interface_id: str,
         case_name: str,
         keyword_name: str,
-        environment_id: int,
-        scenario_id: int | None = None,
+        environment_id: str,
+        scenario_id: Optional[str] = None,
         auto_assertion: bool = True,
     ) -> dict[str, Any]:
         """Generate test case from interface.
@@ -277,7 +277,7 @@ def generate_test_case(
     case_name: str,
     keyword_name: str,
     environment_id: int,
-    scenario_id: int | None = None,
+    scenario_id: Optional[int] = None,
     auto_assertion: bool = True,
 ) -> dict[str, Any]:
     """Generate test case from interface.

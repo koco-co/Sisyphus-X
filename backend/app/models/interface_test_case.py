@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import DateTime, UniqueConstraint
 from sqlmodel import JSON, Column, Field, SQLModel
 from typing import Optional, Dict, Any, List
 
@@ -26,10 +26,10 @@ class InterfaceTestCase(SQLModel, table=True):
         description="Scenario ID"
     )
 
-    assertions: dict = Field(default=dict, sa_column=Column(JSON), description="Assertion config")
+    assertions: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON), description="Assertion config")
 
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc), description="Created at")
-    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc), description="Updated at")
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Created at")
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Updated at")
 
     __table_args__ = (
         UniqueConstraint("yaml_path", name="uq_interface_test_case_yaml_path"),

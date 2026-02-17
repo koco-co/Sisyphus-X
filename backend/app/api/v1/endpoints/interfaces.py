@@ -12,8 +12,13 @@ from app.models.project import Interface, InterfaceFolder
 from app.schemas.interface import (
     EngineExecuteRequest,
     EngineExecuteResponse,
+    ImportFromCurlRequest,
+    InterfaceCreate,
+    InterfaceResponse,
     InterfaceSendRequest,
     InterfaceSendResponse,
+    FolderCreate,
+    FolderResponse,
 )
 from app.schemas.interface_test_case import (
     GenerateTestCaseRequest,
@@ -28,7 +33,7 @@ from app.services.test_case_generator import TestCaseGenerator
 router = APIRouter()
 
 
-@router.get("/", response_model=PageResponse[Interface])
+@router.get("/", response_model=PageResponse[InterfaceResponse])
 async def read_interfaces(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
@@ -58,8 +63,11 @@ async def read_interfaces(
     return PageResponse(items=interfaces, total=total, page=page, size=size, pages=pages)
 
 
-@router.post("/", response_model=Interface)
-async def create_interface(interface: Interface, session: AsyncSession = Depends(get_session)):
+@router.post("/", response_model=InterfaceResponse)
+async def create_interface(
+    data: InterfaceCreate, session: AsyncSession = Depends(get_session)
+):
+    interface = Interface(**data.model_dump())
     session.add(interface)
     await session.commit()
     await session.refresh(interface)
@@ -69,7 +77,7 @@ async def create_interface(interface: Interface, session: AsyncSession = Depends
 # === 接口文件夹管理 ===
 
 
-@router.get("/folders", response_model=list[InterfaceFolder])
+@router.get("/folders", response_model=list[FolderResponse])
 async def list_folders(
     project_id: int | None = Query(None), session: AsyncSession = Depends(get_session)
 ):
@@ -83,9 +91,12 @@ async def list_folders(
     return folders
 
 
-@router.post("/folders", response_model=InterfaceFolder)
-async def create_folder(folder: InterfaceFolder, session: AsyncSession = Depends(get_session)):
+@router.post("/folders", response_model=FolderResponse)
+async def create_folder(
+    data: FolderCreate, session: AsyncSession = Depends(get_session)
+):
     """创建接口文件夹"""
+    folder = InterfaceFolder(**data.model_dump())
     session.add(folder)
     await session.commit()
     await session.refresh(folder)
@@ -122,20 +133,63 @@ async def delete_folder(folder_id: int, session: AsyncSession = Depends(get_sess
     return {"deleted": folder_id}
 
 
-@router.get("/{interface_id}", response_model=Interface)
-async def read_interface(interface_id: int, session: AsyncSession = Depends(get_session)):
+@router.post("/import-from-curl", response_model=InterfaceResponse)
+async def import_from_curl(
+    request: ImportFromCurlRequest,
+    session: AsyncSession = Depends(get_session),
+) -> InterfaceResponse:
+    """从 cURL 命令导入接口"""
+    # 解析 cURL 命令
+    try:
+        parsed = parse_curl_command(request.curl_command)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"cURL 解析失败: {str(e)}")
+
+    # 从解析结果创建接口
+    interface = Interface(
+        project_id="",  # 将从folder获取project_id
+        folder_id=request.folder_id,
+        name=request.name or f"从 cURL 导入 {parsed['method']}",
+        url=parsed["url"],
+        method=parsed["method"],
+        status="draft",
+        description="从 cURL 命令导入",
+        headers=parsed.get("headers", {}),
+        params=parsed.get("params", {}),
+        body=parsed.get("body", {}),
+        body_type=parsed.get("body_type", "json"),
+        cookies={},
+        order=0,
+        auth_config=parsed.get("auth", {}),
+    )
+
+    # 如果提供了folder_id,获取project_id
+    if request.folder_id:
+        folder = await session.get(InterfaceFolder, request.folder_id)
+        if folder:
+            interface.project_id = folder.project_id
+
+    session.add(interface)
+    await session.commit()
+    await session.refresh(interface)
+
+    return interface
+
+
+@router.get("/{interface_id}", response_model=InterfaceResponse)
+async def read_interface(interface_id: str, session: AsyncSession = Depends(get_session)):
     interface = await session.get(Interface, interface_id)
     if not interface:
         raise HTTPException(status_code=404, detail="Interface not found")
     return interface
 
 
-@router.put("/{interface_id}", response_model=Interface)
+@router.put("/{interface_id}", response_model=InterfaceResponse)
 async def update_interface(
-    interface_id: int, data: dict, session: AsyncSession = Depends(get_session)
+    interface_id: str, data: dict, session: AsyncSession = Depends(get_session)
 ):
     """更新接口"""
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     interface = await session.get(Interface, interface_id)
     if not interface:
@@ -159,14 +213,14 @@ async def update_interface(
         if key in allowed_fields:
             setattr(interface, key, value)
 
-    interface.updated_at = datetime.utcnow()
+    interface.updated_at = datetime.now(timezone.utc)
     await session.commit()
     await session.refresh(interface)
     return interface
 
 
 @router.delete("/{interface_id}")
-async def delete_interface(interface_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_interface(interface_id: str, session: AsyncSession = Depends(get_session)):
     """删除接口"""
     interface = await session.get(Interface, interface_id)
     if not interface:
@@ -419,12 +473,12 @@ async def preview_yaml(
             raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/{interface_id}/move")
+@router.put("/{interface_id}/move", response_model=InterfaceResponse)
 async def move_interface(
-    interface_id: int,
-    data: dict[str, int],
+    interface_id: str,
+    data: dict[str, str],
     session: AsyncSession = Depends(get_session),
-) -> Interface:
+) -> InterfaceResponse:
     """Move interface to another folder.
 
     Args:
@@ -451,12 +505,12 @@ async def move_interface(
     return interface
 
 
-@router.post("/{interface_id}/copy", response_model=Interface)
+@router.post("/{interface_id}/copy", response_model=InterfaceResponse)
 async def copy_interface(
     interface_id: int,
     data: dict[str, str],
     session: AsyncSession = Depends(get_session),
-) -> Interface:
+) -> InterfaceResponse:
     """Copy interface.
 
     Args:
@@ -499,7 +553,7 @@ async def copy_interface(
     return new_interface
 
 
-@router.get("/search", response_model=PageResponse[Interface])
+@router.get("/search", response_model=PageResponse[InterfaceResponse])
 async def search_interfaces(
     project_id: int,
     q: str | None = Query(None, description="Search query"),
@@ -508,7 +562,7 @@ async def search_interfaces(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     session: AsyncSession = Depends(get_session),
-) -> PageResponse[Interface]:
+) -> PageResponse[InterfaceResponse]:
     """Search and filter interfaces.
 
     Args:

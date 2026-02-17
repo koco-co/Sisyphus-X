@@ -111,9 +111,9 @@ class TestPlan(Base):
     )  # 最后运行时间
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     # 关系
@@ -167,7 +167,7 @@ class PlanScenario(Base):
     execution_order: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # 复合唯一索引: test_plan_id + execution_order 必须唯一
     __table_args__ = (
@@ -225,7 +225,7 @@ class TestPlanExecution(Base):
     skipped_scenarios: Mapped[int] = mapped_column(Integer, default=0)
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # 关系
     test_plan: Mapped["TestPlan"] = relationship("TestPlan", back_populates="test_plan_executions")
@@ -282,7 +282,7 @@ class PlanExecutionStep(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # 关系
     test_plan_execution: Mapped["TestPlanExecution"] = relationship(

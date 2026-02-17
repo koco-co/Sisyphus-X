@@ -2,7 +2,8 @@
 
 from typing import Any
 
-from sqlmodel import Session, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from app.models.project import ProjectEnvironment
 from app.schemas.environment import (
@@ -16,15 +17,15 @@ from app.services.variable_replacer import VariableReplacer
 class EnvironmentService:
     """Service for managing project environments."""
 
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: AsyncSession) -> None:
         """Initialize the service.
 
         Args:
-            session: Database session
+            session: Async database session
         """
         self.session = session
 
-    def create(self, project_id: int, data: EnvironmentCreate) -> ProjectEnvironment:
+    async def create(self, project_id: str, data: EnvironmentCreate) -> ProjectEnvironment:
         """Create a new environment.
 
         Args:
@@ -38,12 +39,12 @@ class EnvironmentService:
             ValueError: If environment name already exists in project
         """
         # Check for duplicate name
-        existing = self.session.exec(
-            select(ProjectEnvironment).where(
-                ProjectEnvironment.project_id == project_id,
-                ProjectEnvironment.name == data.name,
-            )
-        ).first()
+        statement = select(ProjectEnvironment).where(
+            ProjectEnvironment.project_id == project_id,
+            ProjectEnvironment.name == data.name,
+        )
+        result = await self.session.execute(statement)
+        existing = result.first()
 
         if existing:
             raise ValueError(f"Environment '{data.name}' already exists")
@@ -58,12 +59,12 @@ class EnvironmentService:
         )
 
         self.session.add(environment)
-        self.session.commit()
-        self.session.refresh(environment)
+        await self.session.commit()
+        await self.session.refresh(environment)
 
         return environment
 
-    def get(self, environment_id: int) -> ProjectEnvironment | None:
+    async def get(self, environment_id: str) -> ProjectEnvironment | None:
         """Get environment by ID.
 
         Args:
@@ -72,9 +73,9 @@ class EnvironmentService:
         Returns:
             Environment or None
         """
-        return self.session.get(ProjectEnvironment, environment_id)
+        return await self.session.get(ProjectEnvironment, environment_id)
 
-    def list_by_project(self, project_id: int) -> list[ProjectEnvironment]:
+    async def list_by_project(self, project_id: str) -> list[ProjectEnvironment]:
         """List all environments for a project.
 
         Args:
@@ -86,10 +87,11 @@ class EnvironmentService:
         statement = select(ProjectEnvironment).where(
             ProjectEnvironment.project_id == project_id
         )
-        return list(self.session.exec(statement).all())
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
 
-    def update(
-        self, environment_id: int, data: EnvironmentUpdate
+    async def update(
+        self, environment_id: str, data: EnvironmentUpdate
     ) -> ProjectEnvironment | None:
         """Update environment.
 
@@ -103,18 +105,18 @@ class EnvironmentService:
         Raises:
             ValueError: If new name conflicts with existing environment
         """
-        environment = self.get(environment_id)
+        environment = await self.get(environment_id)
         if not environment:
             return None
 
         # Check for name conflict
         if data.name and data.name != environment.name:
-            existing = self.session.exec(
-                select(ProjectEnvironment).where(
-                    ProjectEnvironment.project_id == environment.project_id,
-                    ProjectEnvironment.name == data.name,
-                )
-            ).first()
+            statement = select(ProjectEnvironment).where(
+                ProjectEnvironment.project_id == environment.project_id,
+                ProjectEnvironment.name == data.name,
+            )
+            result = await self.session.execute(statement)
+            existing = result.first()
 
             if existing:
                 raise ValueError(f"Environment '{data.name}' already exists")
@@ -124,12 +126,12 @@ class EnvironmentService:
         for field, value in update_data.items():
             setattr(environment, field, value)
 
-        self.session.commit()
-        self.session.refresh(environment)
+        await self.session.commit()
+        await self.session.refresh(environment)
 
         return environment
 
-    def delete(self, environment_id: int) -> bool:
+    async def delete(self, environment_id: str) -> bool:
         """Delete environment.
 
         Args:
@@ -138,17 +140,17 @@ class EnvironmentService:
         Returns:
             True if deleted, False if not found
         """
-        environment = self.get(environment_id)
+        environment = await self.get(environment_id)
         if not environment:
             return False
 
-        self.session.delete(environment)
-        self.session.commit()
+        await self.session.delete(environment)
+        await self.session.commit()
 
         return True
 
-    def copy(
-        self, environment_id: int, data: EnvironmentCopyRequest
+    async def copy(
+        self, environment_id: str, data: EnvironmentCopyRequest
     ) -> ProjectEnvironment:
         """Copy environment.
 
@@ -162,17 +164,17 @@ class EnvironmentService:
         Raises:
             ValueError: If source environment not found or name conflicts
         """
-        source = self.get(environment_id)
+        source = await self.get(environment_id)
         if not source:
             raise ValueError(f"Environment {environment_id} not found")
 
         # Check for name conflict
-        existing = self.session.exec(
-            select(ProjectEnvironment).where(
-                ProjectEnvironment.project_id == source.project_id,
-                ProjectEnvironment.name == data.name,
-            )
-        ).first()
+        statement = select(ProjectEnvironment).where(
+            ProjectEnvironment.project_id == source.project_id,
+            ProjectEnvironment.name == data.name,
+        )
+        result = await self.session.execute(statement)
+        existing = result.first()
 
         if existing:
             raise ValueError(f"Environment '{data.name}' already exists")
@@ -188,14 +190,14 @@ class EnvironmentService:
         )
 
         self.session.add(new_env)
-        self.session.commit()
-        self.session.refresh(new_env)
+        await self.session.commit()
+        await self.session.refresh(new_env)
 
         return new_env
 
-    def replace_variables(
+    async def replace_variables(
         self,
-        environment_id: int,
+        environment_id: str,
         text: str,
         additional_vars: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
@@ -209,7 +211,7 @@ class EnvironmentService:
         Returns:
             Dictionary with original, replaced, and used variables
         """
-        environment = self.get(environment_id)
+        environment = await self.get(environment_id)
         if not environment:
             raise ValueError(f"Environment {environment_id} not found")
 

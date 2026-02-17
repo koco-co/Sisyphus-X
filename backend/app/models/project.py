@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 import uuid
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, Index
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, Index
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -43,9 +43,9 @@ class Project(Base):
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True
     )  # 项目负责人 (外键 → users)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     __table_args__ = (
@@ -72,7 +72,7 @@ class InterfaceFolder(Base):
         nullable=True
     )  # 父文件夹ID (支持树形结构)
     order: Mapped[int] = mapped_column(Integer, default=0)  # 同级排序序号
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
 
 
 class Interface(Base):
@@ -109,9 +109,9 @@ class Interface(Base):
     order: Mapped[int] = mapped_column(Integer, default=0)  # 同级排序序号
     auth_config: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # 认证配置
     schema_snapshot: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # Swagger 原始结构
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
     )
 
 
@@ -134,9 +134,9 @@ class ProjectEnvironment(Base):
     variables: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # 全局变量
     headers: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # 全局请求头
     is_preupload: Mapped[bool] = mapped_column(Boolean, default=False)  # 是否预上传
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
     )
 
 
@@ -166,9 +166,9 @@ class ProjectDataSource(Base):
     status: Mapped[str] = mapped_column(String(20), default="unchecked")  # unchecked, connected, error
     last_test_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     error_msg: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(default=datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
     )
 
 

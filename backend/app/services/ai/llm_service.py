@@ -3,7 +3,7 @@
 支持OpenAI、Anthropic、通义千问、文心一言
 """
 
-from typing import Any
+from typing import Any, Optional
 
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_models import QianfanChatEndpoint
@@ -101,7 +101,7 @@ class MultiVendorLLMService:
     @staticmethod
     async def get_default_llm_service(
         session: AsyncSession, user_id: int
-    ) -> "MultiVendorLLMService | None":
+    ) -> "Optional[MultiVendorLLMService]":
         """
         获取用户的默认LLM服务实例
 
@@ -155,7 +155,7 @@ class MultiVendorLLMService:
     @staticmethod
     async def get_llm_by_provider(
         session: AsyncSession, user_id: int, provider_type: str
-    ) -> Any | None:
+    ) -> Optional[Any]:
         """
         根据厂商类型获取LLM实例
 
@@ -288,7 +288,7 @@ class MultiVendorLLMService:
     @staticmethod
     async def get_default_llm(
         session: AsyncSession, user_id: int
-    ) -> "MultiVendorLLMService | None":
+    ) -> "Optional[MultiVendorLLMService]":
         """兼容旧调用名。"""
         return await MultiVendorLLMService.get_default_llm_service(session, user_id)
 

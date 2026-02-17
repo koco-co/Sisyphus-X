@@ -2,17 +2,19 @@ import { useState, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Loader2, Sparkles, ArrowRight, Github, Mail, Lock, Command, Cpu } from 'lucide-react'
+import { Eye, EyeOff, Loader2, Sparkles, ArrowRight, Github, Mail, Lock, Command, Cpu, CheckCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import Typewriter from 'typewriter-effect';
 import type { Container, Engine } from "@tsparticles/engine";
+import { useToast } from '@/components/ui/Toast';
 
 export default function LoginPage() {
     const { t } = useTranslation()
     const { login, register, loginWithGithub, loginWithGoogle } = useAuth()
     const navigate = useNavigate()
+    const { success, error: toastError } = useToast()
 
     const [isLogin, setIsLogin] = useState(true)
     const [email, setEmail] = useState('')
@@ -22,7 +24,11 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState('')
-    const [init, setInit] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('')
+    const [init, setInit] = useState(false)
+    const [agreedToTerms, setAgreedToTerms] = useState(false)
+    const [rememberMe, setRememberMe] = useState(false)
+    const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null)
 
     useEffect(() => {
         initParticlesEngine(async (engine: Engine) => {
@@ -35,6 +41,46 @@ export default function LoginPage() {
     const particlesLoaded = async (_container?: Container) => {
         // console.log(container);
     };
+
+    // 邮箱格式验证
+    const isValidEmail = (email: string): boolean => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        return emailRegex.test(email)
+    }
+
+    // 密码强度验证
+    const checkPasswordStrength = (password: string): 'weak' | 'medium' | 'strong' => {
+        if (password.length < 6) return 'weak'
+        if (password.length < 10) return 'medium'
+        return 'strong'
+    }
+
+    // 密码变更时更新强度
+    useEffect(() => {
+        if (password) {
+            setPasswordStrength(checkPasswordStrength(password))
+        } else {
+            setPasswordStrength(null)
+        }
+    }, [password])
+
+    // 计算表单是否有效
+    const isFormValid = useMemo(() => {
+        if (isLogin) {
+            return email.trim() !== '' && password.trim() !== '' && isValidEmail(email)
+        } else {
+            return (
+                username.trim() !== '' &&
+                email.trim() !== '' &&
+                password.trim() !== '' &&
+                confirmPassword.trim() !== '' &&
+                isValidEmail(email) &&
+                password.length >= 6 &&
+                password === confirmPassword &&
+                agreedToTerms
+            )
+        }
+    }, [isLogin, email, password, username, confirmPassword, agreedToTerms])
 
     const particlesOptions = useMemo(
         () => ({
@@ -113,23 +159,53 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setError('')
+        setSuccessMessage('')
+
+        // 注册时的额外验证
+        if (!isLogin) {
+            // 验证邮箱格式
+            if (!isValidEmail(email)) {
+                setError('请输入有效的邮箱地址')
+                return
+            }
+
+            // 验证密码强度
+            if (password.length < 6) {
+                setError('密码长度至少为6位')
+                return
+            }
+
+            // 验证确认密码
+            if (password !== confirmPassword) {
+                setError(t('auth.passwordMismatch'))
+                return
+            }
+
+            // 验证用户协议
+            if (!agreedToTerms) {
+                setError('请阅读并同意用户协议和隐私政策')
+                return
+            }
+        }
+
         setIsLoading(true)
 
         try {
             if (isLogin) {
                 await login(email, password)
+                success(t('auth.loginSuccess'))
+                navigate('/')
             } else {
-                if (password !== confirmPassword) {
-                    setError(t('auth.passwordMismatch'))
-                    setIsLoading(false)
-                    return
-                }
                 await register(username, email, password)
+                success('注册成功！正在跳转到首页...')
+                // 立即跳转到首页
+                navigate('/')
             }
-            navigate('/')
         } catch (err: unknown) {
             const error = err as { response?: { data?: { detail?: string } } }
-            setError(error.response?.data?.detail || t('auth.operationFailed'))
+            const errorMessage = error.response?.data?.detail || t('auth.operationFailed')
+            setError(errorMessage)
+            toastError(errorMessage)
         } finally {
             setIsLoading(false)
         }
@@ -250,17 +326,21 @@ export default function LoginPage() {
                         <button
                             type="button"
                             onClick={loginWithGithub}
-                            className="flex-1 h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 text-white text-sm font-medium group backdrop-blur-sm shadow-lg shadow-black/20"
+                            data-testid="github-login-button"
+                            aria-label="使用 GitHub 登录"
+                            className="flex-1 h-12 rounded-xl bg-[#24292e]/10 border border-[#24292e]/30 hover:bg-[#24292e]/20 hover:border-[#24292e]/40 transition-all flex items-center justify-center gap-2 text-white text-sm font-medium group backdrop-blur-sm shadow-lg shadow-black/20"
                         >
-                            <Github className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" />
-                            GitHub
+                            <Github className="w-5 h-5 text-[#fff] group-hover:text-white transition-colors" />
+                            <span className="text-white">GitHub</span>
                         </button>
                         <button
                             type="button"
                             onClick={loginWithGoogle}
+                            data-testid="google-login-button"
+                            aria-label="使用 Google 登录"
                             className="flex-1 h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 text-white text-sm font-medium group backdrop-blur-sm shadow-lg shadow-black/20"
                         >
-                            <svg className="w-5 h-5" viewBox="0 0 24 24">
+                            <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
                                 <path
                                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                                     fill="#4285F4"
@@ -278,7 +358,7 @@ export default function LoginPage() {
                                     fill="#EA4335"
                                 />
                             </svg>
-                            <span className="text-zinc-400 group-hover:text-white transition-colors">Google</span>
+                            <span className="text-white">Google</span>
                         </button>
                     </div>
 
@@ -291,7 +371,7 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-5">
+                    <form onSubmit={handleSubmit} className="space-y-5" aria-describedby={error ? 'form-error' : undefined}>
                         <AnimatePresence mode="wait">
                             {!isLogin && (
                                 <motion.div
@@ -309,9 +389,12 @@ export default function LoginPage() {
                                             type="text"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
+                                            data-testid="username-input"
+                                            aria-label={t('auth.usernamePlaceholder')}
+                                            aria-invalid={!username && !isLogin ? 'true' : 'false'}
+                                            aria-required={!isLogin ? 'true' : 'false'}
                                             className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 focus:bg-cyan-500/5 focus:shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all backdrop-blur-sm"
                                             placeholder={t('auth.usernamePlaceholder')}
-                                            required={!isLogin}
                                         />
                                     </div>
                                 </motion.div>
@@ -325,10 +408,28 @@ export default function LoginPage() {
                             <input
                                 type="email"
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 focus:bg-cyan-500/5 focus:shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all backdrop-blur-sm"
+                                onChange={(e) => {
+                                    setEmail(e.target.value)
+                                    if (error && !isValidEmail(e.target.value)) {
+                                        setError('')
+                                    }
+                                }}
+                                onBlur={() => {
+                                    if (email && !isValidEmail(email)) {
+                                        setError('请输入有效的邮箱地址')
+                                    }
+                                }}
+                                data-testid="email-input"
+                                aria-label={t('auth.emailPlaceholder')}
+                                aria-invalid={email && !isValidEmail(email) ? 'true' : 'false'}
+                                aria-required="true"
+                                aria-describedby={email && !isValidEmail(email) && error?.includes('邮箱') ? 'email-error' : undefined}
+                                className={`w-full h-12 bg-white/5 border rounded-xl pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:bg-cyan-500/5 focus:shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all backdrop-blur-sm ${
+                                    email && !isValidEmail(email) && error?.includes('邮箱')
+                                        ? 'border-red-500/50 bg-red-500/5'
+                                        : 'border-white/10 focus:border-cyan-500/50'
+                                }`}
                                 placeholder={t('auth.emailPlaceholder')}
-                                required
                             />
                         </div>
 
@@ -339,19 +440,58 @@ export default function LoginPage() {
                             <input
                                 type={showPassword ? 'text' : 'password'}
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={(e) => {
+                                    setPassword(e.target.value)
+                                    if (error) setError('')
+                                }}
+                                data-testid="password-input"
+                                aria-label={t('auth.passwordPlaceholder')}
+                                aria-invalid={password && password.length < 6 ? 'true' : 'false'}
+                                aria-required="true"
+                                aria-describedby={!isLogin && password && passwordStrength ? 'password-strength' : undefined}
                                 className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-12 pr-12 text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 focus:bg-cyan-500/5 focus:shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all backdrop-blur-sm"
                                 placeholder={t('auth.passwordPlaceholder')}
-                                required
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
+                                data-testid="toggle-password-button"
+                                aria-label={showPassword ? '隐藏密码' : '显示密码'}
                                 className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white transition-colors z-10"
                             >
                                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                             </button>
                         </div>
+
+                        {/* 密码强度指示器 */}
+                        {!isLogin && password && passwordStrength && (
+                            <motion.div
+                                id="password-strength"
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex items-center gap-2 mt-2"
+                                role="progressbar"
+                                aria-valuenow={passwordStrength === 'weak' ? 33 : passwordStrength === 'medium' ? 66 : 100}
+                                aria-valuemin={0}
+                                aria-valuemax={100}
+                                aria-label={`密码强度：${passwordStrength === 'weak' ? '弱' : passwordStrength === 'medium' ? '中' : '强'}`}
+                            >
+                                <div className="flex-1 h-1 bg-white/10 rounded-full overflow-hidden">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: passwordStrength === 'weak' ? '33%' : passwordStrength === 'medium' ? '66%' : '100%' }}
+                                        className={`h-full transition-colors ${
+                                            passwordStrength === 'weak' ? 'bg-red-500' : passwordStrength === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
+                                        }`}
+                                    />
+                                </div>
+                                <span className={`text-xs ${
+                                    passwordStrength === 'weak' ? 'text-red-400' : passwordStrength === 'medium' ? 'text-yellow-400' : 'text-green-400'
+                                }`}>
+                                    {passwordStrength === 'weak' ? '弱' : passwordStrength === 'medium' ? '中' : '强'}
+                                </span>
+                            </motion.div>
+                        )}
 
                         <AnimatePresence mode="wait">
                             {!isLogin && (
@@ -369,44 +509,156 @@ export default function LoginPage() {
                                         <input
                                             type="password"
                                             value={confirmPassword}
-                                            onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="w-full h-12 bg-white/5 border border-white/10 rounded-xl pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:border-cyan-500/50 focus:bg-cyan-500/5 focus:shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all backdrop-blur-sm"
+                                            onChange={(e) => {
+                                                setConfirmPassword(e.target.value)
+                                                if (error && error.includes('密码')) setError('')
+                                            }}
+                                            data-testid="confirm-password-input"
+                                            aria-label={t('auth.confirmPasswordPlaceholder')}
+                                            aria-invalid={confirmPassword && password && confirmPassword !== password ? 'true' : 'false'}
+                                            aria-required={!isLogin ? 'true' : 'false'}
+                                            className={`w-full h-12 bg-white/5 border rounded-xl pl-12 pr-4 text-white placeholder-zinc-500 focus:outline-none focus:bg-cyan-500/5 focus:shadow-[0_0_20px_rgba(34,211,238,0.1)] transition-all backdrop-blur-sm ${
+                                                confirmPassword && password && confirmPassword !== password
+                                                    ? 'border-red-500/50 bg-red-500/5'
+                                                    : 'border-white/10 focus:border-cyan-500/50'
+                                            }`}
                                             placeholder={t('auth.confirmPasswordPlaceholder')}
-                                            required={!isLogin}
                                         />
+                                        {confirmPassword && password && confirmPassword === password && (
+                                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-green-500" aria-hidden="true">
+                                                <CheckCircle2 className="w-5 h-5" />
+                                            </div>
+                                        )}
                                     </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
+                        {/* 用户协议和隐私政策 */}
+                        <AnimatePresence mode="wait">
+                            {!isLogin && (
+                                <motion.div
+                                    key="terms"
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="mt-4"
+                                >
+                                    <label className="flex items-start gap-3 cursor-pointer group">
+                                        <div className="relative pt-1">
+                                            <input
+                                                type="checkbox"
+                                                checked={agreedToTerms}
+                                                onChange={(e) => {
+                                                    setAgreedToTerms(e.target.checked)
+                                                    if (error && error.includes('协议')) setError('')
+                                                }}
+                                                className="peer sr-only"
+                                                data-testid="terms-checkbox"
+                                            />
+                                            <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                                agreedToTerms
+                                                    ? 'bg-cyan-500 border-cyan-500'
+                                                    : 'border-white/20 bg-white/5 peer-hover:border-white/40'
+                                            }`}>
+                                                {agreedToTerms && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                                            </div>
+                                        </div>
+                                        <span className="text-xs text-zinc-400 leading-relaxed">
+                                            我已阅读并同意{' '}
+                                            <button
+                                                type="button"
+                                                className="text-cyan-400 hover:text-cyan-300 underline"
+                                                onClick={() => window.open('/terms', '_blank')}
+                                            >
+                                                用户协议
+                                            </button>
+                                            {' '}和{' '}
+                                            <button
+                                                type="button"
+                                                className="text-cyan-400 hover:text-cyan-300 underline"
+                                                onClick={() => window.open('/privacy', '_blank')}
+                                            >
+                                                隐私政策
+                                            </button>
+                                        </span>
+                                    </label>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* 记住我 */}
+                        {isLogin && (
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className="relative">
+                                    <input
+                                        type="checkbox"
+                                        checked={rememberMe}
+                                        onChange={(e) => setRememberMe(e.target.checked)}
+                                        className="peer sr-only"
+                                    />
+                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
+                                        rememberMe
+                                            ? 'bg-cyan-500 border-cyan-500'
+                                            : 'border-white/20 bg-white/5 peer-hover:border-white/40'
+                                    }`}>
+                                        {rememberMe && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                                    </div>
+                                </div>
+                                <span className="text-sm text-zinc-400">{t('auth.rememberMe')}</span>
+                            </label>
+                        )}
+
                         <AnimatePresence>
                             {error && (
                                 <motion.div
-                                    className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2 backdrop-blur-sm"
+                                    id="form-error"
+                                    className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-start gap-2 backdrop-blur-sm"
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
+                                    role="alert"
+                                    aria-live="assertive"
                                 >
-                                    <span>⚠️</span>
-                                    {error}
+                                    <span className="mt-0.5" aria-hidden="true">⚠️</span>
+                                    <span>{error}</span>
+                                </motion.div>
+                            )}
+                            {successMessage && !error && (
+                                <motion.div
+                                    className="p-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm flex items-start gap-2 backdrop-blur-sm"
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    role="status"
+                                    aria-live="polite"
+                                >
+                                    <CheckCircle2 className="w-4 h-4 mt-0.5" aria-hidden="true" />
+                                    <span>{successMessage}</span>
                                 </motion.div>
                             )}
                         </AnimatePresence>
 
                         <motion.button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={isLoading || !isFormValid}
+                            data-testid={isLogin ? "login-button" : "register-button"}
+                            aria-label={isLogin ? '登录' : '注册'}
                             className="w-full h-12 bg-gradient-to-r from-violet-600 via-purple-600 to-cyan-600 hover:from-violet-500 hover:via-purple-500 hover:to-cyan-500 text-white font-bold rounded-xl shadow-lg shadow-purple-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 relative overflow-hidden group"
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
+                            whileHover={isFormValid && !isLoading ? { scale: 1.02 } : {}}
+                            whileTap={isFormValid && !isLoading ? { scale: 0.98 } : {}}
                         >
                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 transform skew-y-12" />
                             {isLoading ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <>
+                                    <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+                                    <span className="relative z-10">{isLogin ? '登录中...' : '注册中...'}</span>
+                                </>
                             ) : (
                                 <>
                                     <span className="relative z-10">{isLogin ? t('auth.login') : t('auth.createAccount')}</span>
-                                    <ArrowRight className="w-4 h-4 relative z-10" />
+                                    <ArrowRight className="w-4 h-4 relative z-10" aria-hidden="true" />
                                 </>
                             )}
                         </motion.button>
@@ -417,6 +669,7 @@ export default function LoginPage() {
                             {isLogin ? t('auth.noAccount') : t('auth.hasAccount')}
                             <button
                                 onClick={() => setIsLogin(!isLogin)}
+                                data-testid="toggle-auth-mode-button"
                                 className="ml-2 text-cyan-400 hover:text-cyan-300 font-medium transition-colors hover:underline"
                             >
                                 {isLogin ? t('auth.register') : t('auth.login')}

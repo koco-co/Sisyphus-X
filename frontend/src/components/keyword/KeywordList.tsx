@@ -16,9 +16,8 @@ import { Badge } from '@/components/ui/badge'
 import { Search, Plus, Edit, Trash2, Power, PowerOff } from 'lucide-react'
 
 interface KeywordListProps {
-  projectId: number
   keywords?: Array<{
-    id: number
+    id: string
     name: string
     func_name: string
     category?: string
@@ -27,13 +26,12 @@ interface KeywordListProps {
     created_at: string
   }>
   onEdit?: (keyword: any) => void
-  onDelete?: (id: number) => void
-  onToggle?: (id: number) => void
+  onDelete?: (id: string) => void
+  onToggle?: (id: string) => void
   onCreateNew?: () => void
 }
 
 export function KeywordList({
-  projectId,
   keywords = [],
   onEdit,
   onDelete,
@@ -55,7 +53,7 @@ export function KeywordList({
   const categories = ['all', ...Array.from(new Set(keywords.map(kw => kw.category || 'other')))]
 
   return (
-    <div className="keyword-list space-y-4">
+    <div className="keyword-list space-y-4" data-testid="keyword-list">
       {/* 工具栏 */}
       <Card className="p-4">
         <div className="flex items-center gap-4">
@@ -66,6 +64,7 @@ export function KeywordList({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              data-testid="keyword-search-input"
             />
           </div>
 
@@ -73,15 +72,16 @@ export function KeywordList({
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="border rounded-lg px-3 py-2"
+            data-testid="keyword-type-filter"
           >
             {categories.map(cat => (
-              <option key={cat} value={cat}>
+              <option key={cat} value={cat} data-testid={`filter-option-${cat}`}>
                 {cat === 'all' ? '所有分类' : cat}
               </option>
             ))}
           </select>
 
-          <Button onClick={onCreateNew}>
+          <Button onClick={onCreateNew} data-testid="create-keyword-button">
             <Plus className="w-4 h-4 mr-2" />
             新建关键字
           </Button>
@@ -97,27 +97,28 @@ export function KeywordList({
           </Card>
         ) : (
           filteredKeywords.map(keyword => (
-            <Card key={keyword.id} className="p-4">
+            <Card key={keyword.id} className="p-4" data-testid="keyword-item" data-is-builtin="false">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-lg">{keyword.name}</h3>
-                    <Badge variant={keyword.is_active ? 'default' : 'secondary'}>
+                    <h3 className="font-semibold text-lg" data-testid="keyword-name">{keyword.name}</h3>
+                    <Badge variant={keyword.is_active ? 'default' : 'secondary'} data-testid="keyword-type">
                       {keyword.func_name}
                     </Badge>
                     {keyword.category && (
                       <Badge variant="outline">{keyword.category}</Badge>
                     )}
                     {!keyword.is_active && (
-                      <Badge variant="secondary">已禁用</Badge>
+                      <Badge variant="secondary" data-testid="readonly-badge">已禁用</Badge>
                     )}
+                    <Badge variant="outline" data-testid="builtin-badge">自定义</Badge>
                   </div>
 
                   {keyword.description && (
                     <p className="text-sm text-gray-600 mb-2">{keyword.description}</p>
                   )}
 
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-gray-400" data-testid="keyword-usage-count">
                     创建时间：{new Date(keyword.created_at).toLocaleString('zh-CN')}
                   </div>
                 </div>
@@ -127,6 +128,7 @@ export function KeywordList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onToggle?.(keyword.id)}
+                    data-testid="keyword-enabled-switch"
                   >
                     {keyword.is_active ? (
                       <Power className="w-4 h-4 text-green-600" />
@@ -138,6 +140,7 @@ export function KeywordList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onEdit?.(keyword)}
+                    data-testid="edit-keyword-button"
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -145,6 +148,7 @@ export function KeywordList({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDelete?.(keyword.id)}
+                    data-testid="delete-keyword-button"
                   >
                     <Trash2 className="w-4 h-4 text-red-500" />
                   </Button>

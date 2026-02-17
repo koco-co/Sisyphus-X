@@ -4,7 +4,7 @@
 
 import csv
 import io
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -14,6 +14,8 @@ from sqlmodel import col, func, select
 from app.core.db import get_session
 from app.models import FunctionalTestCase, Requirement
 from app.schemas.pagination import PageResponse
+from app.schemas.requirement import RequirementResponse
+from typing import Optional
 
 router = APIRouter()
 
@@ -21,11 +23,11 @@ router = APIRouter()
 # ==================== 需求管理 ====================
 
 
-@router.get("/requirements", response_model=PageResponse[Requirement])
+@router.get("/requirements", response_model=PageResponse[RequirementResponse])
 async def list_requirements(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    project_id: int | None = Query(None),
+    project_id: Optional[int] = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """获取需求列表"""
@@ -48,7 +50,7 @@ async def list_requirements(
     )
 
 
-@router.post("/requirements", response_model=Requirement)
+@router.post("/requirements", response_model=RequirementResponse)
 async def create_requirement(data: dict = Body(...), session: AsyncSession = Depends(get_session)):
     """创建需求"""
     # 映射前端字段到后端字段
@@ -67,8 +69,6 @@ async def create_requirement(data: dict = Body(...), session: AsyncSession = Dep
     }
 
     # 自动生成 requirement_id
-    from datetime import datetime
-
     date_prefix = datetime.now().strftime("%Y%m%d")
 
     # 查询当天已有的需求数量，生成序号
@@ -86,7 +86,7 @@ async def create_requirement(data: dict = Body(...), session: AsyncSession = Dep
     return requirement
 
 
-@router.get("/requirements/{requirement_id}", response_model=Requirement)
+@router.get("/requirements/{requirement_id}", response_model=RequirementResponse)
 async def get_requirement(requirement_id: int, session: AsyncSession = Depends(get_session)):
     """获取需求详情"""
     requirement = await session.get(Requirement, requirement_id)
@@ -113,8 +113,8 @@ async def delete_requirement(requirement_id: int, session: AsyncSession = Depend
 async def list_cases(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    requirement_id: int | None = Query(None),
-    priority: str | None = Query(None),
+    requirement_id: Optional[int] = Query(None),
+    priority: Optional[str] = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """获取用例列表"""
@@ -173,7 +173,7 @@ async def update_case(
         if hasattr(case, key):
             setattr(case, key, value)
 
-    case.updated_at = datetime.utcnow()
+    case.updated_at = datetime.now(timezone.utc)
     await session.commit()
     await session.refresh(case)
     return case
@@ -241,7 +241,7 @@ async def import_cases(
 
 @router.get("/cases/export")
 async def export_cases(
-    requirement_id: int | None = Query(None),
+    requirement_id: Optional[int] = Query(None),
     format: str = Query("csv"),
     session: AsyncSession = Depends(get_session),
 ):
@@ -373,7 +373,7 @@ async def generate_cases_with_ai(
         # TODO: Update AIGenerationTask when model is created
         # task.status = "completed"
         # task.result = result
-        # task.completed_at = datetime.utcnow()
+        # task.completed_at = datetime.now(timezone.utc)
         pass
 
     except Exception:

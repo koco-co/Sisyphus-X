@@ -8,7 +8,7 @@
  * - 测试关键字
  */
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,8 +16,6 @@ import { Card } from '@/components/ui/card'
 import { Save, Play, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
 interface KeywordEditorProps {
-  keywordId?: number
-  projectId: number
   initialData?: {
     name?: string
     func_name?: string
@@ -30,8 +28,6 @@ interface KeywordEditorProps {
 }
 
 export function KeywordEditor({
-  keywordId,
-  projectId,
   initialData,
   onSave
 }: KeywordEditorProps) {
@@ -137,7 +133,29 @@ export function KeywordEditor({
               placeholder="例如：自定义断言"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              data-testid="keyword-name-input"
             />
+            {!formData.name && (
+              <p className="text-red-500 text-sm mt-1" data-testid="keyword-name-error">关键字名称不能为空</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              关键字类型 <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="border rounded-lg px-3 py-2 w-full"
+              data-testid="keyword-type-select"
+            >
+              <option value="action">操作 (action)</option>
+              <option value="assertion">断言 (assertion)</option>
+              <option value="setup">前置 (setup)</option>
+              <option value="teardown">后置 (teardown)</option>
+              <option value="custom">自定义 (custom)</option>
+            </select>
           </div>
 
           <div>
@@ -148,15 +166,7 @@ export function KeywordEditor({
               placeholder="例如：custom_assertion"
               value={formData.func_name}
               onChange={(e) => setFormData({ ...formData, func_name: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">分类</label>
-            <Input
-              placeholder="例如：断言"
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              data-testid="keyword-func-name-input"
             />
           </div>
 
@@ -166,17 +176,19 @@ export function KeywordEditor({
               placeholder="关键字功能描述"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              data-testid="keyword-description-input"
             />
           </div>
         </div>
 
         <div className="mt-4">
-          <label className="block text-sm font-medium mb-2">描述</label>
+          <label className="block text-sm font-medium mb-2">详细描述</label>
           <Textarea
             placeholder="详细描述关键字的用途和使用方法"
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={2}
+            data-testid="keyword-description-textarea"
           />
         </div>
       </Card>
@@ -203,7 +215,7 @@ export function KeywordEditor({
         {validation && (
           <div className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${
             validation.valid ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-          }`}>
+          }`} data-testid={validation.valid ? 'validation-success' : 'syntax-error-message'}>
             {validation.valid ? (
               <CheckCircle className="w-4 h-4" />
             ) : (
@@ -273,6 +285,7 @@ export function KeywordEditor({
         <Button
           onClick={handleSave}
           disabled={isSaving || !formData.name || !formData.func_name}
+          data-testid="submit-keyword-button"
         >
           {isSaving ? (
             <>

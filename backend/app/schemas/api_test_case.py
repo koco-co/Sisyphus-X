@@ -50,8 +50,7 @@ class ApiTestCaseResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class ApiTestCaseListResponse(BaseModel):
@@ -91,8 +90,7 @@ class ApiTestExecutionResponse(BaseModel):
     error_message: Optional[str]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class ApiTestExecutionDetail(BaseModel):
@@ -116,8 +114,7 @@ class ApiTestExecutionDetail(BaseModel):
     execution_options: dict[str, Any]
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class StepValidationResult(BaseModel):
@@ -151,8 +148,7 @@ class ApiTestStepResultResponse(BaseModel):
     extracted_vars: dict[str, Any]
     error_info: dict[str, Any] | None
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 # ============================================================================

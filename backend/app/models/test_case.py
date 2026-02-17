@@ -13,7 +13,7 @@ class TestCase(SQLModel, table=True):
 
     # 核心数据：存储步骤和预期的 JSON 结构
     # 结构示例: [{"step": "输入密码", "expect": "显示掩码"}, {"step": "点击登录", "expect": "跳转首页"}]
-    steps_data: list[dict] = Field(default=list, sa_column=Column(JSON))
+    steps_data: List[Dict[str, Any]] = Field(default=list, sa_column=Column(JSON))
 
     engine_type: str  # 'api', 'web', 'app', 'manual'
-    tags: list[str] = Field(default=list, sa_column=Column(JSON))
+    tags: List[str] = Field(default=list, sa_column=Column(JSON))

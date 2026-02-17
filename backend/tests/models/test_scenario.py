@@ -25,11 +25,12 @@ from app.models.project import Project
 class TestScenarioModel:
     """测试场景模型测试类"""
 
-    async def test_create_scenario_minimal(self, db_session, sample_project):
+    async def test_create_scenario_minimal(self, db_session, sample_project, sample_user):
         """测试创建最小字段场景"""
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="登录场景",
         )
         db_session.add(scenario)
@@ -45,11 +46,12 @@ class TestScenarioModel:
         assert scenario.created_at is not None
         assert isinstance(scenario.created_at, datetime)
 
-    async def test_create_scenario_all_fields(self, db_session, sample_project):
+    async def test_create_scenario_all_fields(self, db_session, sample_project, sample_user):
         """测试创建完整字段场景"""
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="用户注册流程",
             description="测试用户完整的注册流程",
             pre_sql="DELETE FROM users WHERE email = 'test@example.com'",
@@ -84,6 +86,7 @@ class TestScenarioModel:
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=project.id,
+            created_by=sample_user.id,
             name="项目场景",
             description="属于该项目的场景",
         )
@@ -104,11 +107,12 @@ class TestScenarioModel:
         )
         assert result.scalar_one_or_none() is None
 
-    async def test_update_scenario(self, db_session, sample_project):
+    async def test_update_scenario(self, db_session, sample_project, sample_user):
         """测试更新场景"""
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="旧名称",
             description="旧描述",
             pre_sql="旧前置SQL",
@@ -132,11 +136,12 @@ class TestScenarioModel:
         assert scenario.pre_sql == "新前置SQL"
         assert scenario.post_sql == "新后置SQL"
 
-    async def test_delete_scenario(self, db_session, sample_project):
+    async def test_delete_scenario(self, db_session, sample_project, sample_user):
         """测试删除场景"""
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="待删除场景",
             description="这个场景将被删除",
         )
@@ -168,6 +173,7 @@ class ScenarioStepModel:
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="测试场景",
         )
         db_session.add(scenario)
@@ -178,7 +184,9 @@ class ScenarioStepModel:
         step = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            step_order=1,
+            keyword_type="request",
+            keyword_name="测试请求",
+            sort_order=1,
         )
         db_session.add(step)
         await db_session.commit()
@@ -186,10 +194,10 @@ class ScenarioStepModel:
 
         assert step.id is not None
         assert step.scenario_id == scenario.id
-        assert step.step_order == 1
-        assert step.keyword_id is None  # 可选字段
+        assert step.sort_order == 1
+        assert step.keyword_type == "request"
+        assert step.keyword_name == "测试请求"
         assert step.parameters is None
-        assert step.expected_result is None
         assert step.created_at is not None
         assert isinstance(step.created_at, datetime)
 
@@ -199,21 +207,26 @@ class ScenarioStepModel:
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="测试场景",
         )
         db_session.add(scenario)
         await db_session.commit()
 
-        # 创建两个 step_order 相同的步骤
+        # 创建两个 sort_order 相同的步骤
         step1 = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            step_order=1,
+            keyword_type="request",
+            keyword_name="步骤1",
+            sort_order=1,
         )
         step2 = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            step_order=1,  # 相同的 scenario_id + step_order
+            keyword_type="request",
+            keyword_name="步骤2",
+            sort_order=1,  # 相同的 scenario_id + sort_order
         )
 
         db_session.add(step1)
@@ -223,49 +236,35 @@ class ScenarioStepModel:
         with pytest.raises(IntegrityError):
             await db_session.commit()
 
-    async def test_scenario_step_foreign_key_keyword(self, db_session, sample_project):
-        """测试步骤外键关联关键字"""
-        from app.models.keyword import Keyword
-
-        # 创建关键字
-        keyword = Keyword(
-            id=str(uuid.uuid4()),
-            project_id=sample_project.id,
-            name="HTTP请求",
-            class_name="HttpRequestKeyword",
-            method_name="http_request",
-            code="def http_request():\n    pass",
-        )
-        db_session.add(keyword)
-        await db_session.commit()
-        await db_session.refresh(keyword)
-
+    async def test_scenario_step_keyword_parameters(self, db_session, sample_project, sample_user):
+        """测试步骤关键字和参数"""
         # 创建场景
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="测试场景",
         )
         db_session.add(scenario)
         await db_session.commit()
         await db_session.refresh(scenario)
 
-        # 创建步骤 (关联关键字)
+        # 创建步骤 (带参数)
         step = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            keyword_id=keyword.id,
-            step_order=1,
-            parameters='{"url": "https://api.example.com", "method": "GET"}',
-            expected_result='{"status_code": 200}',
+            keyword_type="request",
+            keyword_name="HTTP请求",
+            sort_order=1,
+            parameters={"url": "https://api.example.com", "method": "GET"},
         )
         db_session.add(step)
         await db_session.commit()
         await db_session.refresh(step)
 
-        assert step.keyword_id == keyword.id
-        assert step.parameters == '{"url": "https://api.example.com", "method": "GET"}'
-        assert step.expected_result == '{"status_code": 200}'
+        assert step.keyword_type == "request"
+        assert step.keyword_name == "HTTP请求"
+        assert step.parameters == {"url": "https://api.example.com", "method": "GET"}
 
     async def test_scenario_step_order_auto_sort(self, db_session, sample_project):
         """测试按顺序查询步骤"""
@@ -273,6 +272,7 @@ class ScenarioStepModel:
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="测试场景",
         )
         db_session.add(scenario)
@@ -283,17 +283,23 @@ class ScenarioStepModel:
         step3 = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            step_order=3,
+            keyword_type="request",
+            keyword_name="步骤3",
+            sort_order=3,
         )
         step1 = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            step_order=1,
+            keyword_type="request",
+            keyword_name="步骤1",
+            sort_order=1,
         )
         step2 = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            step_order=2,
+            keyword_type="request",
+            keyword_name="步骤2",
+            sort_order=2,
         )
 
         db_session.add_all([step3, step1, step2])
@@ -303,13 +309,13 @@ class ScenarioStepModel:
         result = await db_session.execute(
             select(ScenarioStep)
             .where(ScenarioStep.scenario_id == scenario.id)
-            .order_by(ScenarioStep.step_order)
+            .order_by(ScenarioStep.sort_order)
         )
         steps = result.scalars().all()
 
-        assert steps[0].step_order == 1
-        assert steps[1].step_order == 2
-        assert steps[2].step_order == 3
+        assert steps[0].sort_order == 1
+        assert steps[1].sort_order == 2
+        assert steps[2].sort_order == 3
 
     async def test_cascade_delete_scenario_steps(self, db_session, sample_project):
         """测试删除场景时级联删除步骤"""
@@ -322,6 +328,7 @@ class ScenarioStepModel:
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="测试场景",
         )
         db_session.add(scenario)
@@ -332,12 +339,16 @@ class ScenarioStepModel:
         step1 = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            step_order=1,
+            keyword_type="request",
+            keyword_name="步骤1",
+            sort_order=1,
         )
         step2 = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            step_order=2,
+            keyword_type="request",
+            keyword_name="步骤2",
+            sort_order=2,
         )
 
         db_session.add_all([step1, step2])
@@ -368,12 +379,13 @@ class ScenarioStepModel:
 class TestDatasetModel:
     """测试数据集模型测试类"""
 
-    async def test_create_dataset_minimal(self, db_session, sample_project):
+    async def test_create_dataset_minimal(self, db_session, sample_project, sample_user):
         """测试创建最小字段数据集"""
         # 先创建场景
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="测试场景",
         )
         db_session.add(scenario)
@@ -383,26 +395,30 @@ class TestDatasetModel:
         # 创建数据集
         dataset = Dataset(
             id=str(uuid.uuid4()),
+            project_id=sample_project.id,
             scenario_id=scenario.id,
             name="用户数据",
+            csv_data="username,password\nuser1,pass1",
         )
         db_session.add(dataset)
         await db_session.commit()
         await db_session.refresh(dataset)
 
         assert dataset.id is not None
+        assert dataset.project_id == sample_project.id
         assert dataset.scenario_id == scenario.id
         assert dataset.name == "用户数据"
-        assert dataset.data is None  # 可选字段
+        assert dataset.csv_data == "username,password\nuser1,pass1"
         assert dataset.created_at is not None
         assert isinstance(dataset.created_at, datetime)
 
-    async def test_dataset_json_data(self, db_session, sample_project):
+    async def test_dataset_json_data(self, db_session, sample_project, sample_user):
         """测试数据集 JSON 序列化"""
         # 创建场景
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="测试场景",
         )
         db_session.add(scenario)
@@ -418,19 +434,20 @@ class TestDatasetModel:
 
         dataset = Dataset(
             id=str(uuid.uuid4()),
+            project_id=sample_project.id,
             scenario_id=scenario.id,
             name="用户CSV数据",
-            data=csv_data,
+            csv_data=csv_data,
         )
         db_session.add(dataset)
         await db_session.commit()
         await db_session.refresh(dataset)
 
-        assert dataset.data == csv_data
-        assert "username,password,email" in dataset.data
-        assert "user1,pass123,user1@example.com" in dataset.data
+        assert dataset.csv_data == csv_data
+        assert "username,password,email" in dataset.csv_data
+        assert "user1,pass123,user1@example.com" in dataset.csv_data
 
-    async def test_cascade_delete_scenario_datasets(self, db_session, sample_project):
+    async def test_cascade_delete_scenario_datasets(self, db_session, sample_project, sample_user):
         """测试删除场景时级联删除数据集"""
         # 注意: SQLite 默认不强制外键约束,需要手动启用
         from sqlalchemy import text
@@ -441,6 +458,7 @@ class TestDatasetModel:
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="测试场景",
         )
         db_session.add(scenario)
@@ -450,13 +468,17 @@ class TestDatasetModel:
         # 创建数据集
         dataset1 = Dataset(
             id=str(uuid.uuid4()),
+            project_id=sample_project.id,
             scenario_id=scenario.id,
             name="数据集1",
+            csv_data="test1,data1",
         )
         dataset2 = Dataset(
             id=str(uuid.uuid4()),
+            project_id=sample_project.id,
             scenario_id=scenario.id,
             name="数据集2",
+            csv_data="test2,data2",
         )
 
         db_session.add_all([dataset1, dataset2])
@@ -479,12 +501,13 @@ class TestDatasetModel:
         assert result1.scalar_one_or_none() is None
         assert result2.scalar_one_or_none() is None
 
-    async def test_scenario_with_multiple_datasets(self, db_session, sample_project):
+    async def test_scenario_with_multiple_datasets(self, db_session, sample_project, sample_user):
         """测试场景关联多个数据集"""
         # 创建场景
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="测试场景",
         )
         db_session.add(scenario)
@@ -494,21 +517,24 @@ class TestDatasetModel:
         # 创建多个数据集
         dataset1 = Dataset(
             id=str(uuid.uuid4()),
+            project_id=sample_project.id,
             scenario_id=scenario.id,
             name="用户数据",
-            data="username,password\nuser1,pass1\n",
+            csv_data="username,password\nuser1,pass1\n",
         )
         dataset2 = Dataset(
             id=str(uuid.uuid4()),
+            project_id=sample_project.id,
             scenario_id=scenario.id,
             name="产品数据",
-            data="product_id,price\n1,99.99\n",
+            csv_data="product_id,price\n1,99.99\n",
         )
         dataset3 = Dataset(
             id=str(uuid.uuid4()),
+            project_id=sample_project.id,
             scenario_id=scenario.id,
             name="订单数据",
-            data="order_id,total\n123,100.00\n",
+            csv_data="order_id,total\n123,100.00\n",
         )
 
         db_session.add_all([dataset1, dataset2, dataset3])
@@ -526,26 +552,13 @@ class TestDatasetModel:
         assert "产品数据" in dataset_names
         assert "订单数据" in dataset_names
 
-    async def test_full_scenario_workflow(self, db_session, sample_project):
+    async def test_full_scenario_workflow(self, db_session, sample_project, sample_user):
         """测试完整场景工作流 (场景 + 步骤 + 数据集)"""
-        from app.models.keyword import Keyword
-
-        # 创建关键字
-        keyword = Keyword(
-            id=str(uuid.uuid4()),
-            project_id=sample_project.id,
-            name="HTTP请求",
-            class_name="HttpRequestKeyword",
-            method_name="http_request",
-            code="def http_request():\n    pass",
-        )
-        db_session.add(keyword)
-        await db_session.commit()
-
         # 创建场景
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
+            created_by=sample_user.id,
             name="用户登录流程",
             description="测试用户登录的完整流程",
             pre_sql="DELETE FROM users WHERE username = 'testuser'",
@@ -559,18 +572,18 @@ class TestDatasetModel:
         step1 = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            keyword_id=keyword.id,
-            step_order=1,
-            parameters='{"url": "/api/login", "method": "POST"}',
-            expected_result='{"status_code": 200}',
+            keyword_type="request",
+            keyword_name="登录请求",
+            sort_order=1,
+            parameters={"url": "/api/login", "method": "POST"},
         )
         step2 = ScenarioStep(
             id=str(uuid.uuid4()),
             scenario_id=scenario.id,
-            keyword_id=keyword.id,
-            step_order=2,
-            parameters='{"url": "/api/user/profile", "method": "GET"}',
-            expected_result='{"status_code": 200}',
+            keyword_type="request",
+            keyword_name="获取用户信息",
+            sort_order=2,
+            parameters={"url": "/api/user/profile", "method": "GET"},
         )
         db_session.add_all([step1, step2])
         await db_session.commit()
@@ -578,9 +591,10 @@ class TestDatasetModel:
         # 创建数据集
         dataset = Dataset(
             id=str(uuid.uuid4()),
+            project_id=sample_project.id,
             scenario_id=scenario.id,
             name="登录测试数据",
-            data="username,password\ntestuser,testpass123\n",
+            csv_data="username,password\ntestuser,testpass123\n",
         )
         db_session.add(dataset)
         await db_session.commit()
@@ -595,14 +609,15 @@ class TestDatasetModel:
         steps_result = await db_session.execute(
             select(ScenarioStep)
             .where(ScenarioStep.scenario_id == scenario.id)
-            .order_by(ScenarioStep.step_order)
+            .order_by(ScenarioStep.sort_order)
         )
         steps = steps_result.scalars().all()
         assert len(steps) == 2
-        assert steps[0].step_order == 1
-        assert steps[1].step_order == 2
-        assert steps[0].keyword_id == keyword.id
-        assert steps[1].keyword_id == keyword.id
+        assert steps[0].sort_order == 1
+        assert steps[1].sort_order == 2
+        assert steps[0].keyword_type == "request"
+        assert steps[0].keyword_name == "登录请求"
+        assert steps[1].keyword_name == "获取用户信息"
 
         # 验证数据集
         datasets_result = await db_session.execute(
@@ -611,4 +626,4 @@ class TestDatasetModel:
         datasets = datasets_result.scalars().all()
         assert len(datasets) == 1
         assert datasets[0].name == "登录测试数据"
-        assert "username,password" in datasets[0].data
+        assert "username,password" in datasets[0].csv_data

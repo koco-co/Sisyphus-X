@@ -151,8 +151,7 @@ class FolderResponse(BaseModel):
     order: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = {"from_attributes": True}
 
 
 class FolderMoveRequest(BaseModel):
@@ -178,3 +177,11 @@ class InterfaceCopyRequest(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=255)
     target_folder_id: Optional[int] = None
+
+
+class ImportFromCurlRequest(BaseModel):
+    """从cURL导入接口请求"""
+
+    curl_command: str = Field(..., description="cURL 命令字符串")
+    folder_id: Optional[str] = Field(None, description="所属文件夹 ID")
+    name: Optional[str] = Field(None, description="接口名称")

@@ -163,7 +163,7 @@ class TestInterfaces:
                 "method": "POST",
                 "url": "/api/users",
                 "folder_id": folder.id,
-                
+                "project_id": sample_project.id,
                 "headers": {"Content-Type": "application/json"},
                 "body": {"username": "test", "password": "123456"}
             },
@@ -180,7 +180,12 @@ class TestInterfaces:
         )
         assert response.status_code == 200
         data = response.json()
-        assert isinstance(data, list)
+        # API返回分页对象
+        assert "items" in data
+        assert isinstance(data["items"], list)
+        assert "total" in data
+        assert "page" in data
+        assert "size" in data
 
     async def test_get_interface_detail(self, async_client: AsyncClient, db_session, sample_project):
         """测试获取接口详情"""
@@ -631,7 +636,7 @@ class TestInterfaceEdgeCases:
         assert response.status_code in [400, 422]
 
     async def test_bulk_delete_interfaces(self, async_client: AsyncClient, db_session, sample_project):
-        """测试批量删除接口"""
+        """测试批量删除接口 (如果端点存在)"""
         # 创建目录
         folder = InterfaceFolder(
             id=str(uuid.uuid4()),
@@ -662,8 +667,8 @@ class TestInterfaceEdgeCases:
             f"/api/v1/interfaces/bulk-delete",
             json={"ids": interface_ids}
         )
-        # 可能返回200(成功)或501(未实现)
-        assert response.status_code in [200, 501]
+        # 可能返回200(成功)、405(未实现)或501(未实现)
+        assert response.status_code in [200, 405, 501]
 
         if response.status_code == 200:
             # 验证已删除

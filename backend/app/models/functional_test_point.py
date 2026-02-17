@@ -3,9 +3,10 @@
 管理测试点（测试用例的抽象描述）
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlmodel import Field, SQLModel
+from typing import Optional, Dict, Any, List
 
 
 class TestPoint(SQLModel, table=True):
@@ -13,25 +14,25 @@ class TestPoint(SQLModel, table=True):
 
     __tablename__ = "test_points"  # pyright: ignore[reportAssignmentType]
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     requirement_id: int = Field(index=True)  # 关联需求
     category: str  # functional/performance/security/compatibility/usability
-    sub_category: str | None = None  # 正常流程/异常流程/边界值
+    sub_category: Optional[str] = None  # 正常流程/异常流程/边界值
 
     title: str
-    description: str | None = None
+    description: Optional[str] = None
     priority: str  # p0/p1/p2/p3
-    risk_level: str | None = None  # high/medium/low
+    risk_level: Optional[str] = None  # high/medium/low
 
     # AI生成信息
     is_ai_generated: bool = Field(default=True)
-    confidence_score: float | None = None  # 0.00-1.00
+    confidence_score: Optional[float] = None  # 0.00-1.00
 
     # 状态
     status: str = Field(default="draft")  # draft/approved/rejected
 
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
 
     class Config:
         indexes = [

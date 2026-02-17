@@ -1,10 +1,11 @@
 """
-用户和权限管理相关的 Pydantic schemas
+用户和权限管理相关的 Pydantic v2 schemas
 """
 
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from typing import Optional
 
 # ============================================================================
 # 用户相关 Schemas
@@ -16,7 +17,7 @@ class UserBase(BaseModel):
 
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
-    full_name: str | None = Field(None, max_length=100)
+    full_name: Optional[str] = Field(None, max_length=100)
     is_active: bool = True
 
 
@@ -24,29 +25,28 @@ class UserCreate(UserBase):
     """创建用户"""
 
     password: str = Field(..., min_length=6, max_length=100)
-    role_ids: list[int] | None = Field(default=[], description="分配的角色ID列表")
+    role_ids: list[int] = Field(default_factory=list, description="分配的角色ID列表")
 
 
 class UserUpdate(BaseModel):
     """更新用户"""
 
-    email: EmailStr | None = None
-    full_name: str | None = None
-    password: str | None = Field(None, min_length=6, max_length=100)
-    is_active: bool | None = None
+    email: Optional[EmailStr] = None
+    full_name: Optional[str] = None
+    password: Optional[str] = Field(None, min_length=6, max_length=100)
+    is_active: Optional[bool] = None
     role_ids: list[int] | None = None
 
 
 class UserResponse(UserBase):
     """用户响应"""
 
-    id: int
-    created_at: datetime
-    updated_at: datetime | None = None
-    roles: list["RoleResponse"] = []
+    model_config = ConfigDict(from_attributes=True)
 
-    class Config:
-        from_attributes = True
+    id: str
+    created_at: datetime
+    updated_at: datetime
+    roles: list["RoleResponse"] = []
 
 
 # ============================================================================
@@ -58,7 +58,7 @@ class RoleBase(BaseModel):
     """角色基础 Schema"""
 
     name: str = Field(..., min_length=2, max_length=50)
-    description: str | None = Field(None, max_length=200)
+    description: Optional[str] = Field(None, max_length=200)
 
 
 class RoleCreate(RoleBase):
@@ -70,21 +70,20 @@ class RoleCreate(RoleBase):
 class RoleUpdate(BaseModel):
     """更新角色"""
 
-    name: str | None = Field(None, min_length=2, max_length=50)
-    description: str | None = None
+    name: Optional[str] = Field(None, min_length=2, max_length=50)
+    description: Optional[str] = None
     permission_ids: list[int] | None = None
 
 
 class RoleResponse(RoleBase):
     """角色响应"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     is_system: bool
     created_at: datetime
     permissions: list["PermissionResponse"] = []
-
-    class Config:
-        from_attributes = True
 
 
 # ============================================================================
@@ -97,7 +96,7 @@ class PermissionBase(BaseModel):
 
     resource: str = Field(..., max_length=50)
     action: str = Field(..., max_length=50)
-    description: str | None = Field(None, max_length=200)
+    description: Optional[str] = Field(None, max_length=200)
 
 
 class PermissionCreate(PermissionBase):
@@ -109,19 +108,18 @@ class PermissionCreate(PermissionBase):
 class PermissionUpdate(BaseModel):
     """更新权限"""
 
-    resource: str | None = None
-    action: str | None = None
-    description: str | None = None
+    resource: Optional[str] = None
+    action: Optional[str] = None
+    description: Optional[str] = None
 
 
 class PermissionResponse(PermissionBase):
     """权限响应"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # ============================================================================
@@ -132,17 +130,16 @@ class PermissionResponse(PermissionBase):
 class AuditLogResponse(BaseModel):
     """审计日志响应"""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     user_id: int
     action: str
     resource_type: str
-    resource_id: int | None
-    details: str | None
-    ip_address: str | None
+    resource_id: Optional[int]
+    details: Optional[str]
+    ip_address: Optional[str]
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 # ============================================================================
@@ -168,12 +165,7 @@ class ProjectMemberResponse(BaseModel):
 
     user_id: int
     username: str
-    full_name: str | None
+    full_name: Optional[str]
     email: str
     role: str
     joined_at: datetime
-
-
-# 更新前向引用
-UserResponse.model_rebuild()
-RoleResponse.model_rebuild()

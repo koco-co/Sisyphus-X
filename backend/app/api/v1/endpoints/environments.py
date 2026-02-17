@@ -22,7 +22,7 @@ router = APIRouter()
 
 @router.get("/", response_model=list[EnvironmentResponse])
 async def list_environments(
-    project_id: int = Path(..., description="Project ID"),
+    project_id: str = Path(..., description="Project ID"),
     session: AsyncSession = Depends(get_session),
 ) -> list[ProjectEnvironment]:
     """List all environments for a project.
@@ -43,7 +43,7 @@ async def list_environments(
 
 @router.post("/", response_model=EnvironmentResponse)
 async def create_environment(
-    project_id: int = Path(..., description="Project ID"),
+    project_id: str = Path(..., description="Project ID"),
     data: EnvironmentCreate | None = None,
     session: AsyncSession = Depends(get_session),
 ) -> ProjectEnvironment:
@@ -73,7 +73,7 @@ async def create_environment(
 
 @router.get("/{environment_id}", response_model=EnvironmentResponse)
 async def get_environment(
-    environment_id: int,
+    environment_id: str,
     session: AsyncSession = Depends(get_session),
 ) -> ProjectEnvironment:
     """Get environment by ID.
@@ -96,7 +96,7 @@ async def get_environment(
 
 @router.put("/{environment_id}", response_model=EnvironmentResponse)
 async def update_environment(
-    environment_id: int,
+    environment_id: str,
     data: EnvironmentUpdate,
     session: AsyncSession = Depends(get_session),
 ) -> ProjectEnvironment:
@@ -128,7 +128,7 @@ async def update_environment(
 
 @router.delete("/{environment_id}")
 async def delete_environment(
-    environment_id: int,
+    environment_id: str,
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, int]:
     """Delete environment.
@@ -155,7 +155,7 @@ async def delete_environment(
 
 @router.post("/{environment_id}/copy", response_model=EnvironmentResponse)
 async def copy_environment(
-    environment_id: int,
+    environment_id: str,
     data: EnvironmentCopyRequest,
     session: AsyncSession = Depends(get_session),
 ) -> ProjectEnvironment:
@@ -184,7 +184,7 @@ async def copy_environment(
 
 @router.post("/{environment_id}/replace", response_model=VariableReplaceResponse)
 async def replace_variables(
-    environment_id: int,
+    environment_id: str,
     data: VariableReplaceRequest,
     session: AsyncSession = Depends(get_session),
 ) -> dict[str, object]:

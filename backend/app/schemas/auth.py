@@ -1,6 +1,7 @@
 # 认证相关的 Pydantic 模型
 
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 
 
 class UserRegister(BaseModel):
@@ -21,10 +22,11 @@ class UserLogin(BaseModel):
 class UserResponse(BaseModel):
     """用户响应模型 (不包含密码)"""
 
-    id: int
+    id: str  # UUID
     username: str
     email: str
-    avatar: str | None = None
+    avatar: Optional[str] = None
+    full_name: Optional[str] = None
     is_active: bool = True
 
 

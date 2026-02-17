@@ -1,9 +1,10 @@
 """Interface test case model."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import UniqueConstraint
 from sqlmodel import JSON, Column, Field, SQLModel
+from typing import Optional, Dict, Any, List
 
 
 class InterfaceTestCase(SQLModel, table=True):
@@ -11,7 +12,7 @@ class InterfaceTestCase(SQLModel, table=True):
 
     __tablename__ = "interfacetestcase"  # pyright: ignore[reportAssignmentType]
 
-    id: int | None = Field(default=None, primary_key=True)
+    id: Optional[int] = Field(default=None, primary_key=True)
     interface_id: int = Field(foreign_key="interface.id", index=True, description="Interface ID")
     project_id: int = Field(foreign_key="project.id", index=True, description="Project ID")
 
@@ -19,16 +20,16 @@ class InterfaceTestCase(SQLModel, table=True):
     keyword_name: str = Field(max_length=100, description="Keyword function name")
     yaml_path: str = Field(max_length=255, unique=True, index=True, description="YAML file relative path")
 
-    scenario_id: int | None = Field(
+    scenario_id: Optional[int] = Field(
         default=None,
         foreign_key="testscenario.id",
         description="Scenario ID"
     )
 
-    assertions: dict = Field(default={}, sa_column=Column(JSON), description="Assertion config")
+    assertions: dict = Field(default=dict, sa_column=Column(JSON), description="Assertion config")
 
-    created_at: datetime = Field(default_factory=datetime.utcnow, description="Created at")
-    updated_at: datetime = Field(default_factory=datetime.utcnow, description="Updated at")
+    created_at: datetime = Field(default_factory=datetime.now(timezone.utc), description="Created at")
+    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc), description="Updated at")
 
     __table_args__ = (
         UniqueConstraint("yaml_path", name="uq_interface_test_case_yaml_path"),

@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from pydantic import BaseModel
+from typing import Optional
 
 # === 测试报告相关 Schema ===
 
@@ -8,14 +9,14 @@ from pydantic import BaseModel
 class ReportDetailResponse(BaseModel):
     """报告详情响应"""
 
-    id: int
-    report_id: int
+    id: str
+    report_id: str
     node_id: str
     node_name: str
     status: str
-    request_data: dict | None = None
-    response_data: dict | None = None
-    error_msg: str | None = None
+    request_data: Optional[dict] = None
+    response_data: Optional[dict] = None
+    error_msg: Optional[str] = None
     elapsed: float
     created_at: datetime
 
@@ -23,8 +24,8 @@ class ReportDetailResponse(BaseModel):
 class ReportResponse(BaseModel):
     """报告响应"""
 
-    id: int
-    scenario_id: int | None = None
+    id: str
+    scenario_id: Optional[int] = None
     name: str
     status: str
     total: int
@@ -32,7 +33,7 @@ class ReportResponse(BaseModel):
     failed: int
     duration: str
     start_time: datetime
-    end_time: datetime | None = None
+    end_time: Optional[datetime] = None
     created_at: datetime
 
 

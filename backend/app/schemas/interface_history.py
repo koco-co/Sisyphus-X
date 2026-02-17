@@ -9,7 +9,7 @@ from pydantic import BaseModel
 class InterfaceHistoryBase(BaseModel):
     """Interface history base schema."""
 
-    interface_id: int
+    interface_id: str
     url: str
     method: str
     headers: dict[str, Any] = {}
@@ -31,8 +31,8 @@ class InterfaceHistoryCreate(InterfaceHistoryBase):
 class InterfaceHistoryResponse(InterfaceHistoryBase):
     """Interface history response."""
 
-    id: int
-    user_id: int
+    id: str
+    user_id: str
     created_at: datetime
 
     class Config:

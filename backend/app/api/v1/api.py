@@ -9,15 +9,18 @@ from app.api.v1.endpoints import (
     api_test_cases,
     auth,
     case_generation,
-    curl_parser,
+    # curl_parser,  # TEMP: 暂时禁用
     dashboard,
+    database_configs,
     documents,
     engine,
     environments,
     execution,
     functional,
-    history,
+    global_params,
+    # history,  # TEMP: 暂时禁用
     interfaces,
+    interface_folders,
     keywords,
     plans,
     point_generation,
@@ -25,7 +28,7 @@ from app.api.v1.endpoints import (
     reports,
     scenarios,
     settings,
-    swagger,
+    # swagger,  # TEMP: 暂时禁用
     testcases,
     upload,
 )
@@ -39,23 +42,36 @@ api_router.include_router(
     dependencies=[Depends(deps.get_current_user)],
 )
 api_router.include_router(
+    database_configs.router,
+    prefix="/projects",
+    tags=["database-configs"],
+    dependencies=[Depends(deps.get_current_user)],
+)
+api_router.include_router(
     interfaces.router,
     prefix="/interfaces",
     tags=["interfaces"],
     dependencies=[Depends(deps.get_current_user)],
 )
+# Interface folders
 api_router.include_router(
-    swagger.router,
-    prefix="/interfaces",
-    tags=["swagger"],
+    interface_folders.router,
+    prefix="/projects",
+    tags=["interface-folders"],
     dependencies=[Depends(deps.get_current_user)],
 )
-api_router.include_router(
-    curl_parser.router,
-    prefix="/interfaces",
-    tags=["curl"],
-    dependencies=[Depends(deps.get_current_user)],
-)
+# api_router.include_router(
+#     swagger.router,  # TEMP: 暂时禁用
+#     prefix="/interfaces",
+#     tags=["swagger"],
+#     dependencies=[Depends(deps.get_current_user)],
+# )
+# api_router.include_router(
+#     curl_parser.router,  # TEMP: 暂时禁用
+#     prefix="/interfaces",
+#     tags=["curl"],
+#     dependencies=[Depends(deps.get_current_user)],
+# )
 api_router.include_router(
     upload.router, prefix="/files", tags=["files"], dependencies=[Depends(deps.get_current_user)]
 )
@@ -154,10 +170,17 @@ api_router.include_router(
     dependencies=[Depends(deps.get_current_user)],
 )
 # Interface history
+# api_router.include_router(
+#     history.router,  # TEMP: 暂时禁用
+#     prefix="/interfaces",
+#     tags=["history"],
+#     dependencies=[Depends(deps.get_current_user)],
+# )
+# Global parameters
 api_router.include_router(
-    history.router,
-    prefix="/interfaces",
-    tags=["history"],
+    global_params.router,
+    prefix="/global-params",
+    tags=["global-params"],
     dependencies=[Depends(deps.get_current_user)],
 )
 # TODO: user_management - 需要修复导入问题后重新启用

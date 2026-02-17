@@ -3,7 +3,7 @@
 """
 
 from enum import Enum
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -31,11 +31,11 @@ class TestPointBase(BaseModel):
     """测试点基础Schema"""
 
     category: TestPointCategory = Field(..., description="测试分类")
-    sub_category: str | None = Field(None, description="子分类")
+    sub_category: Optional[str] = Field(None, description="子分类")
     title: str = Field(..., description="测试点标题")
-    description: str | None = Field(None, description="详细描述")
+    description: Optional[str] = Field(None, description="详细描述")
     priority: str = Field(..., description="优先级：p0/p1/p2/p3")
-    risk_level: str | None = Field(None, description="风险级别：high/medium/low")
+    risk_level: Optional[str] = Field(None, description="风险级别：high/medium/low")
 
 
 class TestPointGenerate(BaseModel):
@@ -63,5 +63,5 @@ class TestPointGenerationResult(BaseModel):
 
     success: bool
     message: str
-    data: GeneratedTestPoints | None = None
-    error: str | None = None
+    data: Optional[GeneratedTestPoints] = None
+    error: Optional[str] = None

@@ -6,7 +6,7 @@ from pydantic import BaseModel
 # ============================================
 # Environment Schemas
 # ============================================
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import Field
 
@@ -24,18 +24,18 @@ class EnvironmentCreate(BaseModel):
 class EnvironmentUpdate(BaseModel):
     """更新环境配置"""
 
-    name: str | None = Field(None, min_length=1, max_length=50)
-    domain: str | None = Field(None, min_length=1)
+    name: Optional[str] = Field(None, min_length=1, max_length=50)
+    domain: Optional[str] = Field(None, min_length=1)
     variables: dict[str, Any] | None = None
     headers: dict[str, Any] | None = None
-    is_preupload: bool | None = None
+    is_preupload: Optional[bool] = None
 
 
 class EnvironmentResponse(BaseModel):
     """环境配置响应"""
 
-    id: int
-    project_id: int
+    id: str
+    project_id: str
     name: str
     domain: str
     variables: dict[str, Any]
@@ -82,29 +82,29 @@ class DataSourceCreate(BaseModel):
     db_name: str  # 数据库名称（必填）
     username: str = ""
     password: str = ""  # 前端传明文，后端加密存储
-    variable_name: str  # 引用变量名（必填）
+    variable_name: str = ""  # 引用变量名
     is_enabled: bool = True
 
 
 class DataSourceUpdate(BaseModel):
     """更新数据源"""
 
-    name: str | None = None
-    db_type: str | None = None
-    host: str | None = None
-    port: int | None = None
-    db_name: str | None = None
-    username: str | None = None
-    password: str | None = None  # 如果提供则更新密码
-    variable_name: str | None = None
-    is_enabled: bool | None = None
+    name: Optional[str] = None
+    db_type: Optional[str] = None
+    host: Optional[str] = None
+    port: Optional[int] = None
+    db_name: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None  # 如果提供则更新密码
+    variable_name: Optional[str] = None
+    is_enabled: Optional[bool] = None
 
 
 class DataSourceResponse(BaseModel):
     """数据源响应（不返回密码）"""
 
-    id: int
-    project_id: int
+    id: str
+    project_id: str
     name: str
     db_type: str
     host: str
@@ -115,8 +115,8 @@ class DataSourceResponse(BaseModel):
     variable_name: str
     is_enabled: bool
     status: str
-    last_test_at: datetime | None
-    error_msg: str | None
+    last_test_at: Optional[datetime]
+    error_msg: Optional[str]
 
     created_at: datetime
     updated_at: datetime

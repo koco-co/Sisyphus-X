@@ -1,7 +1,6 @@
-# Models module - SQLModel database tables
+# Models module - SQLAlchemy 2.0 database tables
 
 # 核心模型
-# 功能测试模块模型
 from .ai_config import AIProviderConfig
 from .ai_conversation import AIConversation
 
@@ -11,6 +10,7 @@ from .api_test_case import ApiTestCase, ApiTestExecution, ApiTestStep, ApiTestSt
 # 其他模型
 from .document import Document
 from .file_attachment import FileAttachment
+from .global_param import GlobalParam
 from .functional_test_case import FunctionalTestCase
 from .functional_test_point import TestPoint
 from .keyword import Keyword
@@ -18,7 +18,7 @@ from .plan import TestPlan
 from .project import Interface, InterfaceFolder, Project, ProjectDataSource, ProjectEnvironment
 from .report import TestReport, TestReportDetail
 from .requirement import Requirement
-from .scenario import TestScenario
+from .scenario import Scenario, ScenarioStep, Dataset
 from .settings import GlobalConfig, NotificationChannel
 from .test_case import TestCase
 from .test_case_knowledge import TestCaseKnowledge
@@ -35,7 +35,9 @@ __all__ = [
     "InterfaceFolder",
     "ProjectEnvironment",
     "ProjectDataSource",
-    "TestScenario",
+    "Scenario",
+    "ScenarioStep",
+    "Dataset",
     "TestCase",
     "Keyword",
     "TestReport",
@@ -57,6 +59,7 @@ __all__ = [
     "FileAttachment",
     # 其他模型
     "Document",
+    "GlobalParam",
     "TestExecution",
     "GlobalConfig",
     "NotificationChannel",

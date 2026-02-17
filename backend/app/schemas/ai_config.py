@@ -7,6 +7,7 @@ from datetime import datetime
 from enum import Enum
 
 from pydantic import BaseModel, Field, validator
+from typing import Optional
 
 
 class ProviderType(str, Enum):  # noqa: UP042
@@ -47,20 +48,20 @@ class AIProviderConfigCreate(AIProviderConfigBase):
     """创建AI配置"""
 
     api_key: str = Field(..., description="API密钥")
-    api_endpoint: str | None = Field(None, description="自定义API端点")
+    api_endpoint: Optional[str] = Field(None, description="自定义API端点")
 
 
 class AIProviderConfigUpdate(BaseModel):
     """更新AI配置"""
 
-    provider_name: str | None = None
-    model_name: str | None = None
-    temperature: float | None = Field(None, ge=0.0, le=2.0)
-    max_tokens: int | None = Field(None, ge=1, le=128000)
-    is_enabled: bool | None = None
-    is_default: bool | None = None
-    api_endpoint: str | None = None
-    api_key: str | None = None  # 如果提供则更新
+    provider_name: Optional[str] = None
+    model_name: Optional[str] = None
+    temperature: Optional[float] = Field(None, ge=0.0, le=2.0)
+    max_tokens: Optional[int] = Field(None, ge=1, le=128000)
+    is_enabled: Optional[bool] = None
+    is_default: Optional[bool] = None
+    api_endpoint: Optional[str] = None
+    api_key: Optional[str] = None  # 如果提供则更新
 
 
 class AIProviderConfigResponse(AIProviderConfigBase):
@@ -68,7 +69,7 @@ class AIProviderConfigResponse(AIProviderConfigBase):
 
     id: int
     api_key_masked: str = Field(..., description="脱敏的API Key")
-    api_endpoint: str | None = None
+    api_endpoint: Optional[str] = None
     user_id: int
     created_at: datetime
     updated_at: datetime
@@ -83,7 +84,7 @@ class AIProviderConfigTest(BaseModel):
     provider_type: ProviderType
     api_key: str
     model_name: str
-    api_endpoint: str | None = None
+    api_endpoint: Optional[str] = None
 
 
 class TestResult(BaseModel):
@@ -91,7 +92,7 @@ class TestResult(BaseModel):
 
     success: bool
     message: str
-    error: str | None = None
+    error: Optional[str] = None
 
 
 # 预设配置模板

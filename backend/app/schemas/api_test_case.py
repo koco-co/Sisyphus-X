@@ -3,7 +3,7 @@ API 测试用例相关的 Pydantic schemas
 """
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -15,11 +15,11 @@ from pydantic import BaseModel, Field
 class ApiTestCaseCreate(BaseModel):
     """创建 API 测试用例"""
 
-    project_id: int | None = None  # 从 URL 路径中获取，请求体中可选
+    project_id: Optional[int] = None  # 从 URL 路径中获取，请求体中可选
     name: str = Field(..., min_length=1, max_length=200)
-    description: str | None = Field(None, max_length=1000)
+    description: Optional[str] = Field(None, max_length=1000)
     config_data: dict[str, Any] = Field(default_factory=dict)
-    environment_id: int | None = None
+    environment_id: Optional[str] = None
     tags: list[str] = Field(default_factory=list)
     enabled: bool = Field(default=True)
 
@@ -27,28 +27,28 @@ class ApiTestCaseCreate(BaseModel):
 class ApiTestCaseUpdate(BaseModel):
     """更新 API 测试用例"""
 
-    name: str | None = Field(None, min_length=1, max_length=200)
-    description: str | None = Field(None, max_length=1000)
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
     config_data: dict[str, Any] | None = None
-    environment_id: int | None = None
+    environment_id: Optional[str] = None
     tags: list[str] | None = None
-    enabled: bool | None = None
+    enabled: Optional[bool] = None
 
 
 class ApiTestCaseResponse(BaseModel):
     """API 测试用例响应"""
 
-    id: int
-    project_id: int
+    id: str
+    project_id: str
     name: str
-    description: str | None
+    description: Optional[str]
     config_data: dict[str, Any]
-    environment_id: int | None
+    environment_id: Optional[str]
     tags: list[str]
     enabled: bool
     yaml_content: str
     created_at: datetime
-    updated_at: datetime | None
+    updated_at: Optional[datetime]
 
     class Config:
         from_attributes = True
@@ -69,7 +69,7 @@ class ApiTestCaseListResponse(BaseModel):
 class ApiTestExecutionRequest(BaseModel):
     """API 测试执行请求"""
 
-    environment_id: int | None = None
+    environment_id: Optional[str] = None
     verbose: bool = Field(default=True, description="是否详细输出")
     execution_options: dict[str, Any] = Field(default_factory=dict)
 
@@ -77,18 +77,18 @@ class ApiTestExecutionRequest(BaseModel):
 class ApiTestExecutionResponse(BaseModel):
     """API 测试执行响应"""
 
-    id: int
-    test_case_id: int
-    environment_id: int | None
+    id: str
+    test_case_id: str
+    environment_id: Optional[str]
     status: str
-    started_at: datetime | None
-    completed_at: datetime | None
-    duration: float | None
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    duration: Optional[float]
     total_steps: int
     passed_steps: int
     failed_steps: int
     skipped_steps: int
-    error_message: str | None
+    error_message: Optional[str]
     created_at: datetime
 
     class Config:
@@ -98,21 +98,21 @@ class ApiTestExecutionResponse(BaseModel):
 class ApiTestExecutionDetail(BaseModel):
     """API 测试执行详情"""
 
-    id: int
-    test_case_id: int
-    environment_id: int | None
+    id: str
+    test_case_id: str
+    environment_id: Optional[str]
     status: str
-    started_at: datetime | None
-    completed_at: datetime | None
-    duration: float | None
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    duration: Optional[float]
     result_data: dict[str, Any]
     total_steps: int
     passed_steps: int
     failed_steps: int
     skipped_steps: int
-    error_message: str | None
-    error_type: str | None
-    error_category: str | None
+    error_message: Optional[str]
+    error_type: Optional[str]
+    error_category: Optional[str]
     execution_options: dict[str, Any]
     created_at: datetime
 
@@ -125,25 +125,25 @@ class StepValidationResult(BaseModel):
 
     passed: bool
     type: str
-    path: str | None
+    path: Optional[str]
     actual: Any
     expected: Any
-    description: str | None
-    error: str | None
+    description: Optional[str]
+    error: Optional[str]
 
 
 class ApiTestStepResultResponse(BaseModel):
     """API 测试步骤结果响应"""
 
-    id: int
-    execution_id: int
+    id: str
+    execution_id: str
     step_name: str
     step_order: int
     step_type: str
     status: str
-    started_at: datetime | None
-    completed_at: datetime | None
-    duration: float | None
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    duration: Optional[float]
     retry_count: int
     performance_metrics: dict[str, Any]
     response_data: dict[str, Any]
@@ -176,7 +176,7 @@ class ValidateYamlResponse(BaseModel):
 class ImportFromYamlRequest(BaseModel):
     """从 YAML 导入请求"""
 
-    project_id: int
+    project_id: str
     yaml_content: str
     override: bool = Field(default=False, description="如果用例已存在是否覆盖")
 

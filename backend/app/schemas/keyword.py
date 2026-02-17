@@ -1,43 +1,55 @@
-from pydantic import BaseModel
+"""关键字 Pydantic Schemas
 
-# === 关键字相关 Schema ===
+参考文档: docs/数据库设计.md §3.4 关键字表 (keywords)
+
+Schema 说明:
+- KeywordBase: 基础 Schema (共享字段)
+- KeywordCreate: 创建关键字请求
+- KeywordUpdate: 更新关键字请求
+- KeywordResponse: 关键字响应
+"""
+from datetime import datetime
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict
 
 
-class KeywordCreate(BaseModel):
-    """创建关键字请求"""
-
-    project_id: int
+class KeywordBase(BaseModel):
+    """关键字基础 Schema"""
     name: str
-    description: str | None = None
-    func_name: str
-    category: str = "custom"
-    input_params: list[dict] = []
-    output_params: list[dict] = []
-    function_code: str
+    class_name: str
+    method_name: str
+    description: Optional[str] = None
+    code: str
+    parameters: Optional[str] = None  # JSON 字符串
+    return_type: Optional[str] = None
+    is_built_in: bool = False
+    is_enabled: bool = True
+
+
+class KeywordCreate(KeywordBase):
+    """创建关键字请求"""
+    id: str  # UUID
+    project_id: str  # 项目 ID (None 表示内置关键字)
 
 
 class KeywordUpdate(BaseModel):
     """更新关键字请求"""
+    name: Optional[str] = None
+    class_name: Optional[str] = None
+    method_name: Optional[str] = None
+    description: Optional[str] = None
+    code: Optional[str] = None
+    parameters: Optional[str] = None
+    return_type: Optional[str] = None
+    is_enabled: Optional[bool] = None
 
-    name: str | None = None
-    description: str | None = None
-    func_name: str | None = None
-    category: str | None = None
-    input_params: list[dict] | None = None
-    output_params: list[dict] | None = None
-    function_code: str | None = None
 
-
-class KeywordResponse(BaseModel):
+class KeywordResponse(KeywordBase):
     """关键字响应"""
+    model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    project_id: int
-    name: str
-    description: str | None = None
-    func_name: str
-    category: str
-    input_params: list[dict]
-    output_params: list[dict]
-    function_code: str
-    is_active: bool = True
+    id: str
+    project_id: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime

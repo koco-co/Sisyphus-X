@@ -10,7 +10,8 @@ import {
     ToggleRight
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { StepItemData, StepType, STEP_TYPE_INFO } from '../TestCaseEditor.types'
+import type { StepItemData } from '../TestCaseEditor.types'
+import { StepType, STEP_TYPE_INFO } from '../TestCaseEditor.types'
 
 interface StepItemProps {
     stepItem: StepItemData

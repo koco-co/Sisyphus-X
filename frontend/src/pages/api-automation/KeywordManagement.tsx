@@ -58,7 +58,7 @@ export default function KeywordManagement() {
 
     // 删除关键字
     const deleteMutation = useMutation({
-        mutationFn: (id: number) => keywordsApi.delete(id),
+        mutationFn: (id: number) => keywordsApi.delete(String(id)),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['keywords'] })
             setDeleteTarget(null)
@@ -71,7 +71,7 @@ export default function KeywordManagement() {
 
     // 切换状态
     const toggleMutation = useMutation({
-        mutationFn: (id: number) => keywordsApi.toggle(id),
+        mutationFn: (id: number) => keywordsApi.toggle(String(id)),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['keywords'] })
         }
@@ -79,7 +79,7 @@ export default function KeywordManagement() {
 
     // 生成文件
     const generateFileMutation = useMutation({
-        mutationFn: (id: number) => keywordsApi.generateFile(id),
+        mutationFn: (id: number) => keywordsApi.generateFile(String(id)),
         onSuccess: (res) => {
             success(res.data.message || '生成成功')
         },

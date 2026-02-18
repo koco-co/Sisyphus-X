@@ -165,7 +165,7 @@ export default function TestPointManagement() {
               </div>
               {selectedIds.length > 0 && (
                 <div className="text-cyan-400">
-                  {t('functionalTest.testPoints.selectedCount').replace('{0}', selectedIds.length)}
+                  {t('functionalTest.testPoints.selectedCount', { count: selectedIds.length })}
                 </div>
               )}
             </div>

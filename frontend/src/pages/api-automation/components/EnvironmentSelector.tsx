@@ -34,7 +34,7 @@ export function EnvironmentSelector({
     })
 
     const envList = environments || []
-    const selectedEnv = envList.find(env => env.id === selectedEnvironmentId)
+    const selectedEnv = envList.find((env: Environment) => env.id === selectedEnvironmentId)
 
     return (
         <div className="relative">
@@ -98,7 +98,7 @@ export function EnvironmentSelector({
                             </button>
 
                             {/* Environment List */}
-                            {envList.map((env) => (
+                            {envList.map((env: Environment) => (
                                 <button
                                     key={env.id}
                                     onClick={() => {

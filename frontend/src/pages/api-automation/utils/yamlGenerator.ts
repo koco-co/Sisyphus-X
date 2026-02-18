@@ -1,7 +1,6 @@
 import type {
     TestCaseConfig,
     StepItemData,
-    StepType,
     RequestStep,
     DatabaseStep,
     WaitStep,
@@ -10,6 +9,7 @@ import type {
     ConcurrentStep,
     ConditionStep
 } from '../TestCaseEditor.types'
+import { StepType } from '../TestCaseEditor.types'
 
 /**
  * 将步骤配置转换为 YAML 格式
@@ -51,7 +51,7 @@ export function generateYAML(config: TestCaseConfig): string {
         lines.push('steps:')
         for (const stepItem of config.steps) {
             // 跳过禁用的步骤
-            if (stepItem.step.enabled === false) {
+            if ((stepItem.step as any).enabled === false) {
                 continue
             }
             lines.push(generateStepYAML(stepItem))

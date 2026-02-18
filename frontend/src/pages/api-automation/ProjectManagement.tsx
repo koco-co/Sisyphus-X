@@ -12,7 +12,8 @@ import {
     Edit2,
     Database,
     FolderKanban,
-    FileText
+    FileText,
+    Globe
 } from 'lucide-react';
 import { Pagination } from '@/components/common/Pagination';
 import { projectsApi } from '@/api/client';
@@ -240,6 +241,7 @@ export default function ProjectManagement() {
                             setSearchQuery(e.target.value);
                             setPage(1); // Reset to first page on search
                         }}
+                        data-testid="project-search-input"
                         placeholder="搜索项目名称..."
                         className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
                     />
@@ -313,6 +315,7 @@ export default function ProjectManagement() {
                                                 <Tooltip content="编辑" position="top">
                                                     <button
                                                         onClick={() => openEditModal(project)}
+                                                        data-testid={`project-edit-button-${project.id}`}
                                                         className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
                                                     >
                                                         <Edit2 className="w-4 h-4" />
@@ -327,6 +330,14 @@ export default function ProjectManagement() {
                                                         <Database className="w-4 h-4" />
                                                     </Link>
                                                 </Tooltip>
+                                                <Tooltip content="环境配置" position="top">
+                                                    <Link
+                                                        to={`/projects/${project.id}/environments`}
+                                                        className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
+                                                    >
+                                                        <Globe className="w-4 h-4" />
+                                                    </Link>
+                                                </Tooltip>
                                                 <Tooltip content="测试用例" position="top">
                                                     <Link
                                                         to={`/api/projects/${project.id}/test-cases`}
@@ -338,6 +349,7 @@ export default function ProjectManagement() {
                                                 <Tooltip content="删除" position="top">
                                                     <button
                                                         onClick={() => { setProjectToDelete(project); setIsDeleteOpen(true); }}
+                                                        data-testid={`project-delete-button-${project.id}`}
                                                         className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
@@ -418,6 +430,7 @@ export default function ProjectManagement() {
                                     </label>
                                     <input
                                         type="text"
+                                        id="project-name-input"
                                         value={createForm.name}
                                         onChange={(e) => handleInputChange('name', e.target.value)}
                                         data-testid="project-name-input"
@@ -446,6 +459,7 @@ export default function ProjectManagement() {
                                 <div>
                                     <label className="block text-slate-400 text-sm mb-2">项目描述</label>
                                     <textarea
+                                        id="project-description-input"
                                         value={createForm.description}
                                         onChange={(e) => handleInputChange('description', e.target.value)}
                                         data-testid="project-description-input"
@@ -476,6 +490,7 @@ export default function ProjectManagement() {
                             <div className="flex justify-end gap-4 mt-8">
                                 <button
                                     onClick={closeCreateModal}
+                                    data-testid="cancel-project-button"
                                     className="px-6 py-3 text-slate-400 hover:text-white transition-colors"
                                 >
                                     取消

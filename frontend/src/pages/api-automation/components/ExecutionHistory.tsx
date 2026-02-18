@@ -63,7 +63,7 @@ export function ExecutionHistory({ testCaseId }: ExecutionHistoryProps) {
                 </div>
             ) : (
                 <div className="space-y-2">
-                    {executionList.map((execution: any, index) => (
+                    {executionList.map((execution: any, index: number) => (
                         <ExecutionHistoryItem
                             key={execution.id}
                             execution={execution}

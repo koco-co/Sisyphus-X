@@ -127,7 +127,8 @@ export default function VisualTestCaseEditor() {
             type,
             step: {
                 name: `${type} 步骤`,
-                enabled: true
+                enabled: true,
+                request: { url: '', method: 'GET' } // 默认值，确保类型匹配
             },
             expanded: true
         }

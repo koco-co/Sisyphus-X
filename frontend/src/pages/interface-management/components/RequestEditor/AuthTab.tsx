@@ -54,7 +54,7 @@ export function AuthTab({ auth, onAuthChange }: AuthTabProps) {
             className="bg-slate-800 border-slate-700 font-mono"
           />
           <p className="text-sm text-slate-500">
-            请求会自动添加 <code className="text-cyan-400">Authorization: Bearer {'{'}{token}{'}'}</code>
+            请求会自动添加 <code className="text-cyan-400">Authorization: Bearer {'{'}token{'}'}</code>
           </p>
         </div>
       )}

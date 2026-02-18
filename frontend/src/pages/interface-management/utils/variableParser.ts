@@ -48,7 +48,7 @@ function replaceSystemVars(text: string): string {
     }
 
     // 解析参数
-    const params = args ? args.split(',').map(a => a.trim().replace(/^['"`]|['"`]$/g, '')) : []
+    const params = args ? args.split(',').map((a: string) => a.trim().replace(/^['"`]|['"`]$/g, '')) : []
     try {
       return func(...params)
     } catch {

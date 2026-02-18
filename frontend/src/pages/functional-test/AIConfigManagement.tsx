@@ -13,6 +13,7 @@ interface AIProviderConfig {
   temperature: number
   is_enabled: boolean
   is_default: boolean
+  api_endpoint?: string
   created_at: string
   updated_at: string
 }

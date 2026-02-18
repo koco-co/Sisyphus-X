@@ -84,10 +84,7 @@ export function ScheduleManager({
         if (editingSchedule) {
             onEdit(editingSchedule.id, formData)
         } else {
-            onAdd({
-                ...formData,
-                id: `schedule-${Date.now()}`
-            })
+            onAdd(formData)
         }
         handleCloseEdit()
     }

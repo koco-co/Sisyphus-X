@@ -26,6 +26,20 @@ interface KeyValuePair {
   value: string
 }
 
+// 辅助函数：在组件外部定义
+const objectToKeyValuePairs = (obj: Record<string, string>): KeyValuePair[] => {
+  return Object.entries(obj || {}).map(([key, value]) => ({ key, value }))
+}
+
+const keyValuePairsToObject = (pairs: KeyValuePair[]): Record<string, string> => {
+  return pairs
+    .filter((p) => p.key.trim())
+    .reduce((acc, { key, value }) => {
+      acc[key] = value
+      return acc
+    }, {} as Record<string, string>)
+}
+
 export default function EnvironmentManagement() {
   const [selectedProjectId, setSelectedProjectId] = useState<number>(1)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -244,19 +258,6 @@ function EnvironmentDialog({
     })
     setVariables([])
     setHeaders([])
-  }
-
-  const objectToKeyValuePairs = (obj: Record<string, string>): KeyValuePair[] => {
-    return Object.entries(obj || {}).map(([key, value]) => ({ key, value }))
-  }
-
-  const keyValuePairsToObject = (pairs: KeyValuePair[]): Record<string, string> => {
-    return pairs
-      .filter((p) => p.key.trim())
-      .reduce((acc, { key, value }) => {
-        acc[key] = value
-        return acc
-      }, {} as Record<string, string>)
   }
 
   const handleSave = () => {

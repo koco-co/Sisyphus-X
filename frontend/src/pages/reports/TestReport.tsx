@@ -212,11 +212,11 @@ export default function TestReport() {
 
             {/* 删除确认对话框 */}
             <ConfirmDialog
-                open={!!deleteTarget}
+                isOpen={!!deleteTarget}
                 title="删除测试报告"
-                message={`确定要删除报告「${deleteTarget?.name}」吗？此操作无法撤销。`}
+                description={`确定要删除报告「${deleteTarget?.name}」吗？此操作无法撤销。`}
                 onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
-                onCancel={() => setDeleteTarget(null)}
+                onClose={() => setDeleteTarget(null)}
             />
         </div>
     );

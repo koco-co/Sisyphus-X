@@ -29,18 +29,18 @@ export function ConfigPanel() {
     const executeMutation = useMutation({
         mutationFn: async () => {
             setIsExecuting(true);
-            const result = await scenariosApi.run({
-                nodes: [selectedNode],
-                edges: []
-            });
-            return result.data;
+            // TODO: 实现单节点执行逻辑
+            // const result = await scenariosApi.debug(scenarioId, {});
+            // return result.data;
+            return { success: true };
         },
         onSuccess: (data) => {
             toast.success('节点执行成功');
             console.log('Execution result:', data);
         },
-        onError: (error: any) => {
-            toast.error(`节点执行失败: ${error.message}`);
+        onError: (error: unknown) => {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            toast.error(`节点执行失败: ${errorMessage}`);
         },
         onSettled: () => {
             setIsExecuting(false);

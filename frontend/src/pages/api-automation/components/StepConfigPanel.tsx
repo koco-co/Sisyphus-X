@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { X, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { StepItemData, HttpMethod } from '../TestCaseEditor.types'
-import { StepType } from '../TestCaseEditor.types'
+import type { StepItemData } from '../TestCaseEditor.types'
+import { HttpMethod, StepType } from '../TestCaseEditor.types'
 
 interface StepConfigPanelProps {
     stepItem: StepItemData | null
@@ -21,10 +21,11 @@ export function StepConfigPanel({ stepItem, onUpdate, onClose }: StepConfigPanel
     if (!stepItem) return null
 
     const handleUpdate = (field: string, value: any) => {
+        if (!localStep) return
         const updated = {
-            ...localStep!,
+            ...localStep,
             step: {
-                ...localStep!.step,
+                ...localStep.step,
                 [field]: value
             }
         }
@@ -33,12 +34,13 @@ export function StepConfigPanel({ stepItem, onUpdate, onClose }: StepConfigPanel
     }
 
     const handleNestedUpdate = (parentField: string, field: string, value: any) => {
+        if (!localStep) return
         const updated = {
-            ...localStep!,
+            ...localStep,
             step: {
-                ...localStep!.step,
+                ...localStep.step,
                 [parentField]: {
-                    ...localStep!.step[parentField],
+                    ...(localStep.step as any)[parentField],
                     [field]: value
                 }
             }
@@ -75,7 +77,7 @@ export function StepConfigPanel({ stepItem, onUpdate, onClose }: StepConfigPanel
                     </label>
                     <input
                         type="text"
-                        value={localStep.step.name || ''}
+                        value={localStep?.step.name || ''}
                         onChange={(e) => handleUpdate('name', e.target.value)}
                         placeholder="输入步骤名称"
                         className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
@@ -83,23 +85,23 @@ export function StepConfigPanel({ stepItem, onUpdate, onClose }: StepConfigPanel
                 </div>
 
                 {/* Type-Specific Config */}
-                {localStep.type === StepType.REQUEST && (
+                {localStep?.type === StepType.REQUEST && (
                     <RequestStepConfig step={localStep.step} onUpdate={handleNestedUpdate} />
                 )}
 
-                {localStep.type === StepType.WAIT && (
+                {localStep?.type === StepType.WAIT && (
                     <WaitStepConfig step={localStep.step} onUpdate={handleNestedUpdate} />
                 )}
 
-                {localStep.type === StepType.DATABASE && (
+                {localStep?.type === StepType.DATABASE && (
                     <DatabaseStepConfig step={localStep.step} onUpdate={handleNestedUpdate} />
                 )}
 
-                {localStep.type === StepType.LOOP && (
+                {localStep?.type === StepType.LOOP && (
                     <LoopStepConfig step={localStep.step} onUpdate={handleNestedUpdate} />
                 )}
 
-                {localStep.type === StepType.SCRIPT && (
+                {localStep?.type === StepType.SCRIPT && (
                     <ScriptStepConfig step={localStep.step} onUpdate={handleNestedUpdate} />
                 )}
             </div>

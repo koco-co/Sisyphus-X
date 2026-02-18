@@ -64,7 +64,7 @@ export default function ExecutionResultPage() {
         },
         refetchInterval: (data) => {
             // Poll if still running
-            return data?.status === 'running' ? 2000 : false
+            return (data as any)?.status === 'running' ? 2000 : false
         }
     })
 
@@ -237,7 +237,7 @@ export default function ExecutionResultPage() {
                             暂无步骤信息
                         </div>
                     ) : (
-                        stepsData.map((step, index) => (
+                        stepsData.map((step: ExecutionStep, index: number) => (
                             <StepResultCard
                                 key={step.id}
                                 step={step}

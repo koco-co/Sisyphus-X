@@ -145,7 +145,7 @@ export default function KeywordEditor() {
     // 如果是编辑模式，获取关键字详情
     const { data: keywordData } = useQuery({
         queryKey: ['keyword', id],
-        queryFn: () => keywordsApi.get(Number(id)),
+        queryFn: () => keywordsApi.get(String(id)),
         enabled: isEditing
     })
 
@@ -170,7 +170,7 @@ export default function KeywordEditor() {
     const mutation = useMutation({
         mutationFn: (data: typeof formData) => {
             if (isEditing) {
-                return keywordsApi.update(Number(id), data)
+                return keywordsApi.update(String(id), data)
             }
             return keywordsApi.create(data)
         },

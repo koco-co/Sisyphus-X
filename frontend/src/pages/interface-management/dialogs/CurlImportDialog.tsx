@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2, FileText, Check } from 'lucide-react'
 import { parseCurlCommand } from '../utils/curlParser'
 import type { ParsedCurlRequest } from '../utils/curlParser'
+import { cn } from '@/lib/utils'
 
 export interface CurlImportData {
   method: string

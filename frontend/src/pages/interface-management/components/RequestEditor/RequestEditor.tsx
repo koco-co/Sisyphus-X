@@ -10,6 +10,15 @@ import { HeadersTab } from './HeadersTab'
 import { BodyTab } from './BodyTab'
 import type { BodyType } from './BodyTab'
 import type { KeyValuePair } from './KeyValueEditor'
+import type { KeyValueTypePair } from './FormDataEditor'
+
+// Convert KeyValuePair to KeyValueTypePair for form-data
+const pairToTypePair = (pair: KeyValuePair): KeyValueTypePair => ({
+  key: pair.key,
+  value: pair.value,
+  type: 'text' as const,
+  enabled: pair.enabled ?? true
+})
 
 export interface RequestData {
   name: string
@@ -159,7 +168,7 @@ export function RequestEditor({
           <ParamsTab params={data.params} onChange={updateParams} />
         )}
         {activeTab === 'auth' && (
-          <AuthTab auth={data.auth} onChange={updateAuth} />
+          <AuthTab auth={data.auth} onAuthChange={updateAuth} />
         )}
         {activeTab === 'headers' && (
           <HeadersTab headers={data.headers} onChange={updateHeaders} />
@@ -168,9 +177,14 @@ export function RequestEditor({
           <BodyTab
             body={data.body}
             bodyType={data.bodyType}
-            formDataPairs={data.formDataPairs}
-            onChange={updateBody}
-            onFormDataChange={updateFormDataPairs}
+            onBodyChange={(body) => updateBody(body, data.bodyType)}
+            onBodyTypeChange={(type) => updateBody(data.body, type)}
+            formData={data.formDataPairs.map(pairToTypePair)}
+            onFormDataChange={(pairs) => updateFormDataPairs(pairs.map(p => ({
+              key: p.key,
+              value: p.value,
+              enabled: p.enabled
+            })))}
           />
         )}
       </div>

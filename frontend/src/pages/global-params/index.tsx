@@ -57,7 +57,7 @@ export default function GlobalParamsPage() {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
     const [editingParam, setEditingParam] = useState<GlobalParam | null>(null)
     const [deletingParam, setDeletingParam] = useState<GlobalParam | null>(null)
-    const { toast } = useToast()
+    const { success, error } = useToast()
 
     const queryClient = useQueryClient()
 
@@ -77,11 +77,11 @@ export default function GlobalParamsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['global-params'] })
-            toast.success('全局参数创建成功')
+            success('全局参数创建成功')
             setIsCreateDialogOpen(false)
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || '创建失败')
+            error(error.response?.data?.message || '创建失败')
         }
     })
 
@@ -92,11 +92,11 @@ export default function GlobalParamsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['global-params'] })
-            toast.success('全局参数更新成功')
+            success('全局参数更新成功')
             setEditingParam(null)
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || '更新失败')
+            error(error.response?.data?.message || '更新失败')
         }
     })
 
@@ -107,16 +107,16 @@ export default function GlobalParamsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['global-params'] })
-            toast.success('全局参数删除成功')
+            success('全局参数删除成功')
             setDeletingParam(null)
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || '删除失败')
+            error(error.response?.data?.message || '删除失败')
         }
     })
 
     // 按类名分组
-    const groupedParams = globalParams.reduce((acc, param) => {
+    const groupedParams = globalParams.reduce((acc: Record<string, typeof globalParams>, param: any) => {
         if (!acc[param.class_name]) {
             acc[param.class_name] = []
         }
@@ -125,12 +125,12 @@ export default function GlobalParamsPage() {
     }, {} as Record<string, GlobalParam[]>)
 
     // 过滤
-    const filteredGroups = Object.entries(groupedParams).filter(([className, params]) => {
+    const filteredGroups = Object.entries(groupedParams).filter(([className, params]: [string, any]) => {
         if (!searchQuery) return true
         const query = searchQuery.toLowerCase()
         return (
             className.toLowerCase().includes(query) ||
-            params.some(p =>
+            params.some((p: any) =>
                 p.method_name.toLowerCase().includes(query) ||
                 (p.description && p.description.toLowerCase().includes(query))
             )
@@ -151,7 +151,7 @@ export default function GlobalParamsPage() {
     // 复制方法名到剪贴板
     const copyMethodName = (methodName: string) => {
         navigator.clipboard.writeText(methodName)
-        toast.success('已复制到剪贴板')
+        success('已复制到剪贴板')
     }
 
     // 处理创建
@@ -256,7 +256,7 @@ export default function GlobalParamsPage() {
                                         <ChevronRight className="w-5 h-5 text-cyan-400" />
                                     )}
                                     <h3 className="text-lg font-semibold text-white">{className}</h3>
-                                    <span className="text-sm text-slate-500">({params.length})</span>
+                                    <span className="text-sm text-slate-500">({(params as any).length})</span>
                                 </div>
                             </button>
 
@@ -284,7 +284,7 @@ export default function GlobalParamsPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
-                                            {params.map((param) => (
+                                            {(params as any).map((param: any) => (
                                                 <tr
                                                     key={param.id}
                                                     className="hover:bg-white/5 transition-colors"
@@ -370,12 +370,12 @@ export default function GlobalParamsPage() {
             <ConfirmDialog
                 isOpen={!!deletingParam}
                 title="确认删除"
-                message={`确定要删除全局参数 "${deletingParam?.method_name}" 吗？此操作不可撤销。`}
+                description={`确定要删除全局参数 "${deletingParam?.method_name}" 吗？此操作不可撤销。`}
                 confirmText="删除"
                 cancelText="取消"
                 onConfirm={handleDelete}
-                onCancel={() => setDeletingParam(null)}
-                isDangerous
+                onClose={() => setDeletingParam(null)}
+                isDestructive
             />
         </div>
     )

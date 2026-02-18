@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { plansApi, scenariosApi } from '@/api/client'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { CustomSelect } from '@/components/ui/CustomSelect'
-import { useToast } from '@/hooks/use-toast'
+import { useToast } from '@/components/ui/Toast'
 
 interface TestPlanItem {
     id: number
@@ -56,7 +56,11 @@ export default function TestPlan() {
     // 创建计划
     const createMutation = useMutation({
         mutationFn: (data: { name: string; scenario_id: number; cron_expression: string }) =>
-            plansApi.create(data),
+            plansApi.create({
+                name: data.name,
+                project_id: 1, // TODO: 从当前项目上下文获取
+                created_by: 'system' // TODO: 从当前用户上下文获取
+            }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] })
             setShowModal(false)
@@ -83,8 +87,9 @@ export default function TestPlan() {
             queryClient.invalidateQueries({ queryKey: ['plans'] })
             setDeleteTarget(null)
             toast({
+                type: 'success',
                 title: '删除成功',
-                description: '测试计划已删除'
+                message: '测试计划已删除'
             })
         }
     })
@@ -95,8 +100,9 @@ export default function TestPlan() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] })
             toast({
+                type: 'success',
                 title: '执行开始',
-                description: '测试计划已开始执行'
+                message: '测试计划已开始执行'
             })
             setExecutingPlanId(null)
         },
@@ -111,8 +117,9 @@ export default function TestPlan() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] })
             toast({
+                type: 'info',
                 title: '已终止',
-                description: '测试执行已终止'
+                message: '测试执行已终止'
             })
         }
     })
@@ -393,11 +400,11 @@ export default function TestPlan() {
 
             {/* 删除确认对话框 */}
             <ConfirmDialog
-                open={!!deleteTarget}
+                isOpen={!!deleteTarget}
                 title="删除测试计划"
-                message={`确定要删除计划「${deleteTarget?.name}」吗？此操作无法撤销。`}
+                description={`确定要删除计划「${deleteTarget?.name}」吗？此操作无法撤销。`}
                 onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
-                onCancel={() => setDeleteTarget(null)}
+                onClose={() => setDeleteTarget(null)}
             />
         </div>
     )

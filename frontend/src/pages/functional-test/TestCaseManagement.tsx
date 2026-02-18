@@ -284,7 +284,7 @@ export default function TestCaseManagement() {
                   <div>
                     <div className="text-gray-400 text-sm mb-2">标签</div>
                     <div className="flex flex-wrap gap-2">
-                      {selectedCase.tags.map((tag, index) => (
+                      {selectedCase.tags.map((tag: string, index: number) => (
                         <span
                           key={index}
                           className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-cyan-500/20 text-cyan-400"
@@ -301,7 +301,7 @@ export default function TestCaseManagement() {
                   <div>
                     <div className="text-gray-400 text-sm mb-2">前置条件</div>
                     <ul className="list-disc list-inside text-sm text-gray-300 space-y-1">
-                      {selectedCase.preconditions.map((condition, index) => (
+                      {selectedCase.preconditions.map((condition: string, index: number) => (
                         <li key={index}>{condition}</li>
                       ))}
                     </ul>
@@ -312,7 +312,7 @@ export default function TestCaseManagement() {
                 <div>
                   <div className="text-gray-400 text-sm mb-2">测试步骤</div>
                   <div className="space-y-3">
-                    {selectedCase.steps.map((step, index) => (
+                    {selectedCase.steps.map((step: TestStep, index: number) => (
                       <div key={index} className="bg-slate-700 rounded-lg p-3">
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 w-6 h-6 bg-cyan-500 rounded-full flex items-center justify-center text-white text-xs font-medium">

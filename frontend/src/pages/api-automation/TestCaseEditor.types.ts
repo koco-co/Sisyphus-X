@@ -3,30 +3,35 @@
  */
 
 // 步骤类型枚举
-export enum StepType {
-    REQUEST = 'request',
-    DATABASE = 'database',
-    WAIT = 'wait',
-    LOOP = 'loop',
-    SCRIPT = 'script',
-    CONCURRENT = 'concurrent',
-    CONDITION = 'condition'
-}
+export const StepType = {
+    REQUEST: 'request',
+    DATABASE: 'database',
+    WAIT: 'wait',
+    LOOP: 'loop',
+    SCRIPT: 'script',
+    CONCURRENT: 'concurrent',
+    CONDITION: 'condition'
+} as const
+
+export type StepType = (typeof StepType)[keyof typeof StepType]
 
 // HTTP 方法
-export enum HttpMethod {
-    GET = 'GET',
-    POST = 'POST',
-    PUT = 'PUT',
-    DELETE = 'DELETE',
-    PATCH = 'PATCH',
-    HEAD = 'HEAD',
-    OPTIONS = 'OPTIONS'
-}
+export const HttpMethod = {
+    GET: 'GET',
+    POST: 'POST',
+    PUT: 'PUT',
+    DELETE: 'DELETE',
+    PATCH: 'PATCH',
+    HEAD: 'HEAD',
+    OPTIONS: 'OPTIONS'
+} as const
+
+export type HttpMethod = (typeof HttpMethod)[keyof typeof HttpMethod]
 
 // 请求步骤配置
 export interface RequestStep {
     name: string
+    enabled?: boolean
     request: {
         url: string
         method: HttpMethod
@@ -47,6 +52,7 @@ export interface RequestStep {
 // 数据库步骤配置
 export interface DatabaseStep {
     name: string
+    enabled?: boolean
     database: {
         type: 'mysql' | 'postgresql' | 'mongodb' | 'redis'
         query: string
@@ -58,6 +64,7 @@ export interface DatabaseStep {
 // 等待步骤配置
 export interface WaitStep {
     name: string
+    enabled?: boolean
     wait: {
         seconds: number
     }
@@ -66,6 +73,7 @@ export interface WaitStep {
 // 循环步骤配置
 export interface LoopStep {
     name: string
+    enabled?: boolean
     loop: {
         times: number
         steps: any[]
@@ -75,6 +83,7 @@ export interface LoopStep {
 // 脚本步骤配置
 export interface ScriptStep {
     name: string
+    enabled?: boolean
     script: {
         language: 'python' | 'javascript'
         code: string
@@ -84,6 +93,7 @@ export interface ScriptStep {
 // 并发步骤配置
 export interface ConcurrentStep {
     name: string
+    enabled?: boolean
     concurrent: {
         steps: any[]
     }
@@ -92,6 +102,7 @@ export interface ConcurrentStep {
 // 条件步骤配置
 export interface ConditionStep {
     name: string
+    enabled?: boolean
     condition: {
         variable: string
         operator: 'eq' | 'ne' | 'gt' | 'lt' | 'contains'

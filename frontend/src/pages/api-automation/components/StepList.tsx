@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { StepItemData, StepType, STEP_TYPE_INFO } from '../TestCaseEditor.types'
+import type { StepItemData } from '../TestCaseEditor.types'
+import { StepType, STEP_TYPE_INFO } from '../TestCaseEditor.types'
 import { StepItem } from './StepItem'
 
 interface StepListProps {
@@ -92,7 +93,7 @@ export function StepList({
                                     onDelete={() => onDeleteStep(step.id)}
                                     onDuplicate={() => onDuplicateStep(step.id)}
                                     onToggleEnabled={() => {
-                                        const currentEnabled = step.step.enabled !== false
+                                        const currentEnabled = (step.step as any).enabled !== false
                                         onUpdateStep(step.id, {
                                             step: {
                                                 ...step.step,

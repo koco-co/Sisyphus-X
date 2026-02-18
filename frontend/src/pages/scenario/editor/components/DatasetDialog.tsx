@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save } from 'lucide-react';
 import { useState } from 'react';
 import { DatasetTableEditor } from './DatasetTableEditor';
-import type { Dataset } from './types';
+import type { Dataset } from '../types';
 
 interface DatasetDialogProps {
     isOpen: boolean;

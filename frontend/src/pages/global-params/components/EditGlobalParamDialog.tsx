@@ -54,7 +54,7 @@ export default function EditGlobalParamDialog({
     const [code, setCode] = useState(param.code)
     const [parsedResult, setParsedResult] = useState<ParsedDocstring | null>(null)
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-    const { toast } = useToast()
+    const { error } = useToast()
     const [showDocstringHelp, setShowDocstringHelp] = useState(false)
 
     // 当 param 改变时更新代码
@@ -147,13 +147,13 @@ export default function EditGlobalParamDialog({
     // 处理保存
     const handleSave = () => {
         if (!code.trim()) {
-            toast.error('请输入代码')
+            error('请输入代码')
             return
         }
 
         const parsed = parseDocstring(code)
         if (!parsed) {
-            toast.error('无法解析代码，请确保使用 Google docstring 格式')
+            error('无法解析代码，请确保使用 Google docstring 格式')
             return
         }
 

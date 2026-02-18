@@ -103,6 +103,7 @@ function ContextMenu({ x, y, onClose, onEdit, onDelete, onCreate, type }: { x: n
             {type === 'root' && onCreate && (
                 <button
                     onClick={() => { onCreate(); onClose(); }}
+                    data-testid="context-create-folder-button"
                     className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
                 >
                     <Plus className="w-4 h-4" />
@@ -114,6 +115,7 @@ function ContextMenu({ x, y, onClose, onEdit, onDelete, onCreate, type }: { x: n
                     {onCreate && (
                         <button
                             onClick={() => { onCreate(); onClose(); }}
+                            data-testid="context-create-interface-button"
                             className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
                         >
                             <FileJson className="w-4 h-4" />
@@ -123,6 +125,7 @@ function ContextMenu({ x, y, onClose, onEdit, onDelete, onCreate, type }: { x: n
                     {onEdit && (
                         <button
                             onClick={() => { onEdit(); onClose(); }}
+                            data-testid="context-rename-folder-button"
                             className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/5 hover:text-white flex items-center gap-2"
                         >
                             <Edit3 className="w-4 h-4" />
@@ -132,6 +135,7 @@ function ContextMenu({ x, y, onClose, onEdit, onDelete, onCreate, type }: { x: n
                     {onDelete && (
                         <button
                             onClick={() => { onDelete(); onClose(); }}
+                            data-testid="context-delete-folder-button"
                             className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
                         >
                             <Trash2 className="w-4 h-4" />
@@ -145,6 +149,7 @@ function ContextMenu({ x, y, onClose, onEdit, onDelete, onCreate, type }: { x: n
                     {onDelete && (
                         <button
                             onClick={() => { onDelete(); onClose(); }}
+                            data-testid="context-delete-interface-button"
                             className="w-full px-3 py-2 text-left text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
                         >
                             <Trash2 className="w-4 h-4" />
@@ -339,6 +344,7 @@ export function InterfaceList() {
                     <div className="flex gap-1">
                         <button
                             onClick={() => navigate('/api/interfaces/new')}
+                            data-testid="create-interface-button"
                             className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
                             title="新建接口"
                         >
@@ -353,6 +359,7 @@ export function InterfaceList() {
                         placeholder="搜索接口..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
+                        data-testid="interface-search-input"
                         className="w-full h-9 bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/50"
                     />
                 </div>
@@ -378,6 +385,7 @@ export function InterfaceList() {
                                             className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer text-slate-300 hover:text-white group"
                                             onClick={() => toggle(node.id)}
                                             onContextMenu={(e) => handleContextMenu(e, node, node.type === 'folder' && node.id !== 'folder-unassigned' ? 'folder' : 'root')}
+                                            data-testid={`folder-node-${node.id}`}
                                         >
                                             {node.children && node.children.length > 0 ? (
                                                 expanded[node.id] ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />
@@ -398,6 +406,7 @@ export function InterfaceList() {
                                                         className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer group"
                                                         onClick={() => child.originalId && handleInterfaceClick(child.originalId)}
                                                         onContextMenu={(e) => handleContextMenu(e, child, 'api')}
+                                                        data-testid={`interface-node-${child.id}`}
                                                     >
                                                         <MethodBadge method={child.method || 'GET'} />
                                                         <span className="text-sm text-slate-300 group-hover:text-white truncate flex-1">{child.name}</span>
@@ -435,11 +444,11 @@ export function InterfaceList() {
                     } : undefined}
                     onDelete={contextMenu.type === 'folder' && contextMenu.node?.originalId ? () => {
                         if (contextMenu.node && confirm(`确定要删除文件夹 "${contextMenu.node.name}" 及其所有接口吗？`)) {
-                            deleteFolderMutation.mutate(contextMenu.node.originalId)
+                            deleteFolderMutation.mutate(contextMenu.node.originalId!)
                         }
                     } : contextMenu.type === 'api' && contextMenu.node?.originalId ? () => {
                         if (contextMenu.node && confirm(`确定要删除接口 "${contextMenu.node.name}" 吗？`)) {
-                            deleteInterfaceMutation.mutate(contextMenu.node.originalId)
+                            deleteInterfaceMutation.mutate(contextMenu.node.originalId!)
                         }
                     } : undefined}
                 />

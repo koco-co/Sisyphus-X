@@ -80,7 +80,7 @@ export default function CreateGlobalParamDialog({
     const [parsedResult, setParsedResult] = useState<ParsedDocstring | null>(null)
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
     const [showDocstringHelp, setShowDocstringHelp] = useState(false)
-    const { toast } = useToast()
+    const { error } = useToast()
 
     // 解析 Google docstring
     const parseDocstring = (pythonCode: string): ParsedDocstring | null => {
@@ -167,13 +167,13 @@ export default function CreateGlobalParamDialog({
     // 处理保存
     const handleSave = () => {
         if (!code.trim()) {
-            toast.error('请输入代码')
+            error('请输入代码')
             return
         }
 
         const parsed = parseDocstring(code)
         if (!parsed) {
-            toast.error('无法解析代码，请确保使用 Google docstring 格式')
+            error('无法解析代码，请确保使用 Google docstring 格式')
             return
         }
 

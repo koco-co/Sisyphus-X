@@ -136,7 +136,7 @@ export default function ApiTestCaseList() {
 
     // Get all unique tags
     const allTags = Array.from(
-        new Set(testCases.flatMap(tc => tc.tags || []))
+        new Set(testCases.flatMap((tc: ApiTestCase) => tc.tags || []))
     ).sort()
 
     return (
@@ -197,8 +197,8 @@ export default function ApiTestCaseList() {
                     className="bg-slate-900 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
                 >
                     <option value="">所有标签</option>
-                    {allTags.map(tag => (
-                        <option key={tag} value={tag}>{tag}</option>
+                    {allTags.map((tag: unknown) => (
+                        <option key={String(tag)} value={String(tag)}>{String(tag)}</option>
                     ))}
                 </select>
 
@@ -245,7 +245,7 @@ export default function ApiTestCaseList() {
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {testCases.length > 0 ? (
-                                testCases.map((testCase, index) => (
+                                testCases.map((testCase: ApiTestCase, index: number) => (
                                     <motion.tr
                                         key={testCase.id}
                                         className="hover:bg-white/5 transition-colors group"
@@ -270,7 +270,7 @@ export default function ApiTestCaseList() {
                                         <td className="px-6 py-4">
                                             <div className="flex flex-wrap gap-1">
                                                 {testCase.tags && testCase.tags.length > 0 ? (
-                                                    testCase.tags.slice(0, 2).map(tag => (
+                                                    testCase.tags.slice(0, 2).map((tag: string) => (
                                                         <span
                                                             key={tag}
                                                             className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-purple-500/10 text-purple-400 text-xs"

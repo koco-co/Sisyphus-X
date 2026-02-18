@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Plus, Database, Trash2, Edit2, Download, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { DatasetDialog } from './DatasetDialog';
-import type { Dataset } from './types';
+import type { Dataset } from '../types';
 
 interface DatasetSidebarProps {
     scenarioId: number;
@@ -76,8 +76,9 @@ export function DatasetSidebar({ scenarioId, onDatasetSelect }: DatasetSidebarPr
             await scenariosApi.importDataset(scenarioId, formData);
             toast.success('数据集导入成功');
             queryClient.invalidateQueries({ queryKey: ['scenarios', scenarioId, 'datasets'] });
-        } catch (error: { message?: string }) {
-            toast.error(`导入失败: ${error.message || 'Unknown error'}`);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            toast.error(`导入失败: ${errorMessage}`);
         }
 
         // Reset input

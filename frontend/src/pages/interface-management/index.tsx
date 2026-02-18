@@ -242,8 +242,8 @@ export default function InterfaceManagementPage() {
     startTime: number,
     endTime: number,
     hasError: boolean
-  ): typeof import('./components/ResponseViewer/ExecutionLog').LogEntry[] => {
-    const logs = []
+  ): Array<{ timestamp: string; type: 'success' | 'error' | 'info' | 'warning'; message: string; details?: any }> => {
+    const logs: Array<{ timestamp: string; type: 'success' | 'error' | 'info' | 'warning'; message: string; details?: any }> = []
     const now = new Date()
     const formatTime = (ms: number) => {
       const date = new Date(now.getTime() + ms)
@@ -370,13 +370,19 @@ export default function InterfaceManagementPage() {
 
   // 处理 cURL 导入
   const handleCurlImport = (data: CurlImportData) => {
+    const convertAuthType = (auth: CurlImportData['auth']): AuthConfig => {
+      if (!auth) return { type: 'no_auth' }
+      if (auth.type === 'none') return { type: 'no_auth' }
+      return auth as unknown as AuthConfig
+    }
+
     setRequestData({
       name: '导入的接口',
       url: data.url,
       method: data.method,
       params: objectToKeyValueArray(data.params),
       headers: objectToKeyValueArray(data.headers),
-      auth: data.auth || { type: 'no_auth' },
+      auth: convertAuthType(data.auth),
       body: typeof data.body === 'string' ? data.body : JSON.stringify(data.body || {}, null, 2),
       bodyType: data.body_type,
       formDataPairs: data.body_type === 'form-data'

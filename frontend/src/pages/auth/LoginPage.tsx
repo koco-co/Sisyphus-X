@@ -29,6 +29,7 @@ export default function LoginPage() {
     const [agreedToTerms, setAgreedToTerms] = useState(false)
     const [rememberMe, setRememberMe] = useState(false)
     const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong' | null>(null)
+    const [showOAuthInfo, setShowOAuthInfo] = useState(false)
 
     useEffect(() => {
         initParticlesEngine(async (engine: Engine) => {
@@ -325,7 +326,12 @@ export default function LoginPage() {
                     <div className="flex gap-4 mb-8">
                         <button
                             type="button"
-                            onClick={loginWithGithub}
+                            onClick={async () => {
+                                const result = await loginWithGithub()
+                                if (!result.success) {
+                                    toastError(result.error || 'GitHub 登录失败')
+                                }
+                            }}
                             data-testid="github-login-button"
                             aria-label="使用 GitHub 登录"
                             className="flex-1 h-12 rounded-xl bg-[#24292e]/10 border border-[#24292e]/30 hover:bg-[#24292e]/20 hover:border-[#24292e]/40 transition-all flex items-center justify-center gap-2 text-white text-sm font-medium group backdrop-blur-sm shadow-lg shadow-black/20"
@@ -335,7 +341,12 @@ export default function LoginPage() {
                         </button>
                         <button
                             type="button"
-                            onClick={loginWithGoogle}
+                            onClick={async () => {
+                                const result = await loginWithGoogle()
+                                if (!result.success) {
+                                    toastError(result.error || 'Google 登录失败')
+                                }
+                            }}
                             data-testid="google-login-button"
                             aria-label="使用 Google 登录"
                             className="flex-1 h-12 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 text-white text-sm font-medium group backdrop-blur-sm shadow-lg shadow-black/20"
@@ -360,6 +371,37 @@ export default function LoginPage() {
                             </svg>
                             <span className="text-white">Google</span>
                         </button>
+                    </div>
+
+                    {/* OAuth 配置提示 */}
+                    <div className="mb-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowOAuthInfo(!showOAuthInfo)}
+                            className="text-xs text-zinc-500 hover:text-zinc-400 transition-colors flex items-center gap-1"
+                        >
+                            <Command className="w-3 h-3" />
+                            {showOAuthInfo ? '隐藏' : '显示'} OAuth 配置说明
+                        </button>
+                        {showOAuthInfo && (
+                            <motion.div
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                                className="mt-2 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg"
+                            >
+                                <p className="text-xs text-yellow-200 mb-1">⚠️ GitHub/Google 登录需要配置 OAuth 凭据</p>
+                                <p className="text-xs text-zinc-400">
+                                    在 backend/.env 中配置以下环境变量：
+                                </p>
+                                <pre className="text-xs text-zinc-500 mt-1 font-mono">
+                                    GITHUB_CLIENT_ID=your_client_id<br/>
+                                    GITHUB_CLIENT_SECRET=your_client_secret<br/>
+                                    GOOGLE_CLIENT_ID=your_client_id<br/>
+                                    GOOGLE_CLIENT_SECRET=your_client_secret
+                                </pre>
+                            </motion.div>
+                        )}
                     </div>
 
                     <div className="relative mb-8">

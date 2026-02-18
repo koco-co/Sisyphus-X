@@ -16,8 +16,8 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<void>
     register: (username: string, email: string, password: string) => Promise<void>
     logout: () => void
-    loginWithGithub: () => void
-    loginWithGoogle: () => void
+    loginWithGithub: () => Promise<{ success: boolean; error?: string }>
+    loginWithGoogle: () => Promise<{ success: boolean; error?: string }>
     handleOAuthCallback: (token: string) => Promise<void>
 }
 
@@ -98,18 +98,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const loginWithGithub = async () => {
         try {
             const res = await api.get('/auth/github')
-            window.location.href = res.data.url
-        } catch (error) {
+            if (res.data && res.data.url) {
+                window.location.href = res.data.url
+                return { success: true }
+            } else {
+                return { success: false, error: 'Invalid OAuth response' }
+            }
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.detail || 'GitHub 登录功能未配置'
             console.error('GitHub login failed:', error)
+            return { success: false, error: errorMessage }
         }
     }
 
     const loginWithGoogle = async () => {
         try {
             const res = await api.get('/auth/google')
-            window.location.href = res.data.url
-        } catch (error) {
+            if (res.data && res.data.url) {
+                window.location.href = res.data.url
+                return { success: true }
+            } else {
+                return { success: false, error: 'Invalid OAuth response' }
+            }
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.detail || 'Google 登录功能未配置'
             console.error('Google login failed:', error)
+            return { success: false, error: errorMessage }
         }
     }
 

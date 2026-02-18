@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sess
 from fastapi import Depends
 
 from app.core.base import Base
+from app.core.security import get_password_hash
 # 导入所有模型以确保 metadata.create_all() 能创建所有表
 from app.models.user import User
 from app.models.project import Project, InterfaceFolder, Interface, ProjectEnvironment, ProjectDataSource
@@ -218,36 +219,55 @@ async def async_client(async_engine, db_session: AsyncSession):
     db_module.sync_session_maker = test_sync_session_maker
     db_module.engine = async_engine
 
+    # 注意：不再预先创建测试用户，避免与测试用例中的用户创建冲突
+    # 每个测试用例应该自己创建所需的测试用户
+    # 并发测试将通过测试用例内部创建用户来避免冲突
+
     # 创建测试应用
     app = FastAPI(redirect_slashes=False)  # 禁用自动重定向
     app.include_router(api_router, prefix="/api/v1")
 
-    # 覆盖数据库依赖
+    # 覆盖数据库依赖 - 为每个请求创建新的会话
+    # 这对于并发测试非常重要，避免多个请求共享同一个会话导致事务状态冲突
     async def override_get_session():
-        yield db_session
+        async with test_async_session_maker() as session:
+            yield session
 
     app.dependency_overrides[get_session] = override_get_session
 
-    # 禁用认证: 创建默认测试用户
+    # 禁用认证: 从 JWT token 获取用户 ID 并查找对应用户
     from app.api.deps import get_current_user
-    from app.core.security import get_password_hash
+    from fastapi import Header
+    from app.core.security import decode_access_token
 
-    async def override_get_current_user(session: AsyncSession = Depends(get_session)):
-        # 查找或创建测试用户
+    async def override_get_current_user(
+        session: AsyncSession = Depends(get_session),
+        authorization: str = Header(None)
+    ):
+        """测试模式下的认证覆盖：从 JWT token 或返回第一个用户"""
         from sqlalchemy import select
-        result = await session.execute(select(User).limit(1))
+
+        # 如果有 Authorization header，尝试解码 JWT token
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.replace("Bearer ", "")
+            try:
+                payload = decode_access_token(token)
+                user_id = payload.get("sub")
+                if user_id:
+                    result = await session.execute(select(User).where(User.id == user_id))
+                    user = result.scalar_one_or_none()
+                    if user:
+                        session.expunge(user)
+                        return user
+            except Exception:
+                # Token 解码失败，使用降级方案
+                pass
+
+        # 降级方案：返回数据库中的第一个用户（兼容不需要认证的测试）
+        result = await session.execute(select(User).order_by(User.created_at).limit(1))
         user = result.scalar_one_or_none()
-        if not user:
-            user = User(
-                id=str(uuid.uuid4()),
-                username="test_user",
-                email="test@example.com",
-                hashed_password=get_password_hash("test123"),
-                is_active=True,
-            )
-            session.add(user)
-            await session.commit()
-            await session.refresh(user)
+        if user:
+            session.expunge(user)
         return user
 
     app.dependency_overrides[get_current_user] = override_get_current_user

@@ -2,7 +2,7 @@
 文档中心 API 端点
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -126,7 +126,7 @@ async def update_document(
         if hasattr(document, key) and key != "change_note":
             setattr(document, key, value)
 
-    document.updated_at = datetime.now(timezone.utc)
+    document.updated_at = datetime.utcnow()
     await session.commit()
     await session.refresh(document)
     return document
@@ -189,7 +189,7 @@ async def restore_document_version(
 
     # 恢复内容
     document.content = doc_version.content
-    document.updated_at = datetime.now(timezone.utc)
+    document.updated_at = datetime.utcnow()
 
     await session.commit()
     return {"restored_to_version": version}

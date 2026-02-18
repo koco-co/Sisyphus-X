@@ -7,7 +7,7 @@
 重构后文件: 本文件
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -118,7 +118,7 @@ async def toggle_keyword_status(keyword_id: int, session: AsyncSession = Depends
     """
     keyword = await get_or_404(session, Keyword, keyword_id, "Keyword")
     keyword.is_active = not keyword.is_active
-    keyword.updated_at = datetime.now(timezone.utc)
+    keyword.updated_at = datetime.utcnow()
     await update_item(session, keyword, {}, auto_commit=False)
     return {"id": keyword_id, "is_active": keyword.is_active}
 

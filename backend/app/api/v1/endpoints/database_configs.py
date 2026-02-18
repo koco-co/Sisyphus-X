@@ -4,7 +4,7 @@
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pymysql
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -335,7 +335,7 @@ async def update_database_config(
     for field, value in update_data.items():
         setattr(config, field, value)
 
-    config.updated_at = datetime.now(timezone.utc)
+    config.updated_at = datetime.utcnow()
     session.add(config)
     await session.commit()
     await session.refresh(config)
@@ -427,7 +427,7 @@ async def test_database_connection_endpoint(
 
     # 更新连接状态
     config.connection_status = "connected" if success else "failed"
-    config.last_tested_at = datetime.now(timezone.utc)
+    config.last_tested_at = datetime.utcnow()
     session.add(config)
     await session.commit()
 

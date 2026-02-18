@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +25,7 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
     total_projects = (await session.execute(total_projects_stmt)).scalar() or 0
 
     # 获取活跃任务数 (假设最近7天内运行过的报告)
-    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
     active_tasks_stmt = (
         select(func.count()).select_from(TestReport).where(TestReport.created_at >= seven_days_ago)
     )
@@ -82,7 +82,7 @@ async def get_recent_activities(session: AsyncSession = Depends(get_session)):
     activities = []
     for report in reports:
         # 计算相对时间
-        time_diff = datetime.now(timezone.utc) - report.created_at
+        time_diff = datetime.utcnow() - report.created_at
         if time_diff.seconds < 60:
             time_str = f"{time_diff.seconds} 秒前"
         elif time_diff.seconds < 3600:

@@ -2,7 +2,7 @@
 API 测试用例相关的 API 端点
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import func
@@ -226,7 +226,7 @@ async def update_api_test_case(
         if field != "config_data":
             setattr(test_case, field, value)
 
-    test_case.updated_at = datetime.now(timezone.utc)
+    test_case.updated_at = datetime.utcnow()
 
     await session.commit()
     await session.refresh(test_case)
@@ -280,7 +280,7 @@ async def execute_test_case_background(
         environment_id=execution_request.environment_id,
         status="running",
         execution_options=execution_request.execution_options,
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.utcnow(),
     )
 
     session.add(execution)
@@ -305,7 +305,7 @@ async def execute_test_case_background(
         # 错误处理
         execution.status = "error"
         execution.error_message = str(e)
-        execution.completed_at = datetime.now(timezone.utc)
+        execution.completed_at = datetime.utcnow()
         await session.commit()
 
 

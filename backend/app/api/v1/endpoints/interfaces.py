@@ -189,7 +189,7 @@ async def update_interface(
     interface_id: str, data: dict, session: AsyncSession = Depends(get_session)
 ):
     """更新接口"""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     interface = await session.get(Interface, interface_id)
     if not interface:
@@ -213,7 +213,7 @@ async def update_interface(
         if key in allowed_fields:
             setattr(interface, key, value)
 
-    interface.updated_at = datetime.now(timezone.utc)
+    interface.updated_at = datetime.utcnow()
     await session.commit()
     await session.refresh(interface)
     return interface

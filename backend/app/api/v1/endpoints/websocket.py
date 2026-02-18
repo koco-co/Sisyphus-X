@@ -5,7 +5,7 @@ WebSocket 实时推送接口 - 测试执行进度更新
 import asyncio
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, Header, WebSocket, WebSocketDisconnect, status
 
@@ -112,7 +112,7 @@ class ConnectionManager:
             try:
                 heartbeat_message = {
                     "type": "heartbeat",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.utcnow().isoformat(),
                     "data": {"status": "alive"},
                 }
                 await self.broadcast_to_execution(execution_id, heartbeat_message)
@@ -221,7 +221,7 @@ async def websocket_execution_endpoint(
         await websocket.send_json(
             {
                 "type": "connected",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.utcnow().isoformat(),
                 "data": {
                     "execution_id": execution_id,
                     "message": "WebSocket connection established",
@@ -253,7 +253,7 @@ async def websocket_execution_endpoint(
                 await websocket.send_json(
                     {
                         "type": "pong",
-                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "timestamp": datetime.utcnow().isoformat(),
                         "data": {"execution_id": execution_id},
                     }
                 )
@@ -293,7 +293,7 @@ async def send_execution_progress(execution_id: str, progress_data: dict):
     """
     message = {
         "type": "progress",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.utcnow().isoformat(),
         "data": {"execution_id": execution_id, **progress_data},
     }
     await manager.broadcast_to_execution(execution_id, message)
@@ -312,7 +312,7 @@ async def send_step_started(execution_id: str, step_data: dict):
     """
     message = {
         "type": "step_started",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.utcnow().isoformat(),
         "data": {"execution_id": execution_id, **step_data},
     }
     await manager.broadcast_to_execution(execution_id, message)
@@ -334,7 +334,7 @@ async def send_step_completed(execution_id: str, step_result: dict):
     """
     message = {
         "type": "step_completed",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.utcnow().isoformat(),
         "data": {"execution_id": execution_id, **step_result},
     }
     await manager.broadcast_to_execution(execution_id, message)
@@ -356,7 +356,7 @@ async def send_execution_completed(execution_id: str, result_data: dict):
     """
     message = {
         "type": "completed",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.utcnow().isoformat(),
         "data": {"execution_id": execution_id, **result_data},
     }
     await manager.broadcast_to_execution(execution_id, message)
@@ -375,7 +375,7 @@ async def send_execution_error(execution_id: str, error_data: dict):
     """
     message = {
         "type": "error",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.utcnow().isoformat(),
         "data": {"execution_id": execution_id, **error_data},
     }
     await manager.broadcast_to_execution(execution_id, message)

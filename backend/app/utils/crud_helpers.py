@@ -5,7 +5,7 @@ CRUD 工具函数 - 消除重复的数据库操作代码
 """
 
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Generic, Optional, TypeVar, cast
 
 from fastapi import HTTPException, status
@@ -104,7 +104,7 @@ async def update_item(
 
     # 如果有 updated_at 字段，自动更新
     if hasattr(item, "updated_at"):
-        item.updated_at = datetime.now(timezone.utc)
+        item.updated_at = datetime.utcnow()
 
     if auto_commit:
         session.add(item)

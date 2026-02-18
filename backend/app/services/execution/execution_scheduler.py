@@ -2,7 +2,7 @@
 执行调度器 - 统一管理测试执行
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,7 +49,7 @@ class ExecutionScheduler:
             test_case_id=test_case_id,
             environment_id=environment_id,
             status="running",
-            started_at=datetime.now(timezone.utc),
+            started_at=datetime.utcnow(),
         )
         session.add(execution)
         await session.commit()
@@ -66,7 +66,7 @@ class ExecutionScheduler:
             execution.status = "success" if result.success else "failed"
             execution.result_data = result.model_dump()
             execution.duration = result.duration
-            execution.completed_at = datetime.now(timezone.utc)
+            execution.completed_at = datetime.utcnow()
 
             await session.commit()
 
@@ -76,6 +76,6 @@ class ExecutionScheduler:
             # 错误处理
             execution.status = "error"
             execution.result_data = {"error": str(e)}
-            execution.completed_at = datetime.now(timezone.utc)
+            execution.completed_at = datetime.utcnow()
             await session.commit()
             raise

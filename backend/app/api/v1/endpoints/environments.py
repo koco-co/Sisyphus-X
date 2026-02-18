@@ -1,7 +1,5 @@
 """Environment management API endpoints."""
 
-from datetime import UTC
-
 from fastapi import APIRouter, Depends, HTTPException, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import col, select
@@ -21,9 +19,10 @@ from app.services.environment_service import EnvironmentService
 router = APIRouter()
 
 
+@router.get("", response_model=list[EnvironmentResponse])
 @router.get("/", response_model=list[EnvironmentResponse])
 async def list_environments(
-    project_id: str = Path(..., description="Project ID"),
+    project_id: str,
     session: AsyncSession = Depends(get_session),
 ) -> list[ProjectEnvironment]:
     """List all environments for a project.
@@ -42,10 +41,11 @@ async def list_environments(
     return list(result.scalars().all())
 
 
+@router.post("", response_model=EnvironmentResponse)
 @router.post("/", response_model=EnvironmentResponse)
 async def create_environment(
-    project_id: str = Path(..., description="Project ID"),
-    data: EnvironmentCreate | None = None,
+    project_id: str,
+    data: EnvironmentCreate,
     session: AsyncSession = Depends(get_session),
 ) -> ProjectEnvironment:
     """Create a new environment.
@@ -89,8 +89,8 @@ async def create_environment(
         variables=data.variables or {},
         headers=data.headers or {},
         is_preupload=data.is_preupload if hasattr(data, 'is_preupload') else False,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
     )
 
     session.add(environment)
@@ -101,6 +101,7 @@ async def create_environment(
 
 
 @router.get("/{environment_id}", response_model=EnvironmentResponse)
+@router.get("/{environment_id}/", response_model=EnvironmentResponse)
 async def get_environment(
     environment_id: str,
     session: AsyncSession = Depends(get_session),
@@ -124,6 +125,7 @@ async def get_environment(
 
 
 @router.put("/{environment_id}", response_model=EnvironmentResponse)
+@router.put("/{environment_id}/", response_model=EnvironmentResponse)
 async def update_environment(
     environment_id: str,
     data: EnvironmentUpdate,
@@ -177,7 +179,7 @@ async def update_environment(
     if hasattr(data, 'is_preupload') and data.is_preupload is not None:
         environment.is_preupload = data.is_preupload
 
-    environment.updated_at = datetime.now(UTC)
+    environment.updated_at = datetime.utcnow()
 
     await session.commit()
     await session.refresh(environment)
@@ -186,6 +188,7 @@ async def update_environment(
 
 
 @router.delete("/{environment_id}")
+@router.delete("/{environment_id}/")
 async def delete_environment(
     environment_id: str,
     session: AsyncSession = Depends(get_session),
@@ -213,6 +216,7 @@ async def delete_environment(
 
 
 @router.post("/{environment_id}/copy", response_model=EnvironmentResponse)
+@router.post("/{environment_id}/copy/", response_model=EnvironmentResponse)
 async def copy_environment(
     environment_id: str,
     data: EnvironmentCopyRequest,
@@ -263,8 +267,8 @@ async def copy_environment(
         variables=source.variables.copy() if source.variables else {},
         headers=source.headers.copy() if source.headers else {},
         is_preupload=source.is_preupload,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
     )
 
     session.add(new_env)
@@ -275,6 +279,7 @@ async def copy_environment(
 
 
 @router.post("/{environment_id}/clone", response_model=EnvironmentResponse)
+@router.post("/{environment_id}/clone/", response_model=EnvironmentResponse)
 async def clone_environment(
     environment_id: str,
     data: dict[str, str] | None = None,
@@ -328,8 +333,8 @@ async def clone_environment(
         variables=source.variables.copy() if source.variables else {},
         headers=source.headers.copy() if source.headers else {},
         is_preupload=source.is_preupload,
-        created_at=datetime.now(UTC),
-        updated_at=datetime.now(UTC),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
     )
 
     session.add(new_env)
@@ -340,6 +345,7 @@ async def clone_environment(
 
 
 @router.post("/{environment_id}/replace", response_model=VariableReplaceResponse)
+@router.post("/{environment_id}/replace/", response_model=VariableReplaceResponse)
 async def replace_variables(
     environment_id: str,
     data: VariableReplaceRequest,

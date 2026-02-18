@@ -4,7 +4,7 @@
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -213,7 +213,7 @@ async def update_keyword(
     for field, value in update_data.items():
         setattr(keyword, field, value)
 
-    keyword.updated_at = datetime.now(timezone.utc)
+    keyword.updated_at = datetime.utcnow()
     session.add(keyword)
     await session.commit()
     await session.refresh(keyword)
@@ -278,7 +278,7 @@ async def toggle_keyword_status(
 
     # 切换状态
     keyword.is_enabled = not keyword.is_enabled
-    keyword.updated_at = datetime.now(timezone.utc)
+    keyword.updated_at = datetime.utcnow()
     session.add(keyword)
     await session.commit()
 

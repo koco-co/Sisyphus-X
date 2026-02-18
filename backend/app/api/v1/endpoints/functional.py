@@ -4,7 +4,7 @@
 
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
@@ -173,7 +173,7 @@ async def update_case(
         if hasattr(case, key):
             setattr(case, key, value)
 
-    case.updated_at = datetime.now(timezone.utc)
+    case.updated_at = datetime.utcnow()
     await session.commit()
     await session.refresh(case)
     return case
@@ -373,7 +373,7 @@ async def generate_cases_with_ai(
         # TODO: Update AIGenerationTask when model is created
         # task.status = "completed"
         # task.result = result
-        # task.completed_at = datetime.now(timezone.utc)
+        # task.completed_at = datetime.utcnow()
         pass
 
     except Exception:

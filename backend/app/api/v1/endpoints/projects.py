@@ -1,6 +1,6 @@
 """项目管理 API 端点"""
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -39,6 +39,7 @@ router = APIRouter()
 # ============================================
 
 
+@router.get("", response_model=PageResponse[ProjectResponse])
 @router.get("/", response_model=PageResponse[ProjectResponse])
 async def list_projects(
     page: int = Query(1, ge=1, description="页码"),
@@ -77,6 +78,7 @@ async def list_projects(
     )
 
 
+@router.post("", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=ProjectResponse, status_code=status.HTTP_201_CREATED)
 async def create_project(
     project_in: ProjectCreate,
@@ -127,6 +129,7 @@ async def create_project(
 
 
 @router.get("/{project_id}", response_model=ProjectResponse)
+@router.get("/{project_id}/", response_model=ProjectResponse)
 async def get_project(
     project_id: str,
     session: AsyncSession = Depends(get_session),
@@ -154,6 +157,7 @@ async def get_project(
 
 
 @router.put("/{project_id}", response_model=ProjectResponse)
+@router.put("/{project_id}/", response_model=ProjectResponse)
 async def update_project(
     project_id: str,
     project_in: ProjectUpdate,
@@ -204,7 +208,7 @@ async def update_project(
     for field, value in update_data.items():
         setattr(project, field, value)
 
-    project.updated_at = datetime.now(timezone.utc)
+    project.updated_at = datetime.utcnow()
     session.add(project)
     await session.commit()
     await session.refresh(project)
@@ -213,6 +217,7 @@ async def update_project(
 
 
 @router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{project_id}/", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_project(
     project_id: str,
     session: AsyncSession = Depends(get_session),
@@ -255,115 +260,13 @@ async def delete_project(
     await session.commit()
 
 
-# ============================================
-# Environment CRUD
-# ============================================
-@router.get("/{project_id}/environments", response_model=list[EnvironmentResponse])
-async def list_environments(project_id: str, session: AsyncSession = Depends(get_session)):
-    """获取项目的所有环境配置"""
-    statement = select(ProjectEnvironment).where(ProjectEnvironment.project_id == project_id)
-    result = await session.execute(statement)
-    return result.scalars().all()
-
-
-@router.post("/{project_id}/environments", response_model=EnvironmentResponse)
-async def create_environment(
-    project_id: str, env: EnvironmentCreate, session: AsyncSession = Depends(get_session)
-):
-    """创建新环境配置"""
-    # 检查项目是否存在
-    project = await session.get(Project, project_id)
-    if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
-
-    db_env = ProjectEnvironment(
-        project_id=project_id,
-        name=env.name,
-        domain=env.domain,
-        variables=env.variables,
-        headers=env.headers,
-    )
-    session.add(db_env)
-    await session.commit()
-    await session.refresh(db_env)
-    return db_env
-
-
-@router.get("/{project_id}/environments/{env_id}", response_model=EnvironmentResponse)
-async def get_environment(
-    project_id: str, env_id: str, session: AsyncSession = Depends(get_session)
-):
-    """获取单个环境配置"""
-    env = await session.get(ProjectEnvironment, env_id)
-    if not env or env.project_id != project_id:
-        raise HTTPException(status_code=404, detail="Environment not found")
-    return env
-
-
-@router.put("/{project_id}/environments/{env_id}", response_model=EnvironmentResponse)
-async def update_environment(
-    project_id: str,
-    env_id: str,
-    env_update: EnvironmentUpdate,
-    session: AsyncSession = Depends(get_session),
-):
-    """更新环境配置"""
-    env = await session.get(ProjectEnvironment, env_id)
-    if not env or env.project_id != project_id:
-        raise HTTPException(status_code=404, detail="Environment not found")
-
-    update_data = env_update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(env, key, value)
-    env.updated_at = datetime.now(timezone.utc)
-
-    session.add(env)
-    await session.commit()
-    await session.refresh(env)
-    return env
-
-
-@router.delete("/{project_id}/environments/{env_id}")
-async def delete_environment(
-    project_id: str, env_id: str, session: AsyncSession = Depends(get_session)
-):
-    """删除环境配置"""
-    env = await session.get(ProjectEnvironment, env_id)
-    if not env or env.project_id != project_id:
-        raise HTTPException(status_code=404, detail="Environment not found")
-
-    await session.delete(env)
-    await session.commit()
-    return {"message": "Environment deleted"}
-
-
-@router.post("/{project_id}/environments/{env_id}/copy", response_model=EnvironmentResponse)
-async def copy_environment(
-    project_id: str, env_id: str, session: AsyncSession = Depends(get_session)
-):
-    """深拷贝环境配置"""
-    env = await session.get(ProjectEnvironment, env_id)
-    if not env or env.project_id != project_id:
-        raise HTTPException(status_code=404, detail="Environment not found")
-
-    # 创建副本
-    new_env = ProjectEnvironment(
-        project_id=project_id,
-        name=f"{env.name} (Copy)",
-        domain=env.domain,
-        variables=dict(env.variables),  # 深拷贝字典
-        headers=dict(env.headers),
-    )
-    session.add(new_env)
-    await session.commit()
-    await session.refresh(new_env)
-    return new_env
 
 
 # ============================================
 # DataSource CRUD
 # ============================================
 @router.get("/{project_id}/datasources", response_model=list[DataSourceResponse])
+@router.get("/{project_id}/datasources/", response_model=list[DataSourceResponse])
 async def list_datasources(project_id: str, session: AsyncSession = Depends(get_session)):
     """获取项目的所有数据源"""
     statement = select(ProjectDataSource).where(ProjectDataSource.project_id == project_id)
@@ -372,6 +275,7 @@ async def list_datasources(project_id: str, session: AsyncSession = Depends(get_
 
 
 @router.post("/{project_id}/datasources", response_model=DataSourceResponse)
+@router.post("/{project_id}/datasources/", response_model=DataSourceResponse)
 async def create_datasource(
     project_id: str, ds: DataSourceCreate, session: AsyncSession = Depends(get_session)
 ):
@@ -390,7 +294,7 @@ async def create_datasource(
     # 尝试测试连接以确定初始状态
     status = "unchecked"
     error_msg = None
-    last_test_at = datetime.now(timezone.utc)
+    last_test_at = datetime.utcnow()
 
     if ds.username and ds.password:
         success, message = await test_mysql_connection(
@@ -425,6 +329,7 @@ async def create_datasource(
 
 
 @router.put("/{project_id}/datasources/{ds_id}", response_model=DataSourceResponse)
+@router.put("/{project_id}/datasources/{ds_id}/", response_model=DataSourceResponse)
 async def update_datasource(
     project_id: str,
     ds_id: str,
@@ -456,7 +361,7 @@ async def update_datasource(
 
     for key, value in update_data.items():
         setattr(ds, key, value)
-    ds.updated_at = datetime.now(timezone.utc)
+    ds.updated_at = datetime.utcnow()
 
     # 如果连接配置发生变化，重新测试连接
     if should_retest and ds.username and ds.password_hash:
@@ -469,7 +374,7 @@ async def update_datasource(
             # 这里简化处理：只在提供了新密码或相关配置变更时标记为unchecked
             ds.status = "unchecked"
             ds.error_msg = None
-            ds.last_test_at = datetime.now(timezone.utc)
+            ds.last_test_at = datetime.utcnow()
 
     session.add(ds)
     await session.commit()
@@ -478,6 +383,7 @@ async def update_datasource(
 
 
 @router.patch("/{project_id}/datasources/{ds_id}", response_model=DataSourceResponse)
+@router.patch("/{project_id}/datasources/{ds_id}/", response_model=DataSourceResponse)
 async def patch_datasource(
     project_id: str,
     ds_id: str,
@@ -492,7 +398,7 @@ async def patch_datasource(
     update_data = ds_patch.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(ds, key, value)
-    ds.updated_at = datetime.now(timezone.utc)
+    ds.updated_at = datetime.utcnow()
 
     session.add(ds)
     await session.commit()
@@ -501,6 +407,7 @@ async def patch_datasource(
 
 
 @router.delete("/{project_id}/datasources/{ds_id}")
+@router.delete("/{project_id}/datasources/{ds_id}/")
 async def delete_datasource(
     project_id: str, ds_id: str, session: AsyncSession = Depends(get_session)
 ):
@@ -550,6 +457,7 @@ async def test_datasource_connection(test_req: DataSourceTestRequest):
 # Environment Variable CRUD
 # ============================================
 @router.get("/{project_id}/environments/{env_id}/variables", response_model=list[EnvVariableResponse])
+@router.get("/{project_id}/environments/{env_id}/variables/", response_model=list[EnvVariableResponse])
 async def list_env_variables(
     project_id: str, env_id: str, session: AsyncSession = Depends(get_session)
 ):
@@ -565,6 +473,7 @@ async def list_env_variables(
 
 
 @router.post("/{project_id}/environments/{env_id}/variables", response_model=EnvVariableResponse)
+@router.post("/{project_id}/environments/{env_id}/variables/", response_model=EnvVariableResponse)
 async def create_env_variable(
     project_id: str,
     env_id: str,
@@ -603,6 +512,7 @@ async def create_env_variable(
 
 
 @router.get("/{project_id}/environments/{env_id}/variables/{var_id}", response_model=EnvVariableResponse)
+@router.get("/{project_id}/environments/{env_id}/variables/{var_id}/", response_model=EnvVariableResponse)
 async def get_env_variable(
     project_id: str, env_id: str, var_id: str, session: AsyncSession = Depends(get_session)
 ):
@@ -620,6 +530,7 @@ async def get_env_variable(
 
 
 @router.put("/{project_id}/environments/{env_id}/variables/{var_id}", response_model=EnvVariableResponse)
+@router.put("/{project_id}/environments/{env_id}/variables/{var_id}/", response_model=EnvVariableResponse)
 async def update_env_variable(
     project_id: str,
     env_id: str,
@@ -652,7 +563,7 @@ async def update_env_variable(
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(var, key, value)
-    var.updated_at = datetime.now(timezone.utc)
+    var.updated_at = datetime.utcnow()
 
     session.add(var)
     await session.commit()
@@ -661,6 +572,7 @@ async def update_env_variable(
 
 
 @router.delete("/{project_id}/environments/{env_id}/variables/{var_id}")
+@router.delete("/{project_id}/environments/{env_id}/variables/{var_id}/")
 async def delete_env_variable(
     project_id: str, env_id: str, var_id: str, session: AsyncSession = Depends(get_session)
 ):

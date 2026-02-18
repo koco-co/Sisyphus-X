@@ -39,6 +39,17 @@ api.interceptors.response.use(
     }
 )
 
+// 认证 API
+export const authApi = {
+    login: (email: string, password: string) => api.post('/auth/login', { email, password }),
+    register: (username: string, email: string, password: string) =>
+        api.post('/auth/register', { username, email, password }),
+    logout: () => api.post('/auth/logout'),
+    me: () => api.get('/auth/me'),
+    github: () => api.get('/auth/github'),
+    google: () => api.get('/auth/google'),
+}
+
 // 文件 API
 export const filesApi = {
     upload: (file: File) => {
@@ -68,6 +79,7 @@ export const projectsApi = {
         api.put(`/projects/${projectId}/environments/${envId}`, data),
     deleteEnvironment: (projectId: number, envId: number) => api.delete(`/projects/${projectId}/environments/${envId}`),
     copyEnvironment: (projectId: number, envId: number) => api.post(`/projects/${projectId}/environments/${envId}/copy`),
+    cloneEnvironment: (projectId: number, envId: number) => api.post(`/projects/${projectId}/environments/${envId}/clone`),
 
     // 数据源 API
     listDataSources: (projectId: number) => api.get(`/projects/${projectId}/datasources`),

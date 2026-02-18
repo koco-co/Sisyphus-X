@@ -3,7 +3,7 @@
 使用pgvector存储向量，支持语义搜索
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlmodel import JSON, Column, Field, SQLModel
 from typing import Optional, Dict, Any, List
@@ -33,7 +33,7 @@ class TestCaseKnowledge(SQLModel, table=True):
     quality_score: float = Field(default=0.0)  # 0.0-10.0
     usage_count: int = Field(default=0)  # 被引用次数
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
 
     class Config:
         indexes = [

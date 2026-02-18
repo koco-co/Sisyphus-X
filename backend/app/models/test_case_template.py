@@ -3,7 +3,7 @@
 管理测试用例模板(快速生成用例)
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Optional, Dict, List
 
 from sqlmodel import JSON, Column, Field, SQLModel
@@ -27,8 +27,8 @@ class TestCaseTemplate(SQLModel, table=True):
     # 元数据
     is_system: bool = Field(default=False)  # 系统模板/用户自定义
     created_by: Optional[int] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
 
     class Config:
         indexes = [

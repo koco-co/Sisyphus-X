@@ -3,7 +3,7 @@ AI对话历史模型 - 功能测试模块
 存储LangGraph对话状态和历史消息
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Optional, Dict, List
 
 from sqlmodel import JSON, Column, Field, SQLModel
@@ -26,8 +26,8 @@ class AIConversation(SQLModel, table=True):
 
     # 元数据
     created_by: int
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
 
     class Config:
         indexes = [

@@ -1,6 +1,6 @@
 """Interface request history model."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import DateTime, Index
 from sqlmodel import JSON, Column, Field, SQLModel
@@ -30,7 +30,7 @@ class InterfaceHistory(SQLModel, table=True):
     elapsed: Optional[float] = Field(default=None, description="Request elapsed time (seconds)")
     timeline: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON), description="Timeline data (DNS/TCP/TTFB/Download)")
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), index=True, description="Created at")
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow(), index=True, description="Created at")
 
     __table_args__ = (
         Index("idx_interface_history_created_at", "created_at"),

@@ -2,7 +2,7 @@
 文档中心模块 - 模型
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlmodel import Column, Field, SQLModel, Text
 from typing import Optional, Dict, Any, List
@@ -21,8 +21,8 @@ class Document(SQLModel, table=True):
     order_index: int = 0  # 排序
     is_published: bool = False  # 是否发布
     created_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow())
+    updated_at: datetime = Field(default_factory=datetime.utcnow())
 
 
 class DocumentVersion(SQLModel, table=True):
@@ -35,4 +35,4 @@ class DocumentVersion(SQLModel, table=True):
     content: str = Field(default="", sa_column=Column(Text))
     change_note: Optional[str] = None
     created_by: Optional[str] = None
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow())

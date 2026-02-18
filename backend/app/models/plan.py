@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 from typing import Optional, Dict, Any, List
@@ -15,5 +15,5 @@ class TestPlan(SQLModel, table=True):
     status: str = "active"  # 'active' 或 'paused'
     next_run: Optional[datetime] = None  # 下次执行时间
     last_run: Optional[datetime] = None  # 上次执行时间
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))  # 创建时间
-    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))  # 更新时间
+    created_at: datetime = Field(default_factory=datetime.utcnow())  # 创建时间
+    updated_at: datetime = Field(default_factory=datetime.utcnow())  # 更新时间

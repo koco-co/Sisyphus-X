@@ -2,7 +2,7 @@
 需求模型 - SQLAlchemy 2.0 ORM
 功能测试模块 - 管理产品需求文档和AI澄清记录
 """
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSON
@@ -42,6 +42,6 @@ class Requirement(Base):
 
     # 元数据
     created_by: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.utcnow(), nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1)

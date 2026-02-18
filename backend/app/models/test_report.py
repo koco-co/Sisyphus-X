@@ -3,7 +3,7 @@
 按照 docs/数据库设计.md §3.16 定义
 """
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, Dict, Any, List
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
@@ -68,7 +68,7 @@ class TestReport(Base):
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc), nullable=False
+        default=lambda: datetime.utcnow(), nullable=False
     )
 
     def __repr__(self) -> str:

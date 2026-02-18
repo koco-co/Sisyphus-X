@@ -3,7 +3,7 @@ AI配置模型 - 功能测试模块
 支持多AI厂商配置管理
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 from typing import Optional, Dict, Any, List
@@ -25,8 +25,8 @@ class AIProviderConfig(SQLModel, table=True):
     is_enabled: bool = Field(default=True)
     is_default: bool = Field(default=False)
     user_id: int = Field(index=True)
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow())
+    updated_at: datetime = Field(default_factory=datetime.utcnow())
 
     class Config:
         indexes = [

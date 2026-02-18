@@ -2,7 +2,7 @@
 系统设置模块 - 全局配置模型
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlmodel import JSON, Column, Field, SQLModel
 from typing import Optional, Dict, Any, List
@@ -19,8 +19,8 @@ class GlobalConfig(SQLModel, table=True):
     category: str = "general"  # 分类: general, minio, llm, notification
     description: Optional[str] = None  # 配置描述
     is_secret: bool = False  # 是否为敏感信息（隐藏显示）
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
 
 
 class NotificationChannel(SQLModel, table=True):
@@ -34,8 +34,8 @@ class NotificationChannel(SQLModel, table=True):
     config: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON))  # 配置信息 (webhook, token等)
     is_enabled: bool = True
     description: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
 
 
 class Role(SQLModel, table=True):
@@ -48,7 +48,7 @@ class Role(SQLModel, table=True):
     code: str = Field(unique=True)  # 角色代码: admin, tester, viewer
     permissions: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON))  # 权限配置
     description: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
 
     # 关系
     # 注意: Permission 在 user_management.py 中定义，避免循环导入

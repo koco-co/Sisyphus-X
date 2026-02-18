@@ -2,7 +2,7 @@
 用户和权限管理模型
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import DateTime, Column, ForeignKey, Integer, Table, Text
 from sqlmodel import Field, SQLModel
@@ -26,7 +26,7 @@ class Permission(SQLModel, table=True):
     resource: str = Field(max_length=50, description="资源名称，如 projects, testcases")
     action: str = Field(max_length=50, description="操作，如 create, read, update, delete, execute")
     description: Optional[str] = Field(default=None, max_length=200)
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow())
 
     # 关系 - 使用 TYPE_CHECKING 避免循环导入
     # roles: list["Role"] = Relationship(
@@ -48,7 +48,7 @@ class AuditLog(SQLModel, table=True):
     details: Optional[str] = Field(default=None, sa_column=Column(Text))
     ip_address: Optional[str] = Field(default=None, max_length=50)
     user_agent: Optional[str] = Field(default=None, max_length=500)
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow())
 
     # 关系 - 使用 TYPE_CHECKING 避免循环导入
     # user: "User" = Relationship(back_populates="audit_logs")

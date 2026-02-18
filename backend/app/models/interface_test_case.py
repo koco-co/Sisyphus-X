@@ -1,6 +1,6 @@
 """Interface test case model."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import DateTime, UniqueConstraint
 from sqlmodel import JSON, Column, Field, SQLModel
@@ -28,8 +28,8 @@ class InterfaceTestCase(SQLModel, table=True):
 
     assertions: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON), description="Assertion config")
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Created at")
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Updated at")
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow(), description="Created at")
+    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow(), description="Updated at")
 
     __table_args__ = (
         UniqueConstraint("yaml_path", name="uq_interface_test_case_yaml_path"),

@@ -3,7 +3,7 @@
 管理详细的测试用例（包含步骤和预期结果）
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlmodel import JSON, Column, Field, SQLModel
 from typing import Optional, Dict, Any, List
@@ -47,8 +47,8 @@ class FunctionalTestCase(SQLModel, table=True):
 
     # 创建信息
     created_by: int
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
     version: int = Field(default=1)
 
     class Config:

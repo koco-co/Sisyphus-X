@@ -2,7 +2,7 @@
 
 按照 docs/数据库设计.md 定义的用户表结构
 """
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, Dict, Any, List
 
 from sqlalchemy import DateTime, Boolean, String, Index
@@ -61,10 +61,10 @@ class User(Base):
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc), nullable=False
+        default=lambda: datetime.utcnow(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
     )
 
     def __repr__(self) -> str:

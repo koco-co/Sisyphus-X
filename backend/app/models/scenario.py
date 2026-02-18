@@ -46,7 +46,7 @@ Dataset:
 索引:
 - idx_scenario_steps_scenario_order: (scenario_id, sort_order)
 """
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING, Optional, List, Dict, Any
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, JSON
@@ -103,9 +103,9 @@ class Scenario(Base):
     post_sql: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
     )
 
     # 关系
@@ -157,9 +157,9 @@ class ScenarioStep(Base):
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
     )
 
     # 索引
@@ -212,9 +212,9 @@ class Dataset(Base):
     csv_data: Mapped[str] = mapped_column(Text, nullable=False)  # CSV 格式数据
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
     )
 
     # 关系

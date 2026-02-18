@@ -3,7 +3,7 @@
 管理MinIO文件存储记录
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 
@@ -27,7 +27,7 @@ class FileAttachment(SQLModel, table=True):
 
     # 元数据
     uploaded_by: int
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow())
 
     class Config:
         indexes = [

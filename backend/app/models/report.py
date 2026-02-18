@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlmodel import JSON, Column, Field, SQLModel
 from typing import Optional, Dict, Any, List
@@ -16,9 +16,9 @@ class TestReport(SQLModel, table=True):
     success: int = 0  # 成功步骤数
     failed: int = 0  # 失败步骤数
     duration: str = "0s"  # 执行时长(格式化后的字符串, 如 "12m 30s")
-    start_time: datetime = Field(default_factory=datetime.now(timezone.utc))  # 开始时间
+    start_time: datetime = Field(default_factory=datetime.utcnow())  # 开始时间
     end_time: Optional[datetime] = None  # 结束时间
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))  # 创建时间
+    created_at: datetime = Field(default_factory=datetime.utcnow())  # 创建时间
 
 
 class TestReportDetail(SQLModel, table=True):
@@ -34,4 +34,4 @@ class TestReportDetail(SQLModel, table=True):
     response_data: Optional[dict] = Field(default=None, sa_column=Column(JSON))  # 响应数据
     error_msg: Optional[str] = None  # 错误信息
     elapsed: float = 0.0  # 执行耗时(秒)
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow())

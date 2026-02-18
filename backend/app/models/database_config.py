@@ -2,7 +2,7 @@
 
 存储项目的数据库连接配置
 """
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import DateTime, Boolean, ForeignKey, Integer, String, Index
 from sqlalchemy.orm import Mapped, mapped_column
@@ -61,10 +61,10 @@ class DatabaseConfig(Base):
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.now(timezone.utc), nullable=False
+        default=lambda: datetime.utcnow(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
+        DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
     )
 
     __table_args__ = (

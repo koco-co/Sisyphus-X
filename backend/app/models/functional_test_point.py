@@ -3,7 +3,7 @@
 管理测试点（测试用例的抽象描述）
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlmodel import Field, SQLModel
 from typing import Optional, Dict, Any, List
@@ -31,8 +31,8 @@ class TestPoint(SQLModel, table=True):
     # 状态
     status: str = Field(default="draft")  # draft/approved/rejected
 
-    created_at: datetime = Field(default_factory=datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=datetime.utcnow())
+    updated_at: datetime = Field(default_factory=datetime.utcnow())
 
     class Config:
         indexes = [

@@ -241,29 +241,65 @@ uv run alembic downgrade -1
 
 ## 🧪 测试
 
-### 运行测试
+### 测试架构
+
+Sisyphus-X 采用分层测试策略:
+
+```
+tests_white/          # 白盒测试 (开发视角)
+├── unit/            # 单元测试 (80%+ 覆盖率)
+├── integration/     # 集成测试 (70%+ 覆盖率)
+└── api/             # API 接口测试 (100% 覆盖率)
+
+tests_black/         # 黑盒测试 (用户视角)
+├── e2e/            # E2E 测试 (Playwright)
+└── functional/     # 功能测试
+```
+
+详细文档: [测试架构设计](./docs/TEST_ARCHITECTURE.md)
+
+### 运行白盒测试
 
 ```bash
-# 后端单元测试
-cd backend
-uv run pytest tests/unit -v
+# 后端测试
+cd tests_white
+pytest                           # 运行所有测试
+pytest -m unit                   # 单元测试
+pytest -m integration            # 集成测试
+pytest -m api                    # API 测试
+pytest --cov=backend/app         # 覆盖率报告
 
-# 后端集成测试
-uv run pytest tests/integration -v
-
-# 后端测试覆盖率
-uv run pytest --cov=app tests/
-
-# 前端类型检查
+# 前端测试
 cd frontend
-npm run build
+npm run test                     # 单元测试
+npm run test:coverage            # 覆盖率报告
+```
+
+### 运行黑盒测试
+
+```bash
+# E2E 测试
+cd tests_black
+npm install                      # 安装依赖
+npm run install:browsers         # 安装浏览器
+npm run test                     # 运行所有 E2E 测试
+npm run test:headed              # 有头模式
+npm run test:ui                  # UI 模式 (交互式)
+npm run report                   # 查看报告
+
+# 运行特定功能测试
+npm run test:auth                # 认证流程
+npm run test:interface           # 接口管理
+npm run test:api-automation      # API 自动化
+npm run test:scenario            # 场景编排
 ```
 
 ### 测试覆盖率目标
 
-- 单元测试: 80%+
-- 集成测试: 覆盖核心 API
-- E2E 测试: 覆盖关键用户流程
+- **单元测试**: 80%+ (目标 90%+)
+- **集成测试**: 70%+ (目标 85%+)
+- **API 测试**: 100% (所有端点)
+- **E2E 测试**: 关键路径 100%, 主要流程 80%+
 
 ---
 

@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-> Last updated: 2025-02-11
+> Last updated: 2026-02-18
 
 ## Project Overview
 
@@ -16,22 +16,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Technology Stack
 
 **Frontend:**
-- React 19.2 + TypeScript 5.9
+- React 18.2 + TypeScript 5.9.3
 - Vite 7.2 (build tool)
 - Tailwind CSS + shadcn/ui
 - React Router v7, React Query v5, ReactFlow v11
 - Monaco Editor, Framer Motion, Recharts
+- Zustand (状态管理)
+- i18next (国际化)
+- Vitest (单元测试) + Playwright (E2E测试)
 
 **Backend:**
 - FastAPI 0.115+ (async web framework)
+- Python 3.12+
 - SQLModel (SQLAlchemy + Pydantic ORM)
 - PostgreSQL/SQLite (database)
 - Alembic (migrations)
 - LangGraph + LangChain + Anthropic Claude (AI)
+- sisyphus-api-engine 2.1+ (API测试引擎)
 
 **Package Manager:**
 - Frontend: npm
-- Backend: UV (fast Python package manager)
+- Backend: UV (fast Python package manager, requires Python 3.12+)
 
 ---
 
@@ -82,10 +87,14 @@ uv run alembic history
 ```bash
 cd frontend
 
-npm run dev       # Development server with hot reload (port 5173)
-npm run build     # Production build (outputs to dist/)
-npm run preview   # Preview production build locally
-npm run lint      # Run ESLint
+npm run dev              # Development server with hot reload (port 5173)
+npm run build            # Production build (outputs to dist/)
+npm run preview          # Preview production build locally
+npm run lint             # Run ESLint
+npm run test             # Run Vitest unit tests
+npm run test:coverage    # Run tests with coverage
+npm run test:e2e         # Run Playwright E2E tests
+npm run test:e2e:ui      # Run Playwright with UI mode
 ```
 
 ### Backend Commands
@@ -102,7 +111,11 @@ uv run ruff format app/         # Formatting
 uv run pyright app/             # Type checking
 
 # Testing
-uv run pytest tests/ -v
+uv run pytest tests/ -v                    # Run all tests
+uv run pytest tests/ -m unit               # Run unit tests only
+uv run pytest tests/ -m integration        # Run integration tests only
+uv run pytest tests/ -m "not slow"         # Skip slow tests
+uv run pytest tests/ --cov=app             # Run with coverage
 
 # Dependencies
 uv add package-name              # Add dependency
@@ -131,8 +144,10 @@ uv sync                         # Sync dependencies
 
 **1. Frontend** (`frontend/src/`)
 - User interaction and data visualization
-- State: React Query (server), Context (global), useState (local)
+- State: React Query (server), Zustand (global), useState (local)
 - API: Centralized Axios client with JWT auto-inject
+- i18n: i18next for internationalization
+- Testing: Vitest (unit) + Playwright (E2E)
 
 **2. Backend** (`backend/app/`)
 - REST API, business logic, data persistence
@@ -186,20 +201,52 @@ Response → Cache → UI Update
 - `/projects/` - Project management, environments, datasources
 - `/interfaces/` - API interface management, folders, Swagger import
 - `/api-test-cases/` - API test case CRUD
-- `/ai/` - AI assistant endpoints (clarification, generation)
+- `/scenarios/` - Test scenario orchestration (ReactFlow)
+- `/keywords/` - Keyword management for test automation
+- `/functional/` - Functional test case and test point management
+- `/execution/` - Test execution (synchronous/asynchronous)
+- `/ai/` - AI assistant endpoints (clarification, generation, config)
 - `/requirements/` - Test requirements management
 - `/test-case-knowledge/` - Test case knowledge base
+- `/plans/` - Test planning
+- `/reports/` - Test reports
+- `/global-params/` - Global parameter management
+- `/documents/` - Document upload and management
+- `/database-configs/` - Database configuration management
+- `/settings/` - System settings
+- `/user-management/` - User and role management
+- `/websocket/` - WebSocket connections for real-time updates
 
 ### 3. Database Model-Schema Separation
 
 **Models** (`backend/app/models/`): SQLModel with `table=True`
 - `project.py` - Projects, environments, datasources
 - `api_test_case.py` - API test cases, steps, assertions
+- `interface_test_case.py` - Interface test cases
+- `test_case.py` - Generic test case model
+- `keyword.py` - Keywords for test automation
+- `scenario.py` - Test scenarios (ReactFlow workflows)
+- `functional_test_case.py` - Functional test cases
+- `functional_test_point.py` - Functional test points
 - `ai_conversation.py` - AI chat history
+- `ai_config.py` - AI model configuration
 - `requirement.py` - Test requirements
 - `test_case_knowledge.py` - Test case knowledge base
-- `functional_test_case.py` - Functional test cases
-- `scenario.py` - Test scenarios
+- `test_plan.py` - Test plans
+- `test_execution.py` - Test execution records
+- `test_report.py` - Test reports
+- `document.py` - Document attachments
+- `file_attachment.py` - File attachments
+- `global_param.py` - Global parameters
+- `env_variable.py` - Environment variables
+- `database_config.py` - Database configurations
+- `interface_history.py` - Interface change history
+- `user.py` - User accounts
+- `user_management.py` - User and role management
+- `settings.py` - System settings
+- `test_case_template.py` - Test case templates
+- `plan.py` - Planning data
+- `report.py` - Report data
 
 **Schemas** (`backend/app/schemas/`): Pydantic for validation
 - Create/Update/Response patterns
@@ -209,19 +256,54 @@ Response → Cache → UI Update
 
 **Pages** (`frontend/src/pages/`):
 - `api-automation/` - API test case management
+  - `ProjectManagement.tsx` - Project CRUD
+  - `ApiTestCaseList.tsx` - Test case list and execution
+  - `VisualTestCaseEditor.tsx` - Visual test case editor
+  - `KeywordManagement.tsx` - Keyword library
+  - `BatchExecution.tsx` - Batch test execution
+  - `ExecutionResultPage.tsx` - Execution results
+  - `DatabaseConfigList.tsx` - Database configuration
 - `functional-test/` - Functional test management
+  - `RequirementList.tsx` - Requirements list
+  - `RequirementClarification.tsx` - AI requirement clarification
+  - `GenerateTestCases.tsx` - AI test case generation
+  - `TestCaseManagement.tsx` - Test case management
+  - `TestPointManagement.tsx` - Test point management
+  - `AIConfigManagement.tsx` - AI configuration
 - `interface/` - API interface explorer and debug
-- `plans/` - Test planning
-- `reports/` - Test execution reports
+  - `InterfaceList.tsx` - Interface list
+  - `InterfaceEditor.tsx` - Interface editor
+- `interface-management/` - Enhanced interface management
 - `scenario/` - Scenario orchestration (ReactFlow)
-- `auth/` - Login/register
+- `plans/` - Test planning (`TestPlan.tsx`)
+- `reports/` - Test execution reports (`TestReport.tsx`)
+- `environments/` - Environment management (`EnvironmentList.tsx`)
+- `global-params/` - Global parameter management
+- `keywords/` - Keyword library
+- `cases/` - Test case management
+- `projects/` - Project management (`ProjectList.tsx`)
+- `auth/` - Login/register (`Login.tsx`, `Register.tsx`)
 
 **Components** (`frontend/src/components/`):
 - `common/` - EmptyState, ConfirmDialog, Pagination
 - `layout/` - AppShell, Navigation
 - `ui/` - shadcn/ui base components
 
-### 5. Authentication Flow
+### 5. API Test Engine Integration
+
+**Engine Package:** `sisyphus-api-engine>=2.1.0`
+
+- Standalone Python package for YAML-driven API test execution
+- Integrates with backend via `/engine/` endpoints
+- Supports:
+  - HTTP methods (GET, POST, PUT, DELETE, PATCH)
+  - Authentication (Bearer Token, Basic Auth, API Key)
+  - Assertions (status, headers, JSON path, response time)
+  - Data-driven testing with datasets
+  - Variable extraction and chaining
+- Execution modes: synchronous (immediate) and asynchronous (background)
+
+### 6. Authentication Flow
 
 **Frontend:**
 - Token in localStorage: `sisyphus-token`
@@ -233,6 +315,15 @@ Response → Cache → UI Update
 - JWT validation via `app.api.deps.get_current_user`
 - OAuth support (GitHub/Google)
 - Dev bypass: `AUTH_DISABLED=true`
+
+### 7. Real-Time Updates (WebSocket)
+
+**Endpoint:** `/websocket/`
+
+- WebSocket connections for real-time test execution updates
+- Live streaming of test execution progress
+- Automatic reconnection on disconnect
+- Used in: Test execution, AI generation progress, scenario orchestration
 
 ---
 
@@ -303,17 +394,20 @@ import { projectsApi } from '@/api/client'
 
 **State Management:**
 ```typescript
-// Local
+// Local state
 const [isOpen, setIsOpen] = useState(false)
 
-// Server (React Query)
+// Server state (React Query)
 const { data, isLoading } = useQuery({
   queryKey: ['projects'],
   queryFn: () => projectsApi.list()
 })
 
-// Global (Context/Zustand)
-const { user } = useAuth()
+// Global state (Zustand)
+const { user, setUser } = useAuthStore()
+
+// Internationalization
+const { t } = useTranslation()
 ```
 
 ### Backend (Python)
@@ -393,6 +487,39 @@ await session.refresh(item)
 **DB:** Ensure PostgreSQL running (`docker compose ps`) and migrations applied
 **Import paths:** Frontend uses `@/` alias, backend uses `app.` prefix
 
+### Testing Best Practices
+
+**Frontend Testing:**
+```bash
+# Unit tests with Vitest
+npm run test
+
+# E2E tests with Playwright
+npm run test:e2e
+
+# Coverage
+npm run test:coverage
+```
+
+**Backend Testing:**
+```bash
+# Run all tests
+uv run pytest tests/ -v
+
+# Run specific test types
+uv run pytest tests/ -m unit
+uv run pytest tests/ -m integration
+
+# Coverage
+uv run pytest tests/ --cov=app --cov-report=html
+```
+
+**Test Organization:**
+- Unit tests: Test individual functions/components in isolation
+- Integration tests: Test API endpoints and database operations
+- E2E tests: Test critical user flows (login, create test case, execute tests)
+- Use markers to categorize tests: `@pytest.mark.unit`, `@pytest.mark.integration`
+
 ---
 
 ## Key Files Reference
@@ -425,15 +552,22 @@ await session.refresh(item)
 
 **Package Manager:**
 - Frontend: npm (standard)
-- Backend: UV (much faster than pip)
+- Backend: UV (much faster than pip, requires Python 3.12+)
 
 **Type Safety:** Strict TypeScript frontend, type hints backend
 
-**Testing:** Manual testing via API docs (`/docs`) and frontend UI
+**Testing:**
+- Frontend: Vitest (unit), Playwright (E2E)
+- Backend: pytest with markers (unit, integration, api, slow)
+- Minimum coverage: 80%
 
 **i18n:** User-facing strings use translation keys (i18next)
 
+**API Test Engine:** sisyphus-api-engine package provides standalone YAML-driven test execution
+
 **Error Handling:** Centralized in API client interceptor
+
+**Real-time:** WebSocket connections for live test execution updates
 
 ---
 
@@ -450,3 +584,6 @@ Key patterns:
 - Async-first throughout
 - UV for fast Python dependency management
 - Alembic for database migrations
+- Zustand for global state management
+- i18next for internationalization
+- Comprehensive testing: Vitest + Playwright + pytest

@@ -1,20 +1,12 @@
-import { test as base } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
 
 /**
  * 基础测试fixture
  * 提供通用的测试配置和辅助函数
  */
 
-export const test = base.extend({
-  // 每个测试前的默认设置
-  beforeEach: async ({ page }, testInfo) => {
-    // 设置默认超时
-    testInfo.setTimeout(60000);
-
-    // 配置视口大小（如果需要）
-    // await page.setViewportSize({ width: 1280, height: 720 });
-  },
-});
+export const test = base.extend({});
+export { expect };
 
 /**
  * 辅助函数：导航到场景编辑器

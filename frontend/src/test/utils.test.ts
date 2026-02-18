@@ -106,7 +106,7 @@ describe('Variable parsing utilities', () => {
   describe('replaceVariables', () => {
     it('should replace single variable', () => {
       const template = '/api/users/{{userId}}'
-      const variables = { userId: '123' }
+      const variables: Record<string, string> = { userId: '123' }
       const result = template.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] || '')
 
       expect(result).toBe('/api/users/123')
@@ -114,7 +114,7 @@ describe('Variable parsing utilities', () => {
 
     it('should replace multiple variables', () => {
       const template = '{{protocol}}://{{domain}}/{{path}}'
-      const variables = { protocol: 'https', domain: 'api.example.com', path: 'api/users' }
+      const variables: Record<string, string> = { protocol: 'https', domain: 'api.example.com', path: 'api/users' }
       const result = template.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] || '')
 
       expect(result).toBe('https://api.example.com/api/users')
@@ -122,7 +122,7 @@ describe('Variable parsing utilities', () => {
 
     it('should handle missing variables', () => {
       const template = '/api/users/{{missingVar}}'
-      const variables = { otherVar: 'value' }
+      const variables: Record<string, string> = { otherVar: 'value' }
       const result = template.replace(/\{\{(\w+)\}\}/g, (_, key) => variables[key] || `{{${key}}}`)
 
       expect(result).toContain('{{missingVar}}')

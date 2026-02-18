@@ -44,4 +44,4 @@ afterEach(() => {
 })
 
 // Make expect available globally
-global.expect = expect
+;(globalThis as any).expect = expect

@@ -23,10 +23,12 @@ import TestCaseManagement from '@/pages/functional-test/TestCaseManagement'
 import GenerateTestCases from '@/pages/functional-test/GenerateTestCases'
 import GlobalParamsPage from '@/pages/global-params'
 import EnvironmentManagement from '@/pages/environments/index'
+import EnvironmentList from '@/pages/environments/EnvironmentList'
 import KeywordsPage from '@/pages/keywords'
 import ProjectManagement from '@/pages/api-automation/ProjectManagement'
 import ProjectSettings from '@/pages/api-automation/ProjectSettings'
 import DatabaseConfigList from '@/pages/api-automation/DatabaseConfigList'
+import ProjectList from '@/pages/projects/ProjectList'
 import '@/i18n'
 
 const queryClient = new QueryClient({
@@ -73,6 +75,9 @@ function AppRoutes() {
         {/* 仪表盘 */}
         <Route path="/" element={<Dashboard />} />
 
+        {/* 项目列表 */}
+        <Route path="/projects" element={<ProjectList />} />
+
         {/* 接口管理模块 */}
         {/* ⚠️ 重要: 更具体的路由必须在前面,否则会被部分匹配 */}
         <Route path="/interface-management/new" element={<InterfaceManagementPage key="interface-new" />} />
@@ -107,6 +112,7 @@ function AppRoutes() {
 
         {/* 环境管理 */}
         <Route path="/environments" element={<EnvironmentManagement />} />
+        <Route path="/projects/:projectId/environments" element={<EnvironmentList />} />
 
         {/* 关键字配置 */}
         <Route path="/keywords" element={<KeywordsPage />} />

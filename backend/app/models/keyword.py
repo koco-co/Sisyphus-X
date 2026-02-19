@@ -22,10 +22,10 @@
 - idx_keywords_is_built_in: is_built_in 索引
 - idx_keywords_is_enabled: is_enabled 索引
 """
-from datetime import datetime
-from typing import Optional, Dict, Any, List
 
-from sqlalchemy import DateTime, Boolean, ForeignKey, Index, String, Text
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
@@ -44,7 +44,7 @@ class Keyword(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
 
     # 外键: project_id=NULL 表示内置关键字
-    project_id: Mapped[Optional[str]] = mapped_column(
+    project_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=True,
@@ -56,27 +56,26 @@ class Keyword(Base):
     method_name: Mapped[str] = mapped_column(String(100), nullable=False)
 
     # 可选字段
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     code: Mapped[str] = mapped_column(Text, nullable=False)
-    parameters: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON 字符串
-    return_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    parameters: Mapped[str | None] = mapped_column(Text, nullable=True)  # JSON 字符串
+    return_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     # 标记字段
     is_built_in: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.utcnow(), nullable=False
-    )
+    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
+        DateTime(timezone=False),
+        default=lambda: datetime.utcnow(),
+        onupdate=lambda: datetime.utcnow(),
+        nullable=False,
     )
 
     # 复合唯一索引: class_name + method_name 必须唯一
-    __table_args__ = (
-        Index("idx_keywords_class_method", "class_name", "method_name", unique=True),
-    )
+    __table_args__ = (Index("idx_keywords_class_method", "class_name", "method_name", unique=True),)
 
     def __repr__(self) -> str:
         return (

@@ -8,48 +8,52 @@ Schema 说明:
 - KeywordUpdate: 更新关键字请求
 - KeywordResponse: 关键字响应
 """
+
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
 
 class KeywordBase(BaseModel):
     """关键字基础 Schema"""
+
     name: str
     class_name: str
     method_name: str
-    description: Optional[str] = None
+    description: str | None = None
     code: str
-    parameters: Optional[str] = None  # JSON 字符串
-    return_type: Optional[str] = None
+    parameters: str | None = None  # JSON 字符串
+    return_type: str | None = None
     is_built_in: bool = False
     is_enabled: bool = True
 
 
 class KeywordCreate(KeywordBase):
     """创建关键字请求"""
+
     id: str  # UUID
     project_id: str  # 项目 ID (None 表示内置关键字)
 
 
 class KeywordUpdate(BaseModel):
     """更新关键字请求"""
-    name: Optional[str] = None
-    class_name: Optional[str] = None
-    method_name: Optional[str] = None
-    description: Optional[str] = None
-    code: Optional[str] = None
-    parameters: Optional[str] = None
-    return_type: Optional[str] = None
-    is_enabled: Optional[bool] = None
+
+    name: str | None = None
+    class_name: str | None = None
+    method_name: str | None = None
+    description: str | None = None
+    code: str | None = None
+    parameters: str | None = None
+    return_type: str | None = None
+    is_enabled: bool | None = None
 
 
 class KeywordResponse(KeywordBase):
     """关键字响应"""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    project_id: Optional[str] = None
+    project_id: str | None = None
     created_at: datetime
     updated_at: datetime

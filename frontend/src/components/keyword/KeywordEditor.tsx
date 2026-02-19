@@ -9,10 +9,12 @@
  */
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
+import { MonacoEditor } from '@/components/ui/MonacoEditor'
 import { Save, Play, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
 interface KeywordEditorProps {
@@ -31,6 +33,7 @@ export function KeywordEditor({
   initialData,
   onSave
 }: KeywordEditorProps) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     func_name: initialData?.func_name || '',
@@ -122,27 +125,27 @@ export function KeywordEditor({
     <div className="keyword-editor space-y-6">
       {/* 基本信息 */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">关键字编辑器</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('keywords.keywordInfo')}</h2>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium mb-2">
-              关键字名称 <span className="text-red-500">*</span>
+              {t('keywords.keywordName')} <span className="text-red-500">*</span>
             </label>
             <Input
-              placeholder="例如：自定义断言"
+              placeholder={t('keywords.newKeyword')}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               data-testid="keyword-name-input"
             />
             {!formData.name && (
-              <p className="text-red-500 text-sm mt-1" data-testid="keyword-name-error">关键字名称不能为空</p>
+              <p className="text-red-500 text-sm mt-1" data-testid="keyword-name-error">{t('keywords.keywordRequired')}</p>
             )}
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2">
-              关键字类型 <span className="text-red-500">*</span>
+              {t('keywords.keywordType')} <span className="text-red-500">*</span>
             </label>
             <select
               value={formData.category}
@@ -160,7 +163,7 @@ export function KeywordEditor({
 
           <div>
             <label className="block text-sm font-medium mb-2">
-              函数名 <span className="text-red-500">*</span>
+              {t('keywords.methodName')} <span className="text-red-500">*</span>
             </label>
             <Input
               placeholder="例如：custom_assertion"
@@ -168,12 +171,15 @@ export function KeywordEditor({
               onChange={(e) => setFormData({ ...formData, func_name: e.target.value })}
               data-testid="keyword-func-name-input"
             />
+            {!formData.func_name && (
+              <p className="text-red-500 text-sm mt-1">{t('keywords.funcNameRequired')}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2">描述</label>
+            <label className="block text-sm font-medium mb-2">{t('keywords.description')}</label>
             <Input
-              placeholder="关键字功能描述"
+              placeholder={t('keywords.description')}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               data-testid="keyword-description-input"
@@ -182,9 +188,9 @@ export function KeywordEditor({
         </div>
 
         <div className="mt-4">
-          <label className="block text-sm font-medium mb-2">详细描述</label>
+          <label className="block text-sm font-medium mb-2">{t('keywords.detailedDesc')}</label>
           <Textarea
-            placeholder="详细描述关键字的用途和使用方法"
+            placeholder={t('keywords.detailedDesc')}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             rows={2}
@@ -196,7 +202,7 @@ export function KeywordEditor({
       {/* 函数代码 */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">函数代码</h3>
+          <h3 className="text-lg font-semibold">{t('keywords.functionCode')}</h3>
           <Button
             variant="outline"
             size="sm"
@@ -204,9 +210,9 @@ export function KeywordEditor({
             disabled={isValidating}
           >
             {isValidating ? (
-              <>验证中...</>
+              <>{t('keywords.validating')}</>
             ) : (
-              <>验证代码</>
+              <>{t('keywords.validateCode')}</>
             )}
           </Button>
         </div>
@@ -222,25 +228,25 @@ export function KeywordEditor({
               <XCircle className="w-4 h-4" />
             )}
             <span className="text-sm">
-              {validation.valid ? '代码语法正确' : validation.error}
+              {validation.valid ? t('keywords.syntaxCorrect') : validation.error}
             </span>
           </div>
         )}
 
-        <Textarea
-          value={formData.function_code}
-          onChange={(e) => setFormData({ ...formData, function_code: e.target.value })}
-          rows={15}
-          className="font-mono text-sm"
-          placeholder="def custom_keyword():
-    pass"
-        />
+        <div className="h-[400px] border rounded-lg overflow-hidden">
+          <MonacoEditor
+            value={formData.function_code}
+            onChange={(value) => setFormData({ ...formData, function_code: value })}
+            language="python"
+            height="100%"
+          />
+        </div>
       </Card>
 
       {/* 测试区域 */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">测试关键字</h3>
+          <h3 className="text-lg font-semibold">{t('keywords.testArea')}</h3>
           <Button
             size="sm"
             onClick={handleTestKeyword}
@@ -249,12 +255,12 @@ export function KeywordEditor({
             {isTesting ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                测试中...
+                {t('keywords.runningTest')}
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 mr-2" />
-                运行测试
+                {t('keywords.testKeyword')}
               </>
             )}
           </Button>
@@ -266,7 +272,7 @@ export function KeywordEditor({
             testResult.success ? 'bg-green-50 text-green-900' : 'bg-red-50 text-red-900'
           }`}>
             <div className="font-medium mb-2">
-              {testResult.success ? '✅ 测试通过' : '❌ 测试失败'}
+              {testResult.success ? `✅ ${t('keywords.testPassed')}` : `❌ ${t('keywords.testFailed')}`}
             </div>
             {testResult.result && (
               <pre className="text-sm overflow-auto">
@@ -290,12 +296,12 @@ export function KeywordEditor({
           {isSaving ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              保存中...
+              {t('common.saving')}
             </>
           ) : (
             <>
               <Save className="w-4 h-4 mr-2" />
-              保存关键字
+              {t('keywords.saveKeyword')}
             </>
           )}
         </Button>

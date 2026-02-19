@@ -64,11 +64,11 @@ const navItems: NavItem[] = [
             { icon: FolderKanban, labelKey: 'nav.projectManagement', href: '/api/projects' },
             { icon: Key, labelKey: 'nav.keywordManagement', href: '/keywords' },
             { icon: Network, labelKey: 'nav.apiManagement', href: '/interface-management' },
+            { icon: Workflow, labelKey: 'nav.testScenarios', href: '/scenarios' },
+            { icon: Clock, labelKey: 'nav.testPlans', href: '/plans' },
+            { icon: FileText, labelKey: 'nav.testReports', href: '/reports' },
         ]
     },
-    { icon: Workflow, labelKey: 'nav.testScenarios', href: '/scenarios' },
-    { icon: FileText, labelKey: 'nav.testReports', href: '/reports' },
-    { icon: Clock, labelKey: 'nav.testPlans', href: '/plans' },
     {
         icon: BookOpen,
         labelKey: 'nav.documentCenter',

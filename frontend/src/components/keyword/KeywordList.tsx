@@ -9,6 +9,7 @@
  */
 
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -38,6 +39,7 @@ export function KeywordList({
   onToggle,
   onCreateNew
 }: KeywordListProps) {
+  const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('all')
 
@@ -60,7 +62,7 @@ export function KeywordList({
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
-              placeholder="搜索关键字..."
+              placeholder={t('keywords.search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -76,14 +78,14 @@ export function KeywordList({
           >
             {categories.map(cat => (
               <option key={cat} value={cat} data-testid={`filter-option-${cat}`}>
-                {cat === 'all' ? '所有分类' : cat}
+                {cat === 'all' ? t('keywords.allCategories') : cat}
               </option>
             ))}
           </select>
 
           <Button onClick={onCreateNew} data-testid="create-keyword-button">
             <Plus className="w-4 h-4 mr-2" />
-            新建关键字
+            {t('keywords.createKeyword')}
           </Button>
         </div>
       </Card>
@@ -92,8 +94,8 @@ export function KeywordList({
       <div className="space-y-3">
         {filteredKeywords.length === 0 ? (
           <Card className="p-12 text-center text-gray-400">
-            <p>暂无关键字</p>
-            <p className="text-sm mt-2">点击"新建关键字"开始创建</p>
+            <p>{t('keywords.noKeywords')}</p>
+            <p className="text-sm mt-2">{t('keywords.noKeywordsDesc')}</p>
           </Card>
         ) : (
           filteredKeywords.map(keyword => (
@@ -109,9 +111,9 @@ export function KeywordList({
                       <Badge variant="outline">{keyword.category}</Badge>
                     )}
                     {!keyword.is_active && (
-                      <Badge variant="secondary" data-testid="readonly-badge">已禁用</Badge>
+                      <Badge variant="secondary" data-testid="readonly-badge">{t('keywords.disabled')}</Badge>
                     )}
-                    <Badge variant="outline" data-testid="builtin-badge">自定义</Badge>
+                    <Badge variant="outline" data-testid="builtin-badge">{t('keywords.custom')}</Badge>
                   </div>
 
                   {keyword.description && (
@@ -119,7 +121,7 @@ export function KeywordList({
                   )}
 
                   <div className="text-xs text-gray-400" data-testid="keyword-usage-count">
-                    创建时间：{new Date(keyword.created_at).toLocaleString('zh-CN')}
+                    {t('keywords.createdAt')}：{new Date(keyword.created_at).toLocaleString('zh-CN')}
                   </div>
                 </div>
 
@@ -129,6 +131,7 @@ export function KeywordList({
                     size="sm"
                     onClick={() => onToggle?.(keyword.id)}
                     data-testid="keyword-enabled-switch"
+                    title={keyword.is_active ? t('keywords.enabled') : t('keywords.disabled')}
                   >
                     {keyword.is_active ? (
                       <Power className="w-4 h-4 text-green-600" />
@@ -141,6 +144,7 @@ export function KeywordList({
                     size="sm"
                     onClick={() => onEdit?.(keyword)}
                     data-testid="edit-keyword-button"
+                    title={t('keywords.edit')}
                   >
                     <Edit className="w-4 h-4" />
                   </Button>
@@ -149,6 +153,7 @@ export function KeywordList({
                     size="sm"
                     onClick={() => onDelete?.(keyword.id)}
                     data-testid="delete-keyword-button"
+                    title={t('keywords.delete')}
                   >
                     <Trash2 className="w-4 h-4 text-red-500" />
                   </Button>
@@ -162,8 +167,8 @@ export function KeywordList({
       {/* 统计信息 */}
       {keywords.length > 0 && (
         <div className="text-sm text-gray-500 text-center">
-          共 {keywords.length} 个关键字
-          {searchQuery && `，找到 ${filteredKeywords.length} 个匹配项`}
+          {t('keywords.totalKeywords', { count: keywords.length })}
+          {searchQuery && t('keywords.foundMatches', { count: filteredKeywords.length })}
         </div>
       )}
     </div>

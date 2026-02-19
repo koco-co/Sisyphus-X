@@ -24,7 +24,7 @@ import GenerateTestCases from '@/pages/functional-test/GenerateTestCases'
 import GlobalParamsPage from '@/pages/global-params'
 import EnvironmentManagement from '@/pages/environments/index'
 import EnvironmentList from '@/pages/environments/EnvironmentList'
-import KeywordsPage from '@/pages/keywords'
+import KeywordManagement from '@/pages/keywords/KeywordManagement'
 import ProjectManagement from '@/pages/api-automation/ProjectManagement'
 import ProjectSettings from '@/pages/api-automation/ProjectSettings'
 import DatabaseConfigList from '@/pages/api-automation/DatabaseConfigList'
@@ -115,7 +115,7 @@ function AppRoutes() {
         <Route path="/projects/:projectId/environments" element={<EnvironmentList />} />
 
         {/* 关键字配置 */}
-        <Route path="/keywords" element={<KeywordsPage />} />
+        <Route path="/keywords" element={<KeywordManagement />} />
 
         {/* API 自动化模块 */}
         <Route path="/api/projects" element={<ProjectManagement />} />

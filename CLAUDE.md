@@ -1,5 +1,7 @@
 # CLAUDE.md
 
+项目要启动起来, 才能介入测试.
+
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 > Last updated: 2026-02-18

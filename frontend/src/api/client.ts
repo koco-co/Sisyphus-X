@@ -262,13 +262,33 @@ export const plansApi = {
 
 // 关键字 API
 export const keywordsApi = {
-    list: (params?: { page?: number; size?: number; project_id?: string }) =>
+    list: (params?: { page?: number; size?: number; project_id?: string; type?: string; is_builtin?: boolean }) =>
         api.get('/keywords/', { params }),
-    create: (data: any) => api.post('/keywords/', data),
+    create: (data: {
+        id: string
+        project_id: string | null
+        name: string
+        class_name: string
+        method_name: string
+        description?: string
+        code: string
+        parameters?: string | null
+        return_type?: string | null
+        is_built_in: boolean
+        is_enabled: boolean
+    }) => api.post('/keywords/', data),
     get: (id: string) => api.get(`/keywords/${id}`),
-    update: (id: string, data: any) => api.put(`/keywords/${id}`, data),
+    update: (id: string, data: {
+        name?: string
+        class_name?: string
+        method_name?: string
+        description?: string
+        code?: string
+        parameters?: string | null
+        return_type?: string | null
+    }) => api.put(`/keywords/${id}`, data),
     delete: (id: string) => api.delete(`/keywords/${id}`),
-    toggle: (id: string) => api.put(`/keywords/${id}/toggle`),
+    toggle: (id: string) => api.patch(`/keywords/${id}/toggle`),
     generateFile: (id: string) => api.post(`/keywords/${id}/generate-file`),
 }
 

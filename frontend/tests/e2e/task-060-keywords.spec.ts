@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { navigateToKeywordsPage } from '../helpers/auth';
 
 /**
  * TASK-060: 关键字配置功能黑盒测试（简化版）
@@ -15,28 +16,27 @@ import { test, expect } from '@playwright/test';
 
 test.describe('TASK-060: 关键字配置功能黑盒测试', () => {
   test.beforeEach(async ({ page }) => {
-    // 直接导航到关键字配置页面
-    await page.goto('/keywords');
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // 使用辅助函数导航到关键字配置页面（自动处理认证）
+    await navigateToKeywordsPage(page);
   });
 
   test('TEST-01: 应该能够显示关键字配置页面', async ({ page }) => {
-    // Step 1: 验证页面标题
-    const pageTitle = page.locator('h1.text-2xl.font-bold');
+    // Step 1: 验证页面标题 - 使用 data-testid 或 first()
+    const pageTitle = page.locator('[data-testid="page-header"] h1').or(page.locator('h1.text-3xl').first());
     await expect(pageTitle, '页面标题应该可见').toBeVisible({ timeout: 10000 });
-    await expect(pageTitle).toContainText('关键字配置');
+    // 标题可能是英文或中文，取决于 i18n 设置
+    await expect(pageTitle).toContainText(/Keyword Management|关键字配置/);
 
-    // Step 2: 验证项目选择器存在
-    const projectSelect = page.locator('[data-testid="project-select"]');
+    // Step 2: 验证项目选择器存在 - 使用 first() 避免多个元素
+    const projectSelect = page.locator('[data-testid="project-select"]').first();
     await expect(projectSelect, '项目选择器应该存在').toBeVisible();
 
     // Step 3: 验证关键字列表组件存在
-    const keywordList = page.locator('[data-testid="keyword-list"]');
+    const keywordList = page.locator('[data-testid="keyword-list"]').first();
     await expect(keywordList, '关键字列表应该存在').toBeVisible();
 
-    // Step 4: 验证创建按钮存在
-    const createButton = page.locator('[data-testid="create-keyword-button"]');
+    // Step 4: 验证创建按钮存在 - 使用 first()
+    const createButton = page.locator('[data-testid="create-keyword-button"]').first();
     await expect(createButton, '创建按钮应该存在').toBeVisible();
   });
 

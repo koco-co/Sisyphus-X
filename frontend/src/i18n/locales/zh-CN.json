@@ -236,7 +236,13 @@
         "builtinKeyword": "内置关键字",
         "keywordUsage": "使用次数",
         "createdAt": "创建时间",
-        "updatedAt": "更新时间"
+        "updatedAt": "更新时间",
+        "parameters": "入参释义",
+        "addParam": "添加参数",
+        "paramName": "参数名",
+        "paramDesc": "参数描述",
+        "required": "必填",
+        "noParams": "暂无参数"
     },
     "apiTestCases": {
         "title": "API 测试用例",

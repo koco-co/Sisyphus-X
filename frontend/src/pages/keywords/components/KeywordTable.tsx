@@ -20,6 +20,7 @@ interface KeywordTableProps {
   onDelete: (keyword: Keyword) => void
   onToggleStatus: (id: string) => void
   onCopyMethodName?: (methodName: string) => void
+  'data-testid'?: string
 }
 
 export function KeywordTable({
@@ -29,6 +30,7 @@ export function KeywordTable({
   onDelete,
   onToggleStatus,
   onCopyMethodName,
+  'data-testid': dataTestid,
 }: KeywordTableProps) {
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleString('zh-CN', {
@@ -46,6 +48,7 @@ export function KeywordTable({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
+      data-testid={dataTestid}
     >
       {isLoading ? (
         <div className="flex justify-center items-center py-20 text-slate-400">

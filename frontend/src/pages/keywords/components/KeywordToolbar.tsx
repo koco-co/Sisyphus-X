@@ -32,6 +32,9 @@ interface KeywordToolbarProps {
 
   // 额外的操作按钮
   extraActions?: React.ReactNode
+
+  // 测试ID
+  'data-testid'?: string
 }
 
 export function KeywordToolbar({
@@ -48,9 +51,10 @@ export function KeywordToolbar({
   showBuiltIn,
   onToggleBuiltIn,
   extraActions,
+  'data-testid': dataTestid,
 }: KeywordToolbarProps) {
   return (
-    <div className="glass rounded-2xl p-4 mb-8">
+    <div className="glass rounded-2xl p-4 mb-8" data-testid={dataTestid}>
       <div className="flex flex-wrap gap-4 items-center">
         {/* 项目选择器 */}
         <div className="flex items-center gap-2">
@@ -67,6 +71,7 @@ export function KeywordToolbar({
               value={selectedProject || ''}
               onChange={(e) => onProjectChange(e.target.value || null)}
               className="w-48 h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-white focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+              data-testid="project-select"
             >
               <option value="" className="bg-slate-900">全部项目</option>
               {projects.map((project) => (
@@ -87,6 +92,7 @@ export function KeywordToolbar({
             value={selectedType}
             onChange={(e) => onTypeChange(e.target.value)}
             className="w-40 h-10 rounded-xl border border-white/10 bg-white/5 px-4 text-white focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+            data-testid="type-select"
           >
             {typeOptions.map((type) => (
               <option key={type} value={type} className="bg-slate-900">
@@ -105,6 +111,7 @@ export function KeywordToolbar({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
             className="w-full h-10 bg-slate-900 border border-white/10 rounded-xl pl-12 pr-4 text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 transition-colors"
+            data-testid="keyword-search-input"
           />
         </div>
 

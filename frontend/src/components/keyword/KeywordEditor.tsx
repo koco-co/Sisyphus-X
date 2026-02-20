@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { MonacoEditor } from '@/components/ui/MonacoEditor'
 import { Save, Play, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
@@ -27,11 +28,13 @@ interface KeywordEditorProps {
     params_schema?: Record<string, any>
   }
   onSave?: (data: any) => Promise<void>
+  readOnly?: boolean
 }
 
 export function KeywordEditor({
   initialData,
-  onSave
+  onSave,
+  readOnly = false
 }: KeywordEditorProps) {
   const { t } = useTranslation()
   const [formData, setFormData] = useState({
@@ -125,7 +128,14 @@ export function KeywordEditor({
     <div className="keyword-editor space-y-6">
       {/* 基本信息 */}
       <Card className="p-6">
-        <h2 className="text-lg font-semibold mb-4">{t('keywords.keywordInfo')}</h2>
+        <h2 className="text-lg font-semibold mb-4">
+          {t('keywords.keywordInfo')}
+          {readOnly && (
+            <Badge variant="secondary" className="ml-2">
+              {t('keywords.builtIn')}
+            </Badge>
+          )}
+        </h2>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -136,9 +146,10 @@ export function KeywordEditor({
               placeholder={t('keywords.newKeyword')}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              disabled={readOnly}
               data-testid="keyword-name-input"
             />
-            {!formData.name && (
+            {!formData.name && !readOnly && (
               <p className="text-red-500 text-sm mt-1" data-testid="keyword-name-error">{t('keywords.keywordRequired')}</p>
             )}
           </div>
@@ -150,14 +161,15 @@ export function KeywordEditor({
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="border rounded-lg px-3 py-2 w-full"
+              disabled={readOnly}
+              className="border rounded-lg px-3 py-2 w-full disabled:opacity-50"
               data-testid="keyword-type-select"
             >
-              <option value="action">操作 (action)</option>
-              <option value="assertion">断言 (assertion)</option>
-              <option value="setup">前置 (setup)</option>
-              <option value="teardown">后置 (teardown)</option>
-              <option value="custom">自定义 (custom)</option>
+              <option value="action">操作</option>
+              <option value="assertion">断言</option>
+              <option value="setup">前置</option>
+              <option value="teardown">后置</option>
+              <option value="custom">自定义</option>
             </select>
           </div>
 
@@ -169,9 +181,10 @@ export function KeywordEditor({
               placeholder="例如：custom_assertion"
               value={formData.func_name}
               onChange={(e) => setFormData({ ...formData, func_name: e.target.value })}
+              disabled={readOnly}
               data-testid="keyword-func-name-input"
             />
-            {!formData.func_name && (
+            {!formData.func_name && !readOnly && (
               <p className="text-red-500 text-sm mt-1">{t('keywords.funcNameRequired')}</p>
             )}
           </div>
@@ -182,6 +195,7 @@ export function KeywordEditor({
               placeholder={t('keywords.description')}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              disabled={readOnly}
               data-testid="keyword-description-input"
             />
           </div>
@@ -193,10 +207,148 @@ export function KeywordEditor({
             placeholder={t('keywords.detailedDesc')}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            disabled={readOnly}
             rows={2}
             data-testid="keyword-description-textarea"
           />
         </div>
+      </Card>
+
+      {/* 参数定义 */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">{t('keywords.parameters')}</h3>
+          {!readOnly && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newParams = { ...formData.params_schema }
+                const paramId = `param_${Date.now()}`
+                newParams[paramId] = {
+                  name: '',
+                  type: 'string',
+                  description: '',
+                  required: false
+                }
+                setFormData({ ...formData, params_schema: newParams })
+              }}
+            >
+              + {t('keywords.addParam')}
+            </Button>
+          )}
+        </div>
+
+        {readOnly ? (
+          // 只读模式：显示参数列表
+          <div className="space-y-3">
+            {Object.entries(formData.params_schema).map(([key, param]: [string, any]) => (
+              <div key={key} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div className="flex items-center gap-3 mb-2">
+                  <span className="font-semibold text-slate-900">{param.name || '未命名参数'}</span>
+                  <Badge variant="secondary" className="text-xs">{param.type || 'string'}</Badge>
+                  {param.required && (
+                    <Badge variant="outline" className="text-xs border-red-200 text-red-700">必填</Badge>
+                  )}
+                </div>
+                {param.description && (
+                  <p className="text-sm text-slate-600">{param.description}</p>
+                )}
+              </div>
+            ))}
+
+            {Object.keys(formData.params_schema).length === 0 && (
+              <p className="text-sm text-slate-500 text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
+                此关键字无参数
+              </p>
+            )}
+          </div>
+        ) : (
+          // 编辑模式：参数编辑表单
+          <div className="space-y-4">
+            {Object.entries(formData.params_schema).map(([key, param]: [string, any]) => (
+              <div key={key} className="p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
+                {/* 第一行：参数名 + 类型 + 必填 + 删除 */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex-1">
+                    <Input
+                      placeholder={t('keywords.paramName')}
+                      value={param.name || ''}
+                      onChange={(e) => {
+                        const newParams = { ...formData.params_schema }
+                        newParams[key] = { ...param, name: e.target.value }
+                        setFormData({ ...formData, params_schema: newParams })
+                      }}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div className="w-32">
+                    <select
+                      value={param.type || 'string'}
+                      onChange={(e) => {
+                        const newParams = { ...formData.params_schema }
+                        newParams[key] = { ...param, type: e.target.value }
+                        setFormData({ ...formData, params_schema: newParams })
+                      }}
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="string">string</option>
+                      <option value="int">int</option>
+                      <option value="float">float</option>
+                      <option value="bool">bool</option>
+                      <option value="list">list</option>
+                      <option value="dict">dict</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 text-sm whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={param.required || false}
+                      onChange={(e) => {
+                        const newParams = { ...formData.params_schema }
+                        newParams[key] = { ...param, required: e.target.checked }
+                        setFormData({ ...formData, params_schema: newParams })
+                      }}
+                      className="w-4 h-4"
+                    />
+                    {t('keywords.required')}
+                  </label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const newParams = { ...formData.params_schema }
+                      delete newParams[key]
+                      setFormData({ ...formData, params_schema: newParams })
+                    }}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
+                  >
+                    ×
+                  </Button>
+                </div>
+                {/* 第二行：参数描述 */}
+                <div>
+                  <Input
+                    placeholder={t('keywords.paramDesc')}
+                    value={param.description || ''}
+                    onChange={(e) => {
+                      const newParams = { ...formData.params_schema }
+                      newParams[key] = { ...param, description: e.target.value }
+                      setFormData({ ...formData, params_schema: newParams })
+                    }}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+            ))}
+
+            {Object.keys(formData.params_schema).length === 0 && (
+              <p className="text-sm text-slate-500 text-center py-8 border-2 border-dashed border-slate-200 rounded-lg">
+                {t('keywords.noParams')}
+              </p>
+            )}
+          </div>
+        )}
       </Card>
 
       {/* 函数代码 */}
@@ -239,6 +391,7 @@ export function KeywordEditor({
             onChange={(value) => setFormData({ ...formData, function_code: value })}
             language="python"
             height="100%"
+            readOnly={readOnly}
           />
         </div>
       </Card>
@@ -287,25 +440,35 @@ export function KeywordEditor({
       </Card>
 
       {/* 操作按钮 */}
-      <div className="flex justify-end gap-4">
-        <Button
-          onClick={handleSave}
-          disabled={isSaving || !formData.name || !formData.func_name}
-          data-testid="submit-keyword-button"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              {t('common.saving')}
-            </>
-          ) : (
-            <>
-              <Save className="w-4 h-4 mr-2" />
-              {t('keywords.saveKeyword')}
-            </>
-          )}
-        </Button>
-      </div>
+      {!readOnly && (
+        <div className="flex justify-end gap-4">
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || !formData.name || !formData.func_name}
+            data-testid="submit-keyword-button"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {t('common.saving')}
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                {t('keywords.saveKeyword')}
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {readOnly && (
+        <div className="flex justify-end gap-4">
+          <div className="text-slate-500 text-sm bg-slate-800/50 px-4 py-2 rounded-lg">
+            ℹ️ {t('keywords.builtInReadOnly')}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

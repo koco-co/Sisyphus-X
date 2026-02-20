@@ -6,6 +6,7 @@ interface MonacoEditorProps {
     language?: string
     theme?: string
     height?: string
+    readOnly?: boolean
 }
 
 export function MonacoEditor({
@@ -13,7 +14,8 @@ export function MonacoEditor({
     onChange,
     language = 'python',
     theme = 'vs-dark',
-    height = '100%'
+    height = '100%',
+    readOnly = false
 }: MonacoEditorProps) {
     return (
         <div className="h-full w-full rounded-2xl overflow-hidden">
@@ -37,6 +39,8 @@ export function MonacoEditor({
                     cursorBlinking: 'smooth',
                     smoothScrolling: true,
                     padding: { top: 16, bottom: 16 },
+                    readOnly: readOnly,
+                    domReadOnly: readOnly,
                 }}
             />
         </div>

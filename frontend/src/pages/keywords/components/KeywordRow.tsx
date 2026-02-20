@@ -125,16 +125,28 @@ export function KeywordRow({
             )}
           </Button>
 
-          {/* 编辑 */}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onEdit(keyword)}
-            className="text-slate-400 hover:text-white hover:bg-white/5"
-            title="编辑"
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
+          {/* 编辑 - 内置关键字禁用 */}
+          {!keyword.is_built_in ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit(keyword)}
+              className="text-slate-400 hover:text-white hover:bg-white/5"
+              title="编辑"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled
+              className="text-slate-600 cursor-not-allowed"
+              title="内置关键字不可编辑"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+          )}
 
           {/* 删除 */}
           {!keyword.is_built_in && (

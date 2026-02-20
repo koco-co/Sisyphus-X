@@ -1,411 +1,609 @@
-import { useTranslation } from 'react-i18next'
-import { motion } from 'framer-motion'
-import { Calendar, Plus, Search, Play, Pause, Edit, Trash2, Clock, Loader2, Square, RotateCcw } from 'lucide-react'
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { plansApi, scenariosApi } from '@/api/client'
-import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { CustomSelect } from '@/components/ui/CustomSelect'
-import { useToast } from '@/components/ui/Toast'
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    Calendar,
+    Plus,
+    Search,
+    Edit2,
+    Trash2,
+    Loader2,
+    ChevronRight,
+    X,
+    Workflow,
+    Play,
+} from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { plansApi, projectsApi, scenariosApi } from '@/api/client';
+import { Pagination } from '@/components/common/Pagination';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { useToast } from '@/components/ui/Toast';
+import { EmptyState } from '@/components/common/EmptyState';
+import { Tooltip } from '@/components/ui/tooltip';
 
 interface TestPlanItem {
-    id: number
-    name: string
-    scenario_id: number
-    scenario_name?: string
-    cron_expression: string
-    next_run?: string
-    last_run?: string
-    status: string
+    id: string;
+    name: string;
+    project_id: string;
+    description?: string;
+    created_at?: string;
+    updated_at?: string;
+    plan_scenarios?: any[];
+}
+
+interface Project {
+    id: number;
+    name: string;
+    key: string;
+}
+
+interface Scenario {
+    id: string;
+    name: string;
+    description?: string;
+    priority: string;
+    tags?: string[];
 }
 
 export default function TestPlan() {
-    const { t } = useTranslation()
-    const queryClient = useQueryClient()
-    const { toast } = useToast()
-    const [showModal, setShowModal] = useState(false)
-    const [searchTerm, setSearchTerm] = useState('')
-    const [deleteTarget, setDeleteTarget] = useState<TestPlanItem | null>(null)
-    const [executingPlanId, setExecutingPlanId] = useState<number | null>(null)
+    const { t } = useTranslation();
+    const queryClient = useQueryClient();
+    const { success, error: showError } = useToast();
 
-    // 表单状态
-    const [formData, setFormData] = useState({
-        name: '',
-        scenario_id: 0,
-        cron_expression: '',
-    })
+    const [page, setPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedProjectId, setSelectedProjectId] = useState('');
+    const size = 10;
+
+    // 删除
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [planToDelete, setPlanToDelete] = useState<TestPlanItem | null>(null);
+
+    // 创建/编辑
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [editingPlan, setEditingPlan] = useState<TestPlanItem | null>(null);
+    const [createForm, setCreateForm] = useState({ name: '', project_id: '', description: '' });
+
+    // 场景抽屉
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [drawerPlanId, setDrawerPlanId] = useState<string | null>(null);
+    const [scenarioSearchQuery, setScenarioSearchQuery] = useState('');
+    const [scenarioPage, setScenarioPage] = useState(1);
+
+    // 获取项目列表
+    const { data: projectData } = useQuery({
+        queryKey: ['projects'],
+        queryFn: () => projectsApi.list({ page: 1, size: 100 }),
+        select: (data) => data.data
+    });
+    const projects: Project[] = projectData?.items || [];
 
     // 获取测试计划列表
-    const { data: plansData, isLoading } = useQuery({
-        queryKey: ['plans'],
-        queryFn: async () => {
-            const res = await plansApi.list()
-            return (res.data?.items ?? res.data ?? []) as TestPlanItem[]
-        }
-    })
+    const { data: planData, isLoading } = useQuery({
+        queryKey: ['plans', page, size, searchQuery, selectedProjectId],
+        queryFn: () => plansApi.list({ page, size }),
+        select: (data) => data.data
+    });
 
-    // 获取场景列表（用于下拉选择）
-    const { data: scenarios = [] } = useQuery({
-        queryKey: ['scenarios'],
-        queryFn: async () => {
-            const res = await scenariosApi.list()
-            return (res.data?.items ?? res.data ?? []) as { id: number; name: string }[]
-        }
-    })
+    const plans: TestPlanItem[] = planData?.items || [];
+    const total = planData?.total || 0;
+    const pages = planData?.pages || 0;
 
-    // 创建计划
+    // 获取可添加的场景列表（抽屉用）
+    const { data: scenarioData, isLoading: scenariosLoading } = useQuery({
+        queryKey: ['scenarios-for-plan', scenarioPage, scenarioSearchQuery, createForm.project_id],
+        queryFn: () => scenariosApi.list({
+            page: scenarioPage,
+            size: 10,
+            search: scenarioSearchQuery || undefined,
+            project_id: createForm.project_id ? Number(createForm.project_id) : undefined,
+        }),
+        select: (data) => data.data,
+        enabled: isDrawerOpen,
+    });
+
+    const availableScenarios: Scenario[] = scenarioData?.items || [];
+    const scenarioTotalPages = scenarioData?.pages || 0;
+
+    // 创建/更新
     const createMutation = useMutation({
-        mutationFn: (data: { name: string; scenario_id: number; cron_expression: string }) =>
-            plansApi.create({
-                name: data.name,
-                project_id: 1, // TODO: 从当前项目上下文获取
-                created_by: 'system' // TODO: 从当前用户上下文获取
-            }),
+        mutationFn: (data: any) => plansApi.create(data),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['plans'] })
-            setShowModal(false)
-            setFormData({ name: '', scenario_id: 0, cron_expression: '' })
+            queryClient.invalidateQueries({ queryKey: ['plans'] });
+            closeCreateModal();
+            success('创建成功');
+        },
+        onError: (err: any) => {
+            showError(err?.response?.data?.detail || '创建失败');
         }
-    })
+    });
 
-    // 暂停计划
-    const pauseMutation = useMutation({
-        mutationFn: (id: number) => plansApi.pause(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plans'] })
-    })
+    const updateMutation = useMutation({
+        mutationFn: (data: any) => plansApi.update(data.id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['plans'] });
+            closeCreateModal();
+            success('编辑成功');
+        },
+        onError: (err: any) => {
+            showError(err?.response?.data?.detail || '编辑失败');
+        }
+    });
 
-    // 恢复计划
-    const resumeMutation = useMutation({
-        mutationFn: (id: number) => plansApi.resume(id),
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: ['plans'] })
-    })
-
-    // 删除计划
     const deleteMutation = useMutation({
         mutationFn: (id: number) => plansApi.delete(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['plans'] })
-            setDeleteTarget(null)
-            toast({
-                type: 'success',
-                title: '删除成功',
-                message: '测试计划已删除'
-            })
-        }
-    })
-
-    // 执行测试计划
-    const executeMutation = useMutation({
-        mutationFn: (id: number) => plansApi.execute(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['plans'] })
-            toast({
-                type: 'success',
-                title: '执行开始',
-                message: '测试计划已开始执行'
-            })
-            setExecutingPlanId(null)
+            queryClient.invalidateQueries({ queryKey: ['plans'] });
+            setIsDeleteOpen(false);
+            setPlanToDelete(null);
+            success('删除成功');
         },
-        onError: () => {
-            setExecutingPlanId(null)
-        }
-    })
+        onError: () => showError('删除失败')
+    });
 
-    // 终止执行
-    const terminateMutation = useMutation({
-        mutationFn: (id: number) => plansApi.terminate(id),
+    // 添加场景到计划
+    const addScenarioMutation = useMutation({
+        mutationFn: ({ planId, scenarioId }: { planId: number; scenarioId: number }) =>
+            plansApi.addScenario(planId, { scenario_id: scenarioId }),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['plans'] })
-            toast({
-                type: 'info',
-                title: '已终止',
-                message: '测试执行已终止'
-            })
-        }
-    })
+            queryClient.invalidateQueries({ queryKey: ['plans'] });
+            success('场景已添加');
+        },
+        onError: (err: any) => showError(err?.response?.data?.detail || '添加失败'),
+    });
 
-    const handleSubmit = () => {
-        if (!formData.name || !formData.scenario_id || !formData.cron_expression) return
-        createMutation.mutate(formData)
-    }
+    const openCreateModal = () => {
+        setEditingPlan(null);
+        setCreateForm({ name: '', project_id: '', description: '' });
+        setIsCreateOpen(true);
+    };
 
-    const filteredPlans = (plansData ?? []).filter(plan =>
-        plan.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    const openEditModal = (plan: TestPlanItem) => {
+        setEditingPlan(plan);
+        setCreateForm({
+            name: plan.name,
+            project_id: plan.project_id || '',
+            description: plan.description || '',
+        });
+        setIsCreateOpen(true);
+    };
+
+    const closeCreateModal = () => {
+        setIsCreateOpen(false);
+        setEditingPlan(null);
+        setCreateForm({ name: '', project_id: '', description: '' });
+    };
+
+    const openScenarioDrawer = (planId: string) => {
+        setDrawerPlanId(planId);
+        setIsDrawerOpen(true);
+        setScenarioSearchQuery('');
+        setScenarioPage(1);
+    };
+
+    const getProjectName = (projectId: string) => {
+        const p = projects.find(p => String(p.id) === String(projectId));
+        return p?.name || projectId || '-';
+    };
+
+    const formatDate = (dateStr?: string) => {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleString('zh-CN', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit',
+        });
+    };
 
     return (
-        <div className="p-8 space-y-8">
-            {/* 页面标题 */}
-            <motion.div
-                className="flex items-center justify-between"
+        <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+            <motion.header
+                className="flex justify-between items-center"
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
             >
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-                        <Calendar className="w-8 h-8 text-cyan-400" />
-                        {t('plans.title')}
+                    <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                        <Calendar className="w-8 h-8 text-cyan-500" />
+                        测试计划
                     </h1>
-                    <p className="text-slate-400 mt-1">配置定时执行任务，自动化运行测试</p>
+                    <p className="text-slate-400">编排测试场景，组织完整的测试流程</p>
                 </div>
                 <motion.button
-                    data-testid="create-plan-button"
-                    onClick={() => setShowModal(true)}
-                    className="h-10 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 text-white shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all flex items-center gap-2 text-sm font-medium"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClick={openCreateModal}
+                    className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-2xl flex items-center gap-2 font-semibold transition-all shadow-lg shadow-cyan-500/20"
                 >
-                    <Plus className="w-4 h-4" />
-                    <span>{t('plans.newPlan')}</span>
+                    <Plus className="w-5 h-5" />
+                    新建计划
                 </motion.button>
-            </motion.div>
+            </motion.header>
 
-            {/* 搜索 */}
+            {/* 工具栏 */}
             <motion.div
-                className="flex gap-4"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.1 }}
+                className="flex gap-4 items-center"
             >
-                <div className="flex-1 relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <select
+                    value={selectedProjectId}
+                    onChange={(e) => { setSelectedProjectId(e.target.value); setPage(1); }}
+                    className="h-12 rounded-2xl border border-white/10 bg-slate-900 px-4 text-sm text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
+                >
+                    <option value="">全部项目</option>
+                    {projects.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                </select>
+                <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
                     <input
                         type="text"
-                        placeholder="搜索计划..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full h-12 bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-2 focus:ring-cyan-500/20 transition-all"
+                        value={searchQuery}
+                        onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                        placeholder="搜索计划名称..."
+                        className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
                     />
                 </div>
             </motion.div>
 
-            {/* 加载状态 */}
-            {isLoading ? (
-                <div className="flex items-center justify-center py-20">
-                    <Loader2 className="w-8 h-8 text-cyan-400 animate-spin" />
-                </div>
-            ) : (
-                /* 计划列表 */
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {filteredPlans.map((plan, i) => (
+            {/* 列表 */}
+            <motion.div
+                className="bg-slate-900 border border-white/5 rounded-3xl overflow-hidden shadow-xl"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+            >
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-20 text-slate-400">
+                        <Loader2 className="w-6 h-6 animate-spin mr-2" /> 加载中...
+                    </div>
+                ) : (
+                    <table className="w-full text-left table-fixed">
+                        <thead className="bg-slate-800/50 border-b border-white/5">
+                            <tr>
+                                <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[200px]">计划名称</th>
+                                <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[250px]">描述</th>
+                                <th className="px-6 py-4 text-sm font-medium text-slate-400">所属项目</th>
+                                <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[80px]">场景数</th>
+                                <th className="px-6 py-4 text-sm font-medium text-slate-400">更新时间</th>
+                                <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[140px]">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {plans.length > 0 ? (
+                                plans.map((plan, index) => (
+                                    <motion.tr
+                                        key={plan.id}
+                                        className="hover:bg-white/5 transition-colors group"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: 0.3 + index * 0.05 }}
+                                    >
+                                        <td className="px-6 py-4 w-[200px]">
+                                            <Tooltip content={plan.name} position="top">
+                                                <span className="font-medium text-white group-hover:text-cyan-400 transition-colors truncate block w-full">
+                                                    {plan.name}
+                                                </span>
+                                            </Tooltip>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-400 w-[250px]">
+                                            <span className="truncate block w-full">
+                                                {plan.description || '-'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-400 text-sm">
+                                            {getProjectName(plan.project_id)}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-500">
+                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-cyan-500/10 text-cyan-400 rounded-md text-xs font-medium">
+                                                {plan.plan_scenarios?.length || 0}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-500">
+                                            {formatDate(plan.updated_at)}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center gap-2">
+                                                <Tooltip content="编辑" position="top">
+                                                    <button
+                                                        onClick={() => openEditModal(plan)}
+                                                        className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
+                                                    >
+                                                        <Edit2 className="w-4 h-4" />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content="添加场景" position="top">
+                                                    <button
+                                                        onClick={() => openScenarioDrawer(plan.id)}
+                                                        className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
+                                                    >
+                                                        <Workflow className="w-4 h-4" />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content="执行" position="top">
+                                                    <button
+                                                        onClick={() => {/* TODO: 执行计划 */ success('功能开发中'); }}
+                                                        className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
+                                                    >
+                                                        <Play className="w-4 h-4" />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content="删除" position="top">
+                                                    <button
+                                                        onClick={() => { setPlanToDelete(plan); setIsDeleteOpen(true); }}
+                                                        className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </Tooltip>
+                                            </div>
+                                        </td>
+                                    </motion.tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={6}>
+                                        <EmptyState
+                                            title="暂无测试计划"
+                                            description="创建测试计划，编排您的测试场景"
+                                            icon={Calendar}
+                                            action={
+                                                <button
+                                                    onClick={openCreateModal}
+                                                    className="text-cyan-400 hover:underline text-sm"
+                                                >
+                                                    立即创建
+                                                </button>
+                                            }
+                                        />
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                )}
+
+                {total > 0 && (
+                    <div className="px-6 py-4 border-t border-white/5 bg-slate-800/30">
+                        <Pagination
+                            page={page}
+                            size={size}
+                            total={total}
+                            pages={pages}
+                            onPageChange={setPage}
+                        />
+                    </div>
+                )}
+            </motion.div>
+
+            {/* 删除确认 */}
+            <ConfirmDialog
+                isOpen={isDeleteOpen}
+                onClose={() => setIsDeleteOpen(false)}
+                onConfirm={() => planToDelete && deleteMutation.mutate(Number(planToDelete.id))}
+                title="删除测试计划"
+                description="请输入计划名称确认删除。此操作无法撤销。"
+                confirmText="删除"
+                isDestructive={true}
+                verificationText={planToDelete?.name}
+            />
+
+            {/* 创建/编辑弹窗 */}
+            <AnimatePresence>
+                {isCreateOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={closeCreateModal}>
                         <motion.div
-                            key={plan.id}
-                            data-testid={`plan-card-${plan.id}`}
-                            data-testid-plan={plan.id}
-                            className="p-6 rounded-2xl glass border border-white/5 hover:border-cyan-500/30 transition-all group"
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1 }}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl p-8"
                         >
-                            <div className="flex items-start justify-between mb-4">
+                            <h3 className="text-xl font-bold text-white mb-6">
+                                {editingPlan ? '编辑计划' : '新建测试计划'}
+                            </h3>
+
+                            <div className="space-y-4">
                                 <div>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="text-white font-semibold text-lg">{plan.name}</h3>
-                                        {plan.status === 'active' || plan.status === 'running' ? (
-                                            <span
-                                                data-testid={`execution-status-${plan.id}`}
-                                                className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400"
-                                            >
-                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                运行中
-                                            </span>
-                                        ) : plan.status === 'paused' ? (
-                                            <span
-                                                data-testid={`execution-status-${plan.id}`}
-                                                className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400"
-                                            >
-                                                <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                                已暂停
-                                            </span>
-                                        ) : (
-                                            <span
-                                                data-testid={`execution-status-${plan.id}`}
-                                                className="text-xs px-2 py-0.5 rounded-full bg-slate-500/10 text-slate-500"
-                                            >
-                                                待执行
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-slate-400 text-sm mt-1">
-                                        {plan.scenario_name || `场景 #${plan.scenario_id}`}
-                                    </p>
+                                    <label className="block text-slate-400 text-sm mb-2 font-medium">
+                                        计划名称 <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={createForm.name}
+                                        onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                                        placeholder="例如: 核心链路回归测试"
+                                        className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
+                                    />
                                 </div>
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    {/* 执行按钮 */}
-                                    <button
-                                        data-testid="execute-button"
-                                        onClick={() => {
-                                            setExecutingPlanId(plan.id)
-                                            executeMutation.mutate(plan.id)
-                                        }}
-                                        className="p-2 rounded-lg text-cyan-400 hover:bg-white/5 transition-colors"
-                                        disabled={executeMutation.isPending || executingPlanId === plan.id}
+                                <div>
+                                    <label className="block text-slate-400 text-sm mb-2 font-medium">
+                                        所属项目 <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={createForm.project_id}
+                                        onChange={(e) => setCreateForm({ ...createForm, project_id: e.target.value })}
+                                        className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
                                     >
-                                        <Play className="w-4 h-4" />
-                                    </button>
-
-                                    {/* 暂停/恢复按钮 */}
-                                    {plan.status === 'active' || plan.status === 'running' ? (
-                                        <button
-                                            data-testid="pause-button"
-                                            onClick={() => pauseMutation.mutate(plan.id)}
-                                            className="p-2 rounded-lg text-amber-400 hover:bg-white/5 transition-colors"
-                                            disabled={pauseMutation.isPending}
-                                        >
-                                            <Pause className="w-4 h-4" />
-                                        </button>
-                                    ) : plan.status === 'paused' ? (
-                                        <button
-                                            data-testid="resume-button"
-                                            onClick={() => resumeMutation.mutate(plan.id)}
-                                            className="p-2 rounded-lg text-emerald-400 hover:bg-white/5 transition-colors"
-                                            disabled={resumeMutation.isPending}
-                                        >
-                                            <RotateCcw className="w-4 h-4" />
-                                        </button>
-                                    ) : null}
-
-                                    {/* 终止按钮 */}
-                                    {(plan.status === 'active' || plan.status === 'running' || plan.status === 'paused') && (
-                                        <button
-                                            data-testid="terminate-button"
-                                            onClick={() => terminateMutation.mutate(plan.id)}
-                                            className="p-2 rounded-lg text-red-400 hover:bg-white/5 transition-colors"
-                                            disabled={terminateMutation.isPending}
-                                        >
-                                            <Square className="w-4 h-4" />
-                                        </button>
-                                    )}
-
-                                    <button
-                                        data-testid="edit-plan-button"
-                                        className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-                                    >
-                                        <Edit className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        data-testid="delete-plan-button"
-                                        onClick={() => setDeleteTarget(plan)}
-                                        className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-white/5 transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                        <option value="">请选择项目</option>
+                                        {projects.map(p => (
+                                            <option key={p.id} value={p.id}>{p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-slate-400 text-sm mb-2">描述</label>
+                                    <textarea
+                                        value={createForm.description}
+                                        onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                                        placeholder="测试计划描述..."
+                                        rows={3}
+                                        className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white resize-none focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
+                                    />
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-3 text-sm">
-                                    <Clock className="w-4 h-4 text-slate-500" />
-                                    <span className="text-slate-400">{t('plans.cronExpression')}:</span>
-                                    <code className="px-2 py-0.5 rounded bg-white/5 text-cyan-400 font-mono text-xs">
-                                        {plan.cron_expression}
-                                    </code>
+                            <div className="flex justify-end gap-4 mt-8">
+                                <button
+                                    onClick={closeCreateModal}
+                                    className="px-6 py-3 text-slate-400 hover:text-white transition-colors"
+                                >
+                                    取消
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        if (!createForm.name.trim() || !createForm.project_id) {
+                                            showError('请填写必填项');
+                                            return;
+                                        }
+                                        const payload = {
+                                            name: createForm.name.trim(),
+                                            project_id: Number(createForm.project_id),
+                                            description: createForm.description.trim(),
+                                            created_by: 'auto-assigned',
+                                        };
+                                        if (editingPlan) {
+                                            updateMutation.mutate({ ...payload, id: Number(editingPlan.id) });
+                                        } else {
+                                            createMutation.mutate(payload);
+                                        }
+                                    }}
+                                    disabled={!createForm.name.trim() || !createForm.project_id || createMutation.isPending || updateMutation.isPending}
+                                    className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center gap-2 transition-colors"
+                                >
+                                    {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    {editingPlan ? '保存' : '创建'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* 场景选择抽屉 */}
+            <AnimatePresence>
+                {isDrawerOpen && (
+                    <>
+                        <motion.div
+                            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setIsDrawerOpen(false)}
+                        />
+                        <motion.div
+                            className="fixed right-0 top-0 h-full w-[480px] z-50 bg-slate-900 border-l border-white/10 shadow-2xl overflow-y-auto"
+                            initial={{ x: '100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                        >
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xl font-bold text-white">添加测试场景</h3>
+                                    <button
+                                        onClick={() => setIsDrawerOpen(false)}
+                                        className="p-2 text-slate-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
                                 </div>
-                                {plan.next_run && (
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <Calendar className="w-4 h-4 text-slate-500" />
-                                        <span className="text-slate-400">{t('plans.nextExecution')}:</span>
-                                        <span className="text-white">{plan.next_run}</span>
+
+                                {/* 搜索 */}
+                                <div className="relative mb-4">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                    <input
+                                        type="text"
+                                        value={scenarioSearchQuery}
+                                        onChange={(e) => { setScenarioSearchQuery(e.target.value); setScenarioPage(1); }}
+                                        placeholder="搜索场景名称..."
+                                        className="w-full bg-slate-800 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
+                                    />
+                                </div>
+
+                                {/* 场景列表 */}
+                                {scenariosLoading ? (
+                                    <div className="flex justify-center py-10 text-slate-500">
+                                        <Loader2 className="w-5 h-5 animate-spin mr-2" /> 加载中...
+                                    </div>
+                                ) : availableScenarios.length === 0 ? (
+                                    <div className="text-center py-10 text-slate-500">
+                                        <Workflow className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                                        <p className="text-sm">暂无可添加的场景</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {availableScenarios.map((scenario) => (
+                                            <div
+                                                key={scenario.id}
+                                                className="flex items-center justify-between p-4 bg-slate-800/50 border border-white/5 rounded-xl hover:border-white/10 transition-colors"
+                                            >
+                                                <div className="flex-1 min-w-0 mr-3">
+                                                    <p className="text-white text-sm font-medium truncate">
+                                                        {scenario.name}
+                                                    </p>
+                                                    <p className="text-slate-500 text-xs mt-1 truncate">
+                                                        {scenario.description || '-'}
+                                                    </p>
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${{
+                                                                P0: 'bg-red-500/10 text-red-400 border-red-500/20',
+                                                                P1: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+                                                                P2: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+                                                                P3: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+                                                            }[scenario.priority] || 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+                                                            }`}>
+                                                            {scenario.priority}
+                                                        </span>
+                                                        {scenario.tags && (scenario.tags as string[]).slice(0, 2).map((tag, i) => (
+                                                            <span key={i} className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{tag}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <button
+                                                    onClick={() => drawerPlanId && addScenarioMutation.mutate({
+                                                        planId: Number(drawerPlanId),
+                                                        scenarioId: Number(scenario.id)
+                                                    })}
+                                                    disabled={addScenarioMutation.isPending}
+                                                    className="px-3 py-1.5 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
+                                                >
+                                                    <Plus className="w-3 h-3" /> 添加
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
-                                {plan.last_run && (
-                                    <div className="flex items-center gap-3 text-sm">
-                                        <Calendar className="w-4 h-4 text-slate-500" />
-                                        <span className="text-slate-400">{t('plans.lastExecution')}:</span>
-                                        <span className="text-slate-300">{plan.last_run}</span>
+
+                                {/* 分页 */}
+                                {scenarioTotalPages > 1 && (
+                                    <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
+                                        <span>第 {scenarioPage} / {scenarioTotalPages} 页</span>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => setScenarioPage(Math.max(1, scenarioPage - 1))}
+                                                disabled={scenarioPage <= 1}
+                                                className="px-3 py-1 bg-slate-800 rounded-md hover:bg-slate-700 disabled:opacity-30 transition-colors"
+                                            >
+                                                上一页
+                                            </button>
+                                            <button
+                                                onClick={() => setScenarioPage(Math.min(scenarioTotalPages, scenarioPage + 1))}
+                                                disabled={scenarioPage >= scenarioTotalPages}
+                                                className="px-3 py-1 bg-slate-800 rounded-md hover:bg-slate-700 disabled:opacity-30 transition-colors"
+                                            >
+                                                下一页
+                                            </button>
+                                        </div>
                                     </div>
                                 )}
                             </div>
                         </motion.div>
-                    ))}
-
-                    {/* 添加计划卡片 */}
-                    <motion.button
-                        onClick={() => setShowModal(true)}
-                        className="p-6 rounded-2xl border border-dashed border-white/10 hover:border-cyan-500/50 hover:bg-cyan-500/5 transition-all flex flex-col items-center justify-center gap-3 text-slate-500 hover:text-cyan-400 min-h-[200px]"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.4 }}
-                        whileHover={{ scale: 1.02 }}
-                    >
-                        <Plus className="w-10 h-10" />
-                        <span className="font-medium">{t('plans.newPlan')}</span>
-                    </motion.button>
-                </div>
-            )}
-
-            {/* 新建计划模态框 */}
-            {showModal && (
-                <motion.div
-                    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    onClick={() => setShowModal(false)}
-                >
-                    <motion.div
-                        className="w-full max-w-lg bg-slate-900 rounded-3xl border border-white/10 p-8"
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <h2 className="text-2xl font-bold text-white mb-6">{t('plans.newPlan')}</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm text-slate-400 mb-2">{t('plans.planName')}</label>
-                                <input
-                                    value={formData.name}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                                    className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-white focus:outline-none focus:border-cyan-500/50"
-                                    placeholder="输入计划名称"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm text-slate-400 mb-2">关联场景</label>
-                                <CustomSelect
-                                    value={formData.scenario_id || ''}
-                                    onChange={(val) => setFormData(prev => ({ ...prev, scenario_id: Number(val) }))}
-                                    options={scenarios.map(s => ({ label: s.name, value: s.id }))}
-                                    placeholder="选择测试场景"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm text-slate-400 mb-2">{t('plans.cronExpression')}</label>
-                                <input
-                                    value={formData.cron_expression}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, cron_expression: e.target.value }))}
-                                    className="w-full h-12 bg-white/5 border border-white/10 rounded-xl px-4 text-white font-mono focus:outline-none focus:border-cyan-500/50"
-                                    placeholder="0 8 * * *"
-                                />
-                                <p className="text-xs text-slate-500 mt-2">示例: 每天8点执行 (0 8 * * *)</p>
-                            </div>
-                        </div>
-                        <div className="flex justify-end gap-3 mt-6">
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="px-4 py-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
-                            >
-                                {t('common.cancel')}
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={createMutation.isPending}
-                                className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-violet-500 text-white font-medium disabled:opacity-50"
-                            >
-                                {createMutation.isPending ? '保存中...' : t('common.save')}
-                            </button>
-                        </div>
-                    </motion.div>
-                </motion.div>
-            )}
-
-            {/* 删除确认对话框 */}
-            <ConfirmDialog
-                isOpen={!!deleteTarget}
-                title="删除测试计划"
-                description={`确定要删除计划「${deleteTarget?.name}」吗？此操作无法撤销。`}
-                onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
-                onClose={() => setDeleteTarget(null)}
-            />
+                    </>
+                )}
+            </AnimatePresence>
         </div>
-    )
+    );
 }

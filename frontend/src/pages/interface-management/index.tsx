@@ -9,6 +9,7 @@ import {
   Settings as SettingsIcon,
 } from 'lucide-react'
 import { interfacesApi, projectsApi } from '@/api/client'
+import { useToast } from '@/components/ui/Toast'
 import { cn } from '@/lib/utils'
 import { InterfaceTree } from './components/InterfaceTree'
 import { WelcomeCards } from './components/WelcomeCards'
@@ -43,27 +44,18 @@ export default function InterfaceManagementPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
+  const { success: showSuccess, error: showError } = useToast()
 
-  // 🔧 终极修复: 直接从window.location解析路径参数,绕过useParams可能的问题
+  // 从路径解析参数
   const pathSegments = location.pathname.split('/')
-  console.log('Path segments:', pathSegments)
+
 
   // 路径格式: /interface-management -> ["", "interface-management"] -> 无ID
   // 路径格式: /interface-management/new -> ["", "interface-management", "new"] -> ID = "new"
   // 路径格式: /interface-management/123 -> ["", "interface-management", "123"] -> ID = "123"
   const pathId = pathSegments.length >= 3 ? pathSegments[2] : undefined
 
-  const effectiveId = pathId !== undefined ? pathId : id // 优先使用从路径解析的值
-
-  console.log('Path analysis:', {
-    pathname: location.pathname,
-    pathSegments,
-    pathSegments_length: pathSegments.length,
-    pathId,
-    useParams_id: id,
-    effectiveId,
-    final_decision: effectiveId === 'new' ? 'NEW MODE' : effectiveId ? `EDIT MODE (${effectiveId})` : 'WELCOME MODE'
-  })
+  const effectiveId = pathId !== undefined ? pathId : id
 
   const interfaceId = effectiveId && effectiveId !== 'new' ? parseInt(effectiveId) : null
   const currentProjectId = projectId ? parseInt(projectId) : 1
@@ -74,38 +66,16 @@ export default function InterfaceManagementPage() {
 
   // 根据路由参数更新页面模式
   useEffect(() => {
-    console.log('Route changed, updating page mode:', {
-      useParams_id: id,
-      pathId,
-      effectiveId,
-      isNew,
-      currentMode: pageMode,
-      pathname: location.pathname
-    })
-
     if (!effectiveId) {
-      console.log('Setting mode: welcome')
       setPageMode('welcome')
     } else if (effectiveId === 'new') {
-      console.log('Setting mode: new')
       setPageMode('new')
     } else {
-      console.log('Setting mode: edit')
       setPageMode('edit')
     }
   }, [effectiveId])
 
-  // 调试日志
-  console.log('InterfaceManagementPage render:', {
-    useParams_id: id,
-    pathId,
-    effectiveId,
-    projectId,
-    interfaceId,
-    isNew,
-    pageMode,
-    pathname: location.pathname
-  })
+
 
   // UI 状态
   const [showEnvironmentDialog, setShowEnvironmentDialog] = useState(false)
@@ -191,12 +161,10 @@ export default function InterfaceManagementPage() {
     }
   }, [interfaceData, isNew])
 
-  // 监听路由变化,当从欢迎界面跳转到新建页面时确保状态正确
+  // 监听路由变化
   useEffect(() => {
-    console.log('Route changed:', { id, isNew, pathname: location.pathname })
     if (isNew) {
-      console.log('Resetting form for new interface')
-      setResponse(null) // 清除之前的响应
+      setResponse(null)
     }
   }, [id, isNew, location.pathname])
 
@@ -231,10 +199,12 @@ export default function InterfaceManagementPage() {
     },
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['interfaces'] })
+      showSuccess('保存成功')
       if (isNew && res.data?.id) {
         navigate(`/interface-management/${res.data.id}?projectId=${currentProjectId}`, { replace: true })
       }
-    }
+    },
+    onError: () => showError('保存失败')
   })
 
   // 生成执行日志
@@ -407,7 +377,6 @@ export default function InterfaceManagementPage() {
 
   // 状态机模式: 根据pageMode决定渲染什么
   if (pageMode === 'welcome') {
-    console.log('Rendering welcome page')
     return (
       <div className="flex h-screen bg-slate-950">
         <InterfaceTree
@@ -423,7 +392,6 @@ export default function InterfaceManagementPage() {
   }
 
   // pageMode === 'new' 或 'edit'
-  console.log('Rendering editor page, mode:', pageMode)
   return (
     <div className="flex h-screen bg-slate-950">
       {/* 左侧目录树 */}

@@ -126,7 +126,7 @@ export const interfacesApi = {
 
 // 场景相关 API
 export const scenariosApi = {
-    list: (params?: { project_id?: number; page?: number; size?: number }) =>
+    list: (params?: { project_id?: number; page?: number; size?: number; search?: string; priority?: string }) =>
         api.get('/scenarios/', { params }),
     get: (id: number) => api.get(`/scenarios/${id}`),
     create: (data: {
@@ -262,7 +262,7 @@ export const plansApi = {
 
 // 关键字 API
 export const keywordsApi = {
-    list: (params?: { page?: number; size?: number; project_id?: string; type?: string; is_builtin?: boolean }) =>
+    list: (params?: { page?: number; size?: number; project_id?: string; type?: string; is_builtin?: boolean; search?: string }) =>
         api.get('/keywords/', { params }),
     create: (data: {
         id: string

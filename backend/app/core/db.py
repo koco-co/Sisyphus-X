@@ -72,6 +72,11 @@ async def init_db():
         # await conn.run_sync(Base.metadata.drop_all)  # 调试用：删除所有表
         await conn.run_sync(Base.metadata.create_all)
 
+    # 初始化内置关键字种子数据
+    from app.core.seed_keywords import seed_builtin_keywords
+    async with async_session_maker() as session:
+        await seed_builtin_keywords(session)
+
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """获取异步数据库 Session

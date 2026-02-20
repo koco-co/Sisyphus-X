@@ -29,6 +29,7 @@ async def list_keywords(
     type: str | None = Query(None, description="关键字类型"),
     is_builtin: bool | None = Query(None, description="是否内置关键字"),
     is_enabled: bool | None = Query(None, description="启用状态"),
+    search: str | None = Query(None, description="搜索关键字名称或方法名"),
     session: AsyncSession = Depends(get_session),
 ) -> PageResponse[KeywordResponse]:
     """获取关键字列表（支持过滤和分页）
@@ -63,6 +64,11 @@ async def list_keywords(
 
     if is_enabled is not None:
         query = query.where(col(Keyword.is_enabled) == is_enabled)
+
+    if search:
+        query = query.where(
+            col(Keyword.name).contains(search) | col(Keyword.method_name).contains(search)
+        )
 
     # 获取总数
     count_statement = select(func.count()).select_from(query.subquery())

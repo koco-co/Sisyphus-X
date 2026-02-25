@@ -11,7 +11,7 @@ export interface VariableContext {
 /**
  * 系统变量生成器
  */
-const systemVars: Record<string, (...args: any[]) => string> = {
+const systemVars: Record<string, (...args: unknown[]) => string> = {
   $timestamp: () => String(Math.floor(Date.now() / 1000)),
   $timestampMs: () => String(Date.now()),
   $date: (format = 'YYYY-MM-DD') => {
@@ -125,7 +125,7 @@ export function validateVariables(text: string): { valid: boolean; errors: strin
   }
 
   // 检查系统变量格式
-  const invalidSystemVar = text.match(/\{\{\$[^\}]*[^\w\)\s][^\}]*\}\}/)
+  const invalidSystemVar = text.match(/\{\{\$[^}]*[^\w)\s][^}]*\}\}/)
   if (invalidSystemVar) {
     errors.push(`无效的系统变量格式: ${invalidSystemVar[0]}`)
   }

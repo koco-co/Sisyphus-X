@@ -28,7 +28,7 @@ global.IntersectionObserver = class IntersectionObserver {
   observe() {}
   takeRecords() {}
   unobserve() {}
-} as any
+} as unknown as typeof IntersectionObserver
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -36,7 +36,7 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
   observe() {}
   unobserve() {}
-} as any
+} as unknown as typeof ResizeObserver
 
 // Cleanup after each test
 afterEach(() => {
@@ -44,4 +44,4 @@ afterEach(() => {
 })
 
 // Make expect available globally
-;(globalThis as any).expect = expect
+;(globalThis as { expect?: typeof expect }).expect = expect

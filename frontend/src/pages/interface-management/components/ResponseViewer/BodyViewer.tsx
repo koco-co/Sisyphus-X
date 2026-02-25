@@ -1,20 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Image, FileText, Code } from 'lucide-react'
-import { cn } from '@/lib/utils'
-
 interface BodyViewerProps {
-  body: any
+  body: unknown
   headers: Record<string, string>
   format: 'pretty' | 'raw'
 }
 
 export function BodyViewer({ body, headers, format }: BodyViewerProps) {
   const [contentType, setContentType] = useState<string>('')
-  const [viewMode, setViewMode] = useState<'preview' | 'source'>('preview')
+  const [_viewMode, _setViewMode] = useState<'preview' | 'source'>('preview')
 
   useEffect(() => {
     const ct = headers['content-type'] || headers['Content-Type'] || ''
-    setContentType(ct)
+    queueMicrotask(() => setContentType(ct))
   }, [headers])
 
   const isJson = contentType.includes('json')
@@ -37,7 +34,7 @@ export function BodyViewer({ body, headers, format }: BodyViewerProps) {
 
   // JSON 格式化展示
   if (isJson && format === 'pretty') {
-    let jsonData: any
+    let jsonData: unknown
     try {
       jsonData = typeof body === 'string' ? JSON.parse(body) : body
     } catch {
@@ -69,12 +66,12 @@ export function BodyViewer({ body, headers, format }: BodyViewerProps) {
 
 // JSON 递归渲染组件
 interface JsonViewProps {
-  data: any
+  data: unknown
   depth?: number
 }
 
 function JsonView({ data, depth = 0 }: JsonViewProps) {
-  const [expanded, setExpanded] = useState(true)
+  const [expanded, _setExpanded] = useState(true)
 
   if (data === null) {
     return <span className="text-purple-400">null</span>

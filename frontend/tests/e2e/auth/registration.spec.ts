@@ -4,7 +4,7 @@
  */
 
 import { test, expect } from '@playwright/test'
-import { generateRandomEmail, takeScreenshot } from '../../utils/helpers'
+import { generateRandomEmail, takeScreenshot as _takeScreenshot } from '../../utils/helpers'
 
 test.describe('用户注册功能', () => {
   test.beforeEach(async ({ page }) => {

@@ -31,7 +31,7 @@ test.describe('认证功能测试', () => {
     await page.waitForLoadState('networkidle');
 
     // 检查是否在登录页 (如果是开发模式可能跳过登录)
-    const url = page.url();
+    const _url = page.url();
     const hasLoginForm = await page.locator('input[type="email"]').count();
 
     if (hasLoginForm > 0) {

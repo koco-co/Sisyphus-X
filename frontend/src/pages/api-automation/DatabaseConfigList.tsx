@@ -70,7 +70,7 @@ export default function DatabaseConfigList() {
     // Toggle Enable Mutation
     const toggleMutation = useMutation({
         mutationFn: (ds: DataSource) =>
-            projectsApi.updateDataSource(Number(projectId), ds.id, { is_enabled: !ds.is_enabled } as any),
+            projectsApi.updateDataSource(Number(projectId), ds.id, { is_enabled: !ds.is_enabled } as unknown),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['datasources', projectId] });
         },

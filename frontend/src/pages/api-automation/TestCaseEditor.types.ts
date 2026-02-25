@@ -1,7 +1,7 @@
 /**
  * API 测试用例编辑器类型定义
  */
-
+import type { Variable } from './components/VariableManager'
 // 步骤类型枚举
 export const StepType = {
     REQUEST: 'request',
@@ -36,16 +36,16 @@ export interface RequestStep {
         url: string
         method: HttpMethod
         headers?: Record<string, string>
-        params?: Record<string, any>
-        body?: any
-        json?: Record<string, any>
-        data?: any
+        params?: Record<string, unknown>
+        body?: unknown
+        json?: Record<string, unknown>
+        data?: unknown
         files?: Record<string, string>
     }
     extract?: Record<string, string>
     validate?: Array<{
         type: 'eq' | 'lt' | 'le' | 'gt' | 'ge' | 'ne' | 'contains' | 'regex'
-        value: any[]
+        value: unknown[]
     }>
 }
 
@@ -56,7 +56,7 @@ export interface DatabaseStep {
     database: {
         type: 'mysql' | 'postgresql' | 'mongodb' | 'redis'
         query: string
-        variables?: Record<string, any>
+        variables?: Record<string, unknown>
     }
     extract?: Record<string, string>
 }
@@ -76,7 +76,7 @@ export interface LoopStep {
     enabled?: boolean
     loop: {
         times: number
-        steps: any[]
+        steps: unknown[]
     }
 }
 
@@ -95,7 +95,7 @@ export interface ConcurrentStep {
     name: string
     enabled?: boolean
     concurrent: {
-        steps: any[]
+        steps: unknown[]
     }
 }
 
@@ -106,9 +106,9 @@ export interface ConditionStep {
     condition: {
         variable: string
         operator: 'eq' | 'ne' | 'gt' | 'lt' | 'contains'
-        value: any
-        steps: any[]
-        else_steps?: any[]
+        value: unknown
+        steps: unknown[]
+        else_steps?: unknown[]
     }
 }
 
@@ -140,7 +140,8 @@ export interface TestCaseConfig {
         base_url?: string
         verify?: boolean
         timeout?: number
-        variables?: Record<string, any>
+        /** 全局变量，兼容字符串或完整 Variable 对象，供 VariableManager 使用 */
+        variables?: Record<string, string | Variable>
         headers?: Record<string, string>
     }
     steps: StepItem[]

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     ArrowLeft,
@@ -51,7 +52,7 @@ function KeyValueEditor({
         onChange(pairs.filter((_, i) => i !== index))
     }
 
-    const updatePair = (index: number, field: 'key' | 'value' | 'enabled', value: any) => {
+    const updatePair = (index: number, field: 'key' | 'value' | 'enabled', value: unknown) => {
         const newPairs = [...pairs]
         newPairs[index] = { ...newPairs[index], [field]: value }
         onChange(newPairs)
@@ -241,7 +242,7 @@ export default function InterfaceEditor() {
     const [response, setResponse] = useState<{
         status_code: number
         headers: Record<string, string>
-        body: any
+        body: unknown
         elapsed: number
     } | null>(null)
     const [isSending, setIsSending] = useState(false)
@@ -262,6 +263,7 @@ export default function InterfaceEditor() {
     })
 
     // 获取项目列表
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { data: projects = [] } = useQuery({
         queryKey: ['projects-list'],
         queryFn: () => projectsApi.list({ page: 1, size: 100 }),
@@ -270,45 +272,44 @@ export default function InterfaceEditor() {
 
     // 加载接口数据
     useEffect(() => {
-        if (interfaceData) {
-            setFormData({
-                name: interfaceData.name || '',
-                url: interfaceData.url || '',
-                method: interfaceData.method || 'GET',
-                description: interfaceData.description || '',
-                status: interfaceData.status || 'draft',
-                params: objectToKeyValueArray(interfaceData.params),
-                headers: objectToKeyValueArray(interfaceData.headers),
-                cookies: objectToKeyValueArray(interfaceData.cookies),
-                body: typeof interfaceData.body === 'string'
-                    ? interfaceData.body
-                    : JSON.stringify(interfaceData.body || {}, null, 2),
-                body_type: interfaceData.body_type || 'json',
-            })
-
-            // 初始化 formDataBodyPairs
-            if (interfaceData.body_type === 'form-data' && Array.isArray(interfaceData.body)) {
-                // 如果后端存储的是结构化数据
-                setFormDataBodyPairs(interfaceData.body)
-            } else if (interfaceData.body_type === 'form-data' && typeof interfaceData.body === 'object') {
-                // 兼容旧数据或 key-value 对象
-                setFormDataBodyPairs(Object.entries(interfaceData.body || {}).map(([key, value]) => ({
-                    key,
-                    value: String(value),
-                    type: 'text',
-                    enabled: true
-                })))
-            } else {
-                setFormDataBodyPairs([])
-            }
-
-            setProjectId(interfaceData.project_id)
+        if (!interfaceData) return
+        const nextFormData = {
+            name: interfaceData.name || '',
+            url: interfaceData.url || '',
+            method: interfaceData.method || 'GET',
+            description: interfaceData.description || '',
+            status: interfaceData.status || 'draft',
+            params: objectToKeyValueArray(interfaceData.params),
+            headers: objectToKeyValueArray(interfaceData.headers),
+            cookies: objectToKeyValueArray(interfaceData.cookies),
+            body: typeof interfaceData.body === 'string'
+                ? interfaceData.body
+                : JSON.stringify(interfaceData.body || {}, null, 2),
+            body_type: interfaceData.body_type || 'json',
         }
+        let nextPairs: KeyValueTypePair[]
+        if (interfaceData.body_type === 'form-data' && Array.isArray(interfaceData.body)) {
+            nextPairs = interfaceData.body
+        } else if (interfaceData.body_type === 'form-data' && typeof interfaceData.body === 'object') {
+            nextPairs = Object.entries(interfaceData.body || {}).map(([key, value]) => ({
+                key,
+                value: String(value),
+                type: 'text' as const,
+                enabled: true
+            }))
+        } else {
+            nextPairs = []
+        }
+        queueMicrotask(() => {
+            setFormData(nextFormData)
+            setFormDataBodyPairs(nextPairs)
+            setProjectId(interfaceData.project_id)
+        })
     }, [interfaceData])
 
     // 保存接口
     const saveMutation = useMutation({
-        mutationFn: (data: any) => {
+        mutationFn: (data: unknown) => {
             if (isNew) {
                 return interfacesApi.create({
                     project_id: projectId,
@@ -339,7 +340,7 @@ export default function InterfaceEditor() {
             let baseUrl = ''
             let envHeaders: Record<string, string> = {}
             if (selectedEnvId) {
-                const env = environments.find((e: any) => e.id === selectedEnvId)
+                const env = environments.find((e: unknown) => e.id === selectedEnvId)
                 if (env) {
                     baseUrl = env.domain || ''
                     envHeaders = env.headers || {}
@@ -398,7 +399,7 @@ export default function InterfaceEditor() {
                 files
             })
             setResponse(res.data)
-        } catch (e: any) {
+        } catch (e: unknown) {
             setResponse({
                 status_code: 0,
                 headers: {},
@@ -518,7 +519,7 @@ export default function InterfaceEditor() {
                         onChange={(val) => setSelectedEnvId(val ? parseInt(val) : null)}
                         options={[
                             { label: '无环境', value: '' },
-                            ...environments.map((env: any) => ({ label: env.name, value: env.id }))
+                            ...environments.map((env: unknown) => ({ label: env.name, value: env.id }))
                         ]}
                         placeholder="选择环境"
                     />

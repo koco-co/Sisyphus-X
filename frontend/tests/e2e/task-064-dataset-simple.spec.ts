@@ -12,7 +12,7 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('TASK-064: 数据集功能黑盒测试', () => {
-  const testCsvContent = 'username,password,email\nuser1,pass123,user1@example.com\nuser2,pass456,user2@example.com\n';
+  const _testCsvContent = 'username,password,email\nuser1,pass123,user1@example.com\nuser2,pass456,user2@example.com\n';
 
   test.beforeEach(async ({ page }) => {
     // 导航到首页

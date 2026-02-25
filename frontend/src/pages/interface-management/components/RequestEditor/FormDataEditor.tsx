@@ -26,7 +26,7 @@ export function FormDataEditor({ pairs, onChange }: FormDataEditorProps) {
         onChange(pairs.filter((_, i) => i !== index))
     }
 
-    const updatePair = (index: number, field: keyof KeyValueTypePair, value: any) => {
+    const updatePair = (index: number, field: keyof KeyValueTypePair, value: unknown) => {
         const newPairs = [...pairs]
         newPairs[index] = { ...newPairs[index], [field]: value }
 
@@ -124,7 +124,7 @@ export function FormDataEditor({ pairs, onChange }: FormDataEditorProps) {
                                             // Trigger file input programmatically
                                             const input = document.createElement('input')
                                             input.type = 'file'
-                                            input.onchange = (e) => handleFileUpload(e as any, index)
+                                            input.onchange = (e) => handleFileUpload(e as unknown, index)
                                             input.click()
                                         }}
                                         disabled={uploadingIndex === index}

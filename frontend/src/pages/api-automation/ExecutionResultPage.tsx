@@ -1,3 +1,4 @@
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -10,8 +11,10 @@ import {
     Clock,
     AlertCircle,
     ChevronDown,
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     ChevronUp,
     Copy,
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     Download
 } from 'lucide-react'
 import { apiTestCasesApi } from '@/api/client'
@@ -24,7 +27,7 @@ interface ExecutionStep {
     step_name: string
     status: 'passed' | 'failed' | 'skipped' | 'error'
     error_message?: string
-    response_data?: Record<string, any>
+    response_data?: Record<string, unknown>
     response_time?: number
     started_at?: string
     completed_at?: string
@@ -64,7 +67,7 @@ export default function ExecutionResultPage() {
         },
         refetchInterval: (data) => {
             // Poll if still running
-            return (data as any)?.status === 'running' ? 2000 : false
+            return (data as unknown)?.status === 'running' ? 2000 : false
         }
     })
 

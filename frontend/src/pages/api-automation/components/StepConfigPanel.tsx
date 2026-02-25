@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { X, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import type { StepItemData } from '../TestCaseEditor.types'
 import { HttpMethod, StepType } from '../TestCaseEditor.types'
 
@@ -15,12 +14,12 @@ export function StepConfigPanel({ stepItem, onUpdate, onClose }: StepConfigPanel
     const [localStep, setLocalStep] = useState(stepItem)
 
     useEffect(() => {
-        setLocalStep(stepItem)
+        if (stepItem) queueMicrotask(() => setLocalStep(stepItem))
     }, [stepItem])
 
     if (!stepItem) return null
 
-    const handleUpdate = (field: string, value: any) => {
+    const handleUpdate = (field: string, value: unknown) => {
         if (!localStep) return
         const updated = {
             ...localStep,
@@ -33,14 +32,14 @@ export function StepConfigPanel({ stepItem, onUpdate, onClose }: StepConfigPanel
         onUpdate(stepItem.id, updated)
     }
 
-    const handleNestedUpdate = (parentField: string, field: string, value: any) => {
+    const handleNestedUpdate = (parentField: string, field: string, value: unknown) => {
         if (!localStep) return
         const updated = {
             ...localStep,
             step: {
                 ...localStep.step,
                 [parentField]: {
-                    ...(localStep.step as any)[parentField],
+                    ...(localStep.step as unknown)[parentField],
                     [field]: value
                 }
             }
@@ -110,7 +109,7 @@ export function StepConfigPanel({ stepItem, onUpdate, onClose }: StepConfigPanel
 }
 
 // Request Step Config
-function RequestStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: string, f: string, v: any) => void }) {
+function RequestStepConfig({ step, onUpdate }: { step: unknown; onUpdate: (p: string, f: string, v: unknown) => void }) {
     const [showAdvanced, setShowAdvanced] = useState(false)
     const request = step.request || {}
 
@@ -234,7 +233,7 @@ function RequestStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: string
                             </button>
                         </div>
                         <div className="space-y-2">
-                            {step.validate && step.validate.map((assertion: any, index: number) => (
+                            {step.validate && step.validate.map((assertion: unknown, index: number) => (
                                 <div key={index} className="flex gap-2 items-center">
                                     <select
                                         value={assertion.type}
@@ -266,7 +265,7 @@ function RequestStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: string
                                     />
                                     <button
                                         onClick={() => {
-                                            const newValidate = step.validate.filter((_: any, i: number) => i !== index)
+                                            const newValidate = step.validate.filter((_: unknown, i: number) => i !== index)
                                             onUpdate('validate', '', newValidate)
                                         }}
                                         className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
@@ -284,7 +283,7 @@ function RequestStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: string
 }
 
 // Wait Step Config
-function WaitStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: string, f: string, v: any) => void }) {
+function WaitStepConfig({ step, onUpdate }: { step: unknown; onUpdate: (p: string, f: string, v: unknown) => void }) {
     return (
         <div>
             <label className="block text-sm font-medium text-slate-400 mb-2">等待时长（秒）</label>
@@ -300,7 +299,7 @@ function WaitStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: string, f
 }
 
 // Database Step Config
-function DatabaseStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: string, f: string, v: any) => void }) {
+function DatabaseStepConfig({ step, onUpdate }: { step: unknown; onUpdate: (p: string, f: string, v: unknown) => void }) {
     return (
         <div className="space-y-4">
             <div>
@@ -332,7 +331,7 @@ function DatabaseStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: strin
 }
 
 // Loop Step Config
-function LoopStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: string, f: string, v: any) => void }) {
+function LoopStepConfig({ step, onUpdate }: { step: unknown; onUpdate: (p: string, f: string, v: unknown) => void }) {
     return (
         <div>
             <label className="block text-sm font-medium text-slate-400 mb-2">循环次数</label>
@@ -349,7 +348,7 @@ function LoopStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: string, f
 }
 
 // Script Step Config
-function ScriptStepConfig({ step, onUpdate }: { step: any; onUpdate: (p: string, f: string, v: any) => void }) {
+function ScriptStepConfig({ step, onUpdate }: { step: unknown; onUpdate: (p: string, f: string, v: unknown) => void }) {
     return (
         <div className="space-y-4">
             <div>

@@ -222,7 +222,7 @@ export default function LoginPage() {
                         <Particles
                             id="tsparticles"
                             particlesLoaded={particlesLoaded}
-                            options={particlesOptions} // @ts-ignore
+                            options={particlesOptions}
                             className="h-full w-full"
                         />
                     )}

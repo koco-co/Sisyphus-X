@@ -8,6 +8,7 @@ import {
     Edit2,
     Trash2,
     Loader2,
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     ChevronRight,
     X,
     Workflow,
@@ -28,7 +29,7 @@ interface TestPlanItem {
     description?: string;
     created_at?: string;
     updated_at?: string;
-    plan_scenarios?: any[];
+    plan_scenarios?: unknown[];
 }
 
 interface Project {
@@ -46,6 +47,7 @@ interface Scenario {
 }
 
 export default function TestPlan() {
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { success, error: showError } = useToast();
@@ -107,25 +109,25 @@ export default function TestPlan() {
 
     // 创建/更新
     const createMutation = useMutation({
-        mutationFn: (data: any) => plansApi.create(data),
+        mutationFn: (data: unknown) => plansApi.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
             closeCreateModal();
             success('创建成功');
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
             showError(err?.response?.data?.detail || '创建失败');
         }
     });
 
     const updateMutation = useMutation({
-        mutationFn: (data: any) => plansApi.update(data.id, data),
+        mutationFn: (data: unknown) => plansApi.update(data.id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
             closeCreateModal();
             success('编辑成功');
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
             showError(err?.response?.data?.detail || '编辑失败');
         }
     });
@@ -149,7 +151,7 @@ export default function TestPlan() {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
             success('场景已添加');
         },
-        onError: (err: any) => showError(err?.response?.data?.detail || '添加失败'),
+        onError: (err: unknown) => showError(err?.response?.data?.detail || '添加失败'),
     });
 
     const openCreateModal = () => {

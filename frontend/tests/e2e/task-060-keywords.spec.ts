@@ -136,7 +136,7 @@ test.describe('TASK-060: 关键字配置功能黑盒测试', () => {
 
     // Step 2: 不填写任何内容，检查提交按钮状态
     const submitButton = page.locator('[data-testid="submit-keyword-button"]');
-    const isInitiallyDisabled = await submitButton.isDisabled();
+    const _isInitiallyDisabled = await submitButton.isDisabled();
 
     // Step 3: 尝试点击提交按钮
     await submitButton.click();

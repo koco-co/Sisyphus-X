@@ -78,7 +78,7 @@ export default function EnvironmentList() {
       setIsCreateDialogOpen(false)
       success('环境创建成功')
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       showError(err.response?.data?.detail || '创建环境失败')
     },
   })
@@ -94,7 +94,7 @@ export default function EnvironmentList() {
       setEditingEnvironment(null)
       success('环境更新成功')
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       showError(err.response?.data?.detail || '更新环境失败')
     },
   })
@@ -110,7 +110,7 @@ export default function EnvironmentList() {
       setEnvironmentToDelete(null)
       success('环境删除成功')
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       showError(err.response?.data?.detail || '删除环境失败')
     },
   })
@@ -124,7 +124,7 @@ export default function EnvironmentList() {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
       success('环境克隆成功')
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       showError(err.response?.data?.detail || '克隆环境失败')
     },
   })

@@ -9,10 +9,10 @@ export interface RequestHistory {
   method: string
   headers: Record<string, string>
   params: Record<string, unknown>
-  body: any
+  body: unknown
   status_code: number
   response_headers: Record<string, string>
-  response_body: any
+  response_body: unknown
   elapsed: number
   size: number
   timeline?: {

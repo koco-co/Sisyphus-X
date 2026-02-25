@@ -6,7 +6,7 @@ export interface LogEntry {
   timestamp: string    // "14:32:01.234"
   type: 'info' | 'success' | 'warning' | 'error'
   message: string
-  details?: any
+  details?: unknown
 }
 
 interface ExecutionLogProps {

@@ -1,3 +1,4 @@
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from 'react'
 import { Send, FileText, Cookie, History } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -12,7 +13,7 @@ import type { LogEntry } from './ExecutionLog'
 export interface ResponseData {
   status_code: number
   headers: Record<string, string>
-  body: any
+  body: unknown
   elapsed: number
   size: number
   timeline?: {

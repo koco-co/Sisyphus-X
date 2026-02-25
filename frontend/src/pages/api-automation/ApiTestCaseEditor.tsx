@@ -25,7 +25,7 @@ interface ApiTestCase {
     tags?: string[]
     enabled?: boolean
     yaml_content?: string
-    config_data?: Record<string, any>
+    config_data?: Record<string, unknown>
     created_at?: string
     updated_at?: string
 }
@@ -86,13 +86,14 @@ steps:
     // Load existing data when fetched
     useEffect(() => {
         if (existingCase) {
-            setFormData({
+            const next = {
                 name: existingCase.name || '',
                 description: existingCase.description || '',
                 tags: existingCase.tags || [],
                 enabled: existingCase.enabled ?? true,
                 yaml_content: existingCase.yaml_content || ''
-            })
+            }
+            queueMicrotask(() => setFormData(next))
         }
     }, [existingCase])
 
@@ -119,7 +120,7 @@ steps:
             success(isEditMode ? '更新成功' : '创建成功')
             navigate(`/api/projects/${projectId}/test-cases`)
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
             if (err?.response?.data?.detail) {
                 showError(err.response.data.detail)
             } else {

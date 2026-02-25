@@ -23,7 +23,7 @@ const __dirname = path.dirname(__filename);
 test.describe.skip('TASK-064: 测试数据集功能黑盒测试 (跳过: Page Object未实现)', () => {
   // let scenariosPage: ScenariosPage; // TODO: Page Object未实现
   const testCsvContent = 'username,password,email\nuser1,pass123,user1@example.com\nuser2,pass456,user2@example.com\n';
-  const testCsvFilePath = path.join(__dirname, 'test-data.csv');
+  const _testCsvFilePath = path.join(__dirname, 'test-data.csv');
 
   test.beforeEach(async ({ page }) => {
     // TODO: Page Object未实现,暂时禁用此测试
@@ -503,7 +503,7 @@ test.describe.skip('TASK-064: 测试数据集功能黑盒测试 (跳过: Page Ob
 });
 
 // 辅助函数：将流转换为字符串
-async function streamToString(stream: any): Promise<string> {
+async function streamToString(stream: AsyncIterable<Buffer | Uint8Array>): Promise<string> {
   const chunks = [];
   for await (const chunk of stream) {
     chunks.push(chunk);

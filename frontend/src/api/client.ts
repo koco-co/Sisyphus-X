@@ -67,7 +67,7 @@ export const projectsApi = {
     get: (id: number) => api.get(`/projects/${id}`),
     create: (data: { name: string; key: string; owner: string; description?: string }) =>
         api.post('/projects/', data),
-    update: (id: number, data: any) => api.put(`/projects/${id}`, data),
+    update: (id: number, data: unknown) => api.put(`/projects/${id}`, data),
     delete: (id: number) => api.delete(`/projects/${id}`),
 
     // 环境配置 API
@@ -111,9 +111,9 @@ export const interfacesApi = {
         body_type?: string
     }) =>
         api.post('/interfaces/', data),
-    update: (id: number, data: any) => api.put(`/interfaces/${id}`, data),
+    update: (id: number, data: unknown) => api.put(`/interfaces/${id}`, data),
     delete: (id: number) => api.delete(`/interfaces/${id}`),
-    sendRequest: (data: { url: string; method: string; headers?: Record<string, string>; params?: Record<string, any>; body?: any; files?: Record<string, string> }) =>
+    sendRequest: (data: { url: string; method: string; headers?: Record<string, string>; params?: Record<string, unknown>; body?: unknown; files?: Record<string, string> }) =>
         api.post('/interfaces/debug/send', data),
     listFolders: (params?: { project_id?: number }) => api.get('/interfaces/folders', { params }),
     createFolder: (data: { project_id: number; name: string; parent_id?: number }) => api.post('/interfaces/folders', data),
@@ -136,7 +136,7 @@ export const scenariosApi = {
         priority?: string
         tags?: string[]
         created_by: string
-        variables?: Record<string, any>
+        variables?: Record<string, unknown>
     }) => api.post('/scenarios/', data),
     update: (id: string | number, data: {
         project_id?: string
@@ -144,7 +144,7 @@ export const scenariosApi = {
         description?: string
         priority?: string
         tags?: string[]
-        variables?: Record<string, any>
+        variables?: Record<string, unknown>
     }) => api.put(`/scenarios/${id}`, data),
     delete: (id: string | number) => api.delete(`/scenarios/${id}`),
 
@@ -153,14 +153,14 @@ export const scenariosApi = {
         description?: string
         keyword_type: string
         keyword_name: string
-        parameters?: Record<string, any>
+        parameters?: Record<string, unknown>
         sort_order?: number
     }) => api.post(`/scenarios/${scenarioId}/steps`, data),
     updateStep: (scenarioId: number, stepId: number, data: {
         description?: string
         keyword_type?: string
         keyword_name?: string
-        parameters?: Record<string, any>
+        parameters?: Record<string, unknown>
         sort_order?: number
     }) => api.put(`/scenarios/${scenarioId}/steps/${stepId}`, data),
     deleteStep: (scenarioId: number, stepId: number) =>
@@ -235,7 +235,7 @@ export const plansApi = {
         scenario_id: string | number
         dataset_id?: string | number
         environment_id?: string | number
-        variables?: Record<string, any>
+        variables?: Record<string, unknown>
         sort_order?: number
     }) => api.post(`/plans/${planId}/scenarios`, data),
     listScenarios: (planId: string | number) =>
@@ -244,7 +244,7 @@ export const plansApi = {
         scenario_id?: string | number
         dataset_id?: string | number
         environment_id?: string | number
-        variables?: Record<string, any>
+        variables?: Record<string, unknown>
         sort_order?: number
     }) => api.put(`/plans/${planId}/scenarios/${planScenarioId}`, data),
     removeScenario: (planId: string | number, planScenarioId: string | number) =>
@@ -301,9 +301,9 @@ export const apiTestCasesApi = {
     // 测试用例 CRUD
     list: (projectId: number, params?: { page?: number; size?: number; search?: string; tags?: string; enabled_only?: boolean }) =>
         api.get(`/projects/${projectId}/api-test-cases`, { params }),
-    create: (projectId: number, data: any) => api.post(`/projects/${projectId}/api-test-cases`, data),
+    create: (projectId: number, data: unknown) => api.post(`/projects/${projectId}/api-test-cases`, data),
     get: (id: number) => api.get(`/api-test-cases/${id}`),
-    update: (id: number, data: any) => api.put(`/api-test-cases/${id}`, data),
+    update: (id: number, data: unknown) => api.put(`/api-test-cases/${id}`, data),
     delete: (id: number) => api.delete(`/api-test-cases/${id}`),
 
     // 测试执行

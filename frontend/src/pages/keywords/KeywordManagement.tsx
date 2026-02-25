@@ -123,7 +123,7 @@ export default function KeywordManagement() {
   })
 
   const getQueryParams = useCallback(() => {
-    const params: any = { page: currentPage, size: pageSize }
+    const params: unknown = { page: currentPage, size: pageSize }
     if (activeTab === 'custom') {
       if (selectedProjectId) params.project_id = selectedProjectId
       params.is_builtin = false
@@ -150,7 +150,7 @@ export default function KeywordManagement() {
 
   // ===== Mutations =====
   const createMutation = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: unknown) => {
       const payload = {
         id: crypto.randomUUID(),
         project_id: selectedProjectId || null,
@@ -170,13 +170,13 @@ export default function KeywordManagement() {
       setIsCreateDialogOpen(false)
       queryClient.invalidateQueries({ queryKey: ['keywords'] })
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '创建失败')
     },
   })
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+    mutationFn: async ({ id, data }: { id: string; data: unknown }) => {
       await keywordsApi.update(id, data)
     },
     onSuccess: () => {
@@ -185,7 +185,7 @@ export default function KeywordManagement() {
       setSelectedKeyword(null)
       queryClient.invalidateQueries({ queryKey: ['keywords'] })
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '更新失败')
     },
   })
@@ -200,7 +200,7 @@ export default function KeywordManagement() {
       setSelectedKeyword(null)
       queryClient.invalidateQueries({ queryKey: ['keywords'] })
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '删除失败')
     },
   })
@@ -213,7 +213,7 @@ export default function KeywordManagement() {
       toast.success('状态更新成功')
       queryClient.invalidateQueries({ queryKey: ['keywords'] })
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '状态更新失败')
     },
   })
@@ -273,6 +273,7 @@ export default function KeywordManagement() {
       const parsed = JSON.parse(params)
       if (Array.isArray(parsed)) return parsed
       // 兼容旧格式: object形式
+      /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
       return Object.entries(parsed).map(([key, val]: [string, any]) => ({
         name: val.name || key,
         type: val.type || 'string',
@@ -726,7 +727,7 @@ interface KeywordFormDialogProps {
   onOpenChange: (open: boolean) => void
   title: string
   initialData?: Keyword
-  onSubmit: (data: any) => Promise<void>
+  onSubmit: (data: unknown) => Promise<void>
   isSaving: boolean
 }
 
@@ -756,6 +757,7 @@ function KeywordFormDialog({
       try {
         const parsed = JSON.parse(initialData.parameters)
         if (Array.isArray(parsed)) return parsed
+        /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
         return Object.entries(parsed).map(([key, val]: [string, any]) => ({
           name: val.name || key,
           type: val.type || 'string',
@@ -774,7 +776,7 @@ function KeywordFormDialog({
     setParams(params.filter((_, i) => i !== index))
   }
 
-  const updateParam = (index: number, field: keyof ParamItem, value: any) => {
+  const updateParam = (index: number, field: keyof ParamItem, value: unknown) => {
     const newParams = [...params]
     newParams[index] = { ...newParams[index], [field]: value }
     setParams(newParams)

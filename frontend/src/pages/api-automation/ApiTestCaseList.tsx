@@ -35,6 +35,7 @@ interface ApiTestCase {
     updated_at: string
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 interface ListResponse {
     total: number
     pages: number
@@ -42,6 +43,7 @@ interface ListResponse {
 }
 
 export default function ApiTestCaseList() {
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { t } = useTranslation()
     const navigate = useNavigate()
     const { projectId } = useParams<{ projectId: string }>()

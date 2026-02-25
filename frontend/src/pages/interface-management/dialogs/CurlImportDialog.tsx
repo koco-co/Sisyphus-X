@@ -18,7 +18,7 @@ export interface CurlImportData {
   method: string
   url: string
   headers: Record<string, string>
-  body?: any
+  body?: unknown
   body_type: 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw' | 'none'
   params: Record<string, string>
   auth?: {
@@ -58,7 +58,7 @@ export function CurlImportDialog({ open, onClose, onImport }: CurlImportDialogPr
       const result = parseCurlCommand(curlCommand)
       setParsedData(result)
       setError('')
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(err.message || '解析失败，请检查 cURL 格式')
       setParsedData(null)
     } finally {

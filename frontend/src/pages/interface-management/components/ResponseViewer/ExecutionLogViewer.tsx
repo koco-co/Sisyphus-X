@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp, Clock } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 interface ExecutionLogViewerProps {
@@ -20,6 +20,60 @@ interface LogEntry {
   duration?: number
 }
 
+function buildLogEntries(
+  timeline: ExecutionLogViewerProps['timeline'],
+  responseTime: number,
+  requestSize: number,
+  responseSize: number
+): LogEntry[] {
+  const logEntries: LogEntry[] = []
+  const startTime = Date.now()
+  let elapsed = 0
+
+  logEntries.push({
+    timestamp: formatTime(startTime),
+    message: `开始发送请求 (大小: ${formatBytes(requestSize)})`,
+  })
+
+  if (timeline?.dns) {
+    elapsed += timeline.dns
+    logEntries.push({
+      timestamp: formatTime(startTime + elapsed),
+      message: 'DNS 查询完成',
+      duration: timeline.dns,
+    })
+  }
+  if (timeline?.tcp) {
+    elapsed += timeline.tcp
+    logEntries.push({
+      timestamp: formatTime(startTime + elapsed),
+      message: 'TCP 连接建立完成',
+      duration: timeline.tcp,
+    })
+  }
+  if (timeline?.ttfb) {
+    elapsed += timeline.ttfb
+    logEntries.push({
+      timestamp: formatTime(startTime + elapsed),
+      message: '首字节接收时间 (TTFB)',
+      duration: timeline.ttfb,
+    })
+  }
+  if (timeline?.download) {
+    elapsed += timeline.download
+    logEntries.push({
+      timestamp: formatTime(startTime + elapsed),
+      message: `响应内容下载完成 (大小: ${formatBytes(responseSize)})`,
+      duration: timeline.download,
+    })
+  }
+  logEntries.push({
+    timestamp: formatTime(startTime + elapsed),
+    message: `请求完成，总耗时: ${responseTime.toFixed(0)}ms`,
+  })
+  return logEntries
+}
+
 export function ExecutionLogViewer({
   timeline,
   responseTime,
@@ -27,71 +81,11 @@ export function ExecutionLogViewer({
   responseSize,
 }: ExecutionLogViewerProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [logs, setLogs] = useState<LogEntry[]>([])
 
-  // 生成执行日志
-  const generateLogs = (): LogEntry[] => {
-    const logs: LogEntry[] = []
-    const startTime = Date.now()
-
-    // 初始时间
-    let elapsed = 0
-
-    // 开始发送请求
-    logs.push({
-      timestamp: formatTime(startTime),
-      message: `开始发送请求 (大小: ${formatBytes(requestSize)})`,
-    })
-
-    // DNS 查询
-    if (timeline?.dns) {
-      elapsed += timeline.dns
-      logs.push({
-        timestamp: formatTime(startTime + elapsed),
-        message: 'DNS 查询完成',
-        duration: timeline.dns,
-      })
-    }
-
-    // TCP 连接
-    if (timeline?.tcp) {
-      elapsed += timeline.tcp
-      logs.push({
-        timestamp: formatTime(startTime + elapsed),
-        message: 'TCP 连接建立完成',
-        duration: timeline.tcp,
-      })
-    }
-
-    // TTFB
-    if (timeline?.ttfb) {
-      elapsed += timeline.ttfb
-      logs.push({
-        timestamp: formatTime(startTime + elapsed),
-        message: '首字节接收时间 (TTFB)',
-        duration: timeline.ttfb,
-      })
-    }
-
-    // 下载
-    if (timeline?.download) {
-      elapsed += timeline.download
-      logs.push({
-        timestamp: formatTime(startTime + elapsed),
-        message: `响应内容下载完成 (大小: ${formatBytes(responseSize)})`,
-        duration: timeline.download,
-      })
-    }
-
-    // 总计
-    logs.push({
-      timestamp: formatTime(startTime + elapsed),
-      message: `请求完成，总耗时: ${responseTime.toFixed(0)}ms`,
-    })
-
-    return logs
-  }
-
-  const logs = generateLogs()
+  useEffect(() => {
+    setLogs(buildLogEntries(timeline, responseTime, requestSize, responseSize))
+  }, [timeline, responseTime, requestSize, responseSize])
 
   return (
     <div className="space-y-2">

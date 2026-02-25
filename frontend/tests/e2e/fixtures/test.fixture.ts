@@ -1,4 +1,5 @@
 import { test as base, expect } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 /**
  * 基础测试fixture
@@ -11,7 +12,7 @@ export { expect };
 /**
  * 辅助函数：导航到场景编辑器
  */
-export async function navigateToScenarioEditor(page: any, scenarioId?: number) {
+export async function navigateToScenarioEditor(page: Page, scenarioId?: number) {
   await page.goto('http://localhost:5173/');
 
   // 等待页面加载
@@ -29,7 +30,7 @@ export async function navigateToScenarioEditor(page: any, scenarioId?: number) {
 /**
  * 辅助函数：创建测试场景
  */
-export async function createTestScenario(page: any, name: string) {
+export async function createTestScenario(page: Page, name: string) {
   // 导航到场景页面
   await page.goto('http://localhost:5173/scenarios');
   await page.waitForLoadState('domcontentloaded');
@@ -66,7 +67,7 @@ export async function createTestScenario(page: any, name: string) {
 /**
  * 辅助函数：等待Toast消息
  */
-export async function waitForToast(page: any, message: string, timeout = 5000) {
+export async function waitForToast(page: Page, message: string, timeout = 5000) {
   await expect(page.locator(`text=/${message}/`).first()).toBeVisible({ timeout });
   await page.waitForTimeout(1000);
 }

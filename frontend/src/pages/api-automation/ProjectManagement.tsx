@@ -124,13 +124,13 @@ export default function ProjectManagement() {
 
     // Create/Update mutations
     const createMutation = useMutation({
-        mutationFn: (data: any) => projectsApi.create(data),
+        mutationFn: (data: unknown) => projectsApi.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             closeCreateModal();
             success('创建成功');
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
             // 处理后端验证错误
             if (err?.response?.data?.detail) {
                 const detail = err.response.data.detail;
@@ -138,7 +138,7 @@ export default function ProjectManagement() {
                     showError(detail);
                 } else if (Array.isArray(detail)) {
                     // Pydantic 验证错误格式
-                    const errorMsg = detail.map((e: any) => e.msg).join('; ');
+                    const errorMsg = detail.map((e: unknown) => e.msg).join('; ');
                     showError(errorMsg);
                 }
             } else {
@@ -148,20 +148,20 @@ export default function ProjectManagement() {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (data: any) => projectsApi.update(data.id, data),
+        mutationFn: (data: unknown) => projectsApi.update(data.id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             closeCreateModal();
             success('编辑成功');
         },
-        onError: (err: any) => {
+        onError: (err: unknown) => {
             // 处理后端验证错误
             if (err?.response?.data?.detail) {
                 const detail = err.response.data.detail;
                 if (typeof detail === 'string') {
                     showError(detail);
                 } else if (Array.isArray(detail)) {
-                    const errorMsg = detail.map((e: any) => e.msg).join('; ');
+                    const errorMsg = detail.map((e: unknown) => e.msg).join('; ');
                     showError(errorMsg);
                 }
             } else {

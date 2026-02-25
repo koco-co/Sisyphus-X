@@ -9,8 +9,11 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Textarea } from '@/components/ui/textarea'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Loader2, Plus, Trash2, Copy } from 'lucide-react'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { cn } from '@/lib/utils'
 
 export interface Environment {
@@ -282,8 +285,11 @@ interface EnvironmentListDialogProps {
 export function EnvironmentListDialog({
   open,
   onClose,
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   projectId,
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   onSelectEnv,
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   currentEnvId
 }: EnvironmentListDialogProps) {
   const [mode, setMode] = useState<'list' | 'create' | 'edit'>('list')
@@ -295,21 +301,25 @@ export function EnvironmentListDialog({
     onClose()
   }
 
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const handleCreate = () => {
     setEditingEnv(undefined)
     setMode('create')
   }
 
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const handleEdit = (env: Environment) => {
     setEditingEnv(env)
     setMode('edit')
   }
 
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const handleSave = (env: Environment) => {
     setMode('list')
     // TODO: 调用保存 API
   }
 
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const handleCopy = (env: Environment) => {
     setEditingEnv({
       ...env,

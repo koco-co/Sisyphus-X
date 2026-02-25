@@ -329,7 +329,7 @@ test.describe('TASK-069: 全局参数功能黑盒测试', () => {
     await page.waitForTimeout(500);
 
     // Step 4: 验证错误提示（Toast 或对话框内的提示）
-    const errorToast = page.locator('text=请输入代码').or(
+    const _errorToast = page.locator('text=请输入代码').or(
       page.locator('text=无法解析代码')
     );
 

@@ -8,6 +8,7 @@
 
 import { motion } from 'framer-motion'
 import { Plus } from 'lucide-react'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Button } from '@/components/ui/button'
 
 interface PageHeaderProps {

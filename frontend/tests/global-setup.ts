@@ -8,7 +8,7 @@
 
 import { FullConfig } from '@playwright/test';
 
-async function globalSetup(config: FullConfig) {
+async function globalSetup(_config: FullConfig) {
   console.log('🔧 全局测试设置开始...');
 
   // 在浏览器启动前设置环境变量

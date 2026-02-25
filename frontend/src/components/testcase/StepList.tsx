@@ -17,14 +17,14 @@ interface StepListProps {
     id: string
     type: string
     name: string
-    params: Record<string, any>
-    validations?: Array<Record<string, any>>
+    params: Record<string, unknown>
+    validations?: Array<Record<string, unknown>>
   }>
-  onChange: (steps: any[]) => void
+  onChange: (steps: unknown[]) => void
 }
 
 export function StepList({ steps, onChange }: StepListProps) {
-  const handleStepChange = useCallback((index: number, updatedStep: any) => {
+  const handleStepChange = useCallback((index: number, updatedStep: unknown) => {
     const newSteps = [...steps]
     newSteps[index] = { ...newSteps[index], ...updatedStep }
     onChange(newSteps)

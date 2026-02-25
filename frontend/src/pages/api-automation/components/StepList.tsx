@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { StepItemData } from '../TestCaseEditor.types'
 import { StepType, STEP_TYPE_INFO } from '../TestCaseEditor.types'
@@ -27,7 +27,7 @@ export function StepList({
     onDeleteStep,
     onDuplicateStep,
     onToggleExpand,
-    onReorderSteps
+    onReorderSteps: _onReorderSteps
 }: StepListProps) {
     const [showAddMenu, setShowAddMenu] = useState(false)
     const [addMenuIndex, setAddMenuIndex] = useState<number | null>(null)
@@ -93,7 +93,7 @@ export function StepList({
                                     onDelete={() => onDeleteStep(step.id)}
                                     onDuplicate={() => onDuplicateStep(step.id)}
                                     onToggleEnabled={() => {
-                                        const currentEnabled = (step.step as any).enabled !== false
+                                        const currentEnabled = (step.step as unknown).enabled !== false
                                         onUpdateStep(step.id, {
                                             step: {
                                                 ...step.step,

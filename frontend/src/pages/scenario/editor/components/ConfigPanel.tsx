@@ -5,27 +5,17 @@ import { X, Settings2, Trash2, Save, PlayCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { scenariosApi } from '@/api/client';
 import { toast } from 'sonner';
 
 export function ConfigPanel() {
     const { t } = useTranslation();
-    const { selectedNode, setSelectedNode, setNodes, nodes, edges } = useScenarioEditor();
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+    const { selectedNode, setSelectedNode, setNodes, nodes, edges: _edges } = useScenarioEditor();
     const [isExecuting, setIsExecuting] = useState(false);
 
-    if (!selectedNode) return null;
-
-    const onDelete = () => {
-        setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
-        setSelectedNode(null);
-    };
-
-    const onSave = () => {
-        toast.success('节点配置已保存');
-        setSelectedNode(null);
-    };
-
-    // 执行单个节点
+    // 执行单个节点（必须在条件 return 之前调用 hook）
     const executeMutation = useMutation({
         mutationFn: async () => {
             setIsExecuting(true);
@@ -46,6 +36,18 @@ export function ConfigPanel() {
             setIsExecuting(false);
         }
     });
+
+    if (!selectedNode) return null;
+
+    const onDelete = () => {
+        setNodes((nds) => nds.filter((n) => n.id !== selectedNode.id));
+        setSelectedNode(null);
+    };
+
+    const onSave = () => {
+        toast.success('节点配置已保存');
+        setSelectedNode(null);
+    };
 
     // 根据节点类型渲染不同的配置表单
     const renderConfigForm = () => {
@@ -152,7 +154,7 @@ export function ConfigPanel() {
 }
 
 // HTTP 请求节点配置
-function ApiConfig({ node, setNodes }: { node: any; setNodes: any }) {
+function ApiConfig({ node, setNodes }: { node: unknown; setNodes: unknown }) {
     return (
         <div className="space-y-4">
             <h4 className="text-sm font-semibold text-cyan-400">HTTP 请求配置</h4>
@@ -163,7 +165,7 @@ function ApiConfig({ node, setNodes }: { node: any; setNodes: any }) {
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500/50"
                     value={node.data.config?.method || 'GET'}
                     onChange={(e) => {
-                        setNodes((nds: any[]) => nds.map((n) => n.id === node.id ? {
+                        setNodes((nds: unknown[]) => nds.map((n) => n.id === node.id ? {
                             ...n,
                             data: {
                                 ...n.data,
@@ -188,7 +190,7 @@ function ApiConfig({ node, setNodes }: { node: any; setNodes: any }) {
                     placeholder="https://api.example.com/v1/resource"
                     value={node.data.config?.url || ''}
                     onChange={(e) => {
-                        setNodes((nds: any[]) => nds.map((n) => n.id === node.id ? {
+                        setNodes((nds: unknown[]) => nds.map((n) => n.id === node.id ? {
                             ...n,
                             data: {
                                 ...n.data,
@@ -207,7 +209,7 @@ function ApiConfig({ node, setNodes }: { node: any; setNodes: any }) {
 }
 
 // 条件判断节点配置
-function ConditionConfig({ node, setNodes }: { node: any; setNodes: any }) {
+function ConditionConfig({ node, setNodes }: { node: unknown; setNodes: unknown }) {
     return (
         <div className="space-y-4">
             <h4 className="text-sm font-semibold text-amber-400">条件判断配置</h4>
@@ -219,7 +221,7 @@ function ConditionConfig({ node, setNodes }: { node: any; setNodes: any }) {
                     placeholder="{{status_code}} == 200"
                     value={node.data.config?.condition || ''}
                     onChange={(e) => {
-                        setNodes((nds: any[]) => nds.map((n) => n.id === node.id ? {
+                        setNodes((nds: unknown[]) => nds.map((n) => n.id === node.id ? {
                             ...n,
                             data: {
                                 ...n.data,
@@ -238,7 +240,7 @@ function ConditionConfig({ node, setNodes }: { node: any; setNodes: any }) {
 }
 
 // 等待节点配置
-function WaitConfig({ node, setNodes }: { node: any; setNodes: any }) {
+function WaitConfig({ node, setNodes }: { node: unknown; setNodes: unknown }) {
     return (
         <div className="space-y-4">
             <h4 className="text-sm font-semibold text-emerald-400">等待延迟配置</h4>
@@ -251,7 +253,7 @@ function WaitConfig({ node, setNodes }: { node: any; setNodes: any }) {
                     placeholder="5"
                     value={node.data.config?.wait_time || ''}
                     onChange={(e) => {
-                        setNodes((nds: any[]) => nds.map((n) => n.id === node.id ? {
+                        setNodes((nds: unknown[]) => nds.map((n) => n.id === node.id ? {
                             ...n,
                             data: {
                                 ...n.data,
@@ -266,7 +268,7 @@ function WaitConfig({ node, setNodes }: { node: any; setNodes: any }) {
 }
 
 // SQL 节点配置
-function SQLConfig({ node, setNodes }: { node: any; setNodes: any }) {
+function SQLConfig({ node, setNodes }: { node: unknown; setNodes: unknown }) {
     return (
         <div className="space-y-4">
             <h4 className="text-sm font-semibold text-violet-400">数据库操作配置</h4>
@@ -278,7 +280,7 @@ function SQLConfig({ node, setNodes }: { node: any; setNodes: any }) {
                     placeholder="SELECT * FROM users WHERE id = {{user_id}}"
                     value={node.data.config?.sql || ''}
                     onChange={(e) => {
-                        setNodes((nds: any[]) => nds.map((n) => n.id === node.id ? {
+                        setNodes((nds: unknown[]) => nds.map((n) => n.id === node.id ? {
                             ...n,
                             data: {
                                 ...n.data,
@@ -295,7 +297,7 @@ function SQLConfig({ node, setNodes }: { node: any; setNodes: any }) {
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-violet-500/50"
                     value={node.data.config?.datasource || ''}
                     onChange={(e) => {
-                        setNodes((nds: any[]) => nds.map((n) => n.id === node.id ? {
+                        setNodes((nds: unknown[]) => nds.map((n) => n.id === node.id ? {
                             ...n,
                             data: {
                                 ...n.data,
@@ -314,7 +316,7 @@ function SQLConfig({ node, setNodes }: { node: any; setNodes: any }) {
 }
 
 // 循环节点配置
-function LoopConfig({ node, setNodes }: { node: any; setNodes: any }) {
+function LoopConfig({ node, setNodes }: { node: unknown; setNodes: unknown }) {
     return (
         <div className="space-y-4">
             <h4 className="text-sm font-semibold text-pink-400">循环配置</h4>
@@ -327,7 +329,7 @@ function LoopConfig({ node, setNodes }: { node: any; setNodes: any }) {
                     placeholder="10"
                     value={node.data.config?.loops || ''}
                     onChange={(e) => {
-                        setNodes((nds: any[]) => nds.map((n) => n.id === node.id ? {
+                        setNodes((nds: unknown[]) => nds.map((n) => n.id === node.id ? {
                             ...n,
                             data: {
                                 ...n.data,
@@ -346,7 +348,7 @@ function LoopConfig({ node, setNodes }: { node: any; setNodes: any }) {
                     checked={!node.data.config?.loops}
                     onChange={(e) => {
                         if (e.target.checked) {
-                            setNodes((nds: any[]) => nds.map((n) => n.id === node.id ? {
+                            setNodes((nds: unknown[]) => nds.map((n) => n.id === node.id ? {
                                 ...n,
                                 data: {
                                     ...n.data,
@@ -363,7 +365,7 @@ function LoopConfig({ node, setNodes }: { node: any; setNodes: any }) {
 }
 
 // 自定义脚本节点配置
-function ScriptConfig({ node, setNodes }: { node: any; setNodes: any }) {
+function ScriptConfig({ node, setNodes }: { node: unknown; setNodes: unknown }) {
     return (
         <div className="space-y-4">
             <h4 className="text-sm font-semibold text-amber-400">自定义关键字配置</h4>
@@ -374,7 +376,7 @@ function ScriptConfig({ node, setNodes }: { node: any; setNodes: any }) {
                     className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-500/50"
                     value={node.data.config?.keyword_name || ''}
                     onChange={(e) => {
-                        setNodes((nds: any[]) => nds.map((n) => n.id === node.id ? {
+                        setNodes((nds: unknown[]) => nds.map((n) => n.id === node.id ? {
                             ...n,
                             data: {
                                 ...n.data,

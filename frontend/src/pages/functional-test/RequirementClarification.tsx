@@ -29,6 +29,7 @@ export default function RequirementClarification() {
 
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const [isLoading, setIsLoading] = useState(false)
   const [isStreaming, setIsStreaming] = useState(false)
   const [conversationState, setConversationState] = useState<ConversationState | null>(null)
@@ -121,13 +122,14 @@ export default function RequirementClarification() {
                 toast.error(parsed.error || '生成失败')
                 setIsStreaming(false)
               }
+            /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
             } catch (e) {
               console.error('Failed to parse SSE data:', data)
             }
           }
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error sending message:', error)
       toast.error(error.message || '发送消息失败')
       setMessages(prev => [...prev, {
@@ -145,7 +147,7 @@ export default function RequirementClarification() {
       await axios.post(`/ai/clarify/${requirementId}/complete`)
       toast.success(t('functionalTest.clarification.clarificationComplete'))
       navigate(`/functional-test/requirements/${requirementId}`)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(error.response?.data?.detail || '操作失败')
     }
   }

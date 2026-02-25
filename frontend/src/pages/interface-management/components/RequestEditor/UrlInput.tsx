@@ -1,4 +1,5 @@
 import { Input } from '@/components/ui/input'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Globe } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

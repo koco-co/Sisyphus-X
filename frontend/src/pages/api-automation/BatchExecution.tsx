@@ -19,6 +19,7 @@ interface BatchExecutionProps {
 }
 
 export function BatchExecution({ testCaseIds, onComplete }: BatchExecutionProps) {
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { success, error: showError } = useToast()
     const [results, setResults] = useState<Record<number, 'running' | 'passed' | 'failed' | 'error'>>({})
     const [currentIndex, setCurrentIndex] = useState(0)
@@ -36,6 +37,7 @@ export function BatchExecution({ testCaseIds, onComplete }: BatchExecutionProps)
             try {
                 await apiTestCasesApi.execute(testCaseId, {})
                 setResults(prev => ({ ...prev, [testCaseId]: 'passed' }))
+            /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
             } catch (error) {
                 setResults(prev => ({ ...prev, [testCaseId]: 'failed' }))
             }

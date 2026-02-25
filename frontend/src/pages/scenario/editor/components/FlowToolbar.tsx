@@ -42,7 +42,7 @@ export function FlowToolbar() {
                             project_id: res.data.data.project_id || ''
                         });
                     }
-                } catch (e) {
+                } catch {
                     console.error('Failed to fetch scenario details');
                 }
             };
@@ -79,8 +79,11 @@ export function FlowToolbar() {
             }
             queryClient.invalidateQueries({ queryKey: ['scenarios'] });
         },
-        onError: (error: any) => {
-            toast.error(`保存失败: ${error.response?.data?.message || error.message}`);
+        onError: (error: unknown) => {
+            const msg = error && typeof error === 'object' && 'response' in error
+                ? (error as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message
+                : (error as Error)?.message;
+            toast.error(`保存失败: ${msg || '未知错误'}`);
         },
         onSettled: () => {
             setIsSaving(false);
@@ -95,7 +98,7 @@ export function FlowToolbar() {
     const runMutation = useMutation({
         mutationFn: async () => {
             setIsRunning(true);
-            const scenarioId = id && id !== 'new' ? id : 0;
+            const _scenarioId = id && id !== 'new' ? id : '0';
             // TODO: 实现场景运行逻辑
             return { success: true };
         },
@@ -103,8 +106,11 @@ export function FlowToolbar() {
             toast.success('场景执行成功');
             console.log('Execution result:', data);
         },
-        onError: (error: any) => {
-            toast.error(`执行失败: ${error.response?.data?.message || error.message}`);
+        onError: (error: unknown) => {
+            const msg = error && typeof error === 'object' && 'response' in error
+                ? (error as { response?: { data?: { message?: string } }; message?: string }).response?.data?.message
+                : (error as Error)?.message;
+            toast.error(`执行失败: ${msg || '未知错误'}`);
         },
         onSettled: () => {
             setIsRunning(false);
@@ -219,7 +225,7 @@ export function FlowToolbar() {
                                         className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
                                     >
                                         <option value="">请选择项目</option>
-                                        {projects.map((p: any) => (
+                                        {projects.map((p: { id: string; name: string }) => (
                                             <option key={p.id} value={p.id}>{p.name}</option>
                                         ))}
                                     </select>

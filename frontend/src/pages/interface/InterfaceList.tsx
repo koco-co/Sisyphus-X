@@ -7,11 +7,13 @@ import {
     Folder,
     Plus,
     Search,
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     MoreHorizontal,
     Loader2,
     FileJson,
     Trash2,
     Edit3,
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     Download,
     GripVertical
 } from 'lucide-react'
@@ -62,6 +64,7 @@ interface TreeNode {
 
 // 可排序项组件
 function SortableItem({ id, children, className }: { id: string; children: React.ReactNode; className?: string }) {
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
 
     const style = {
@@ -337,7 +340,7 @@ export function InterfaceList() {
             {/* Header */}
             <div
                 className="p-4 border-b border-white/5 space-y-3"
-                onContextMenu={(e) => handleContextMenu(e, null as any, 'root')}
+                onContextMenu={(e) => handleContextMenu(e, null as unknown, 'root')}
             >
                 <div className="flex items-center justify-between">
                     <h2 className="text-sm font-semibold text-white">接口列表</h2>

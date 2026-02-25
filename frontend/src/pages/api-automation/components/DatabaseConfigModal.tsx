@@ -12,7 +12,7 @@ interface DatabaseConfigModalProps {
     onClose: () => void
     projectId: number
     projectName: string
-    editData?: any // Data source to edit
+    editData?: unknown // Data source to edit
 }
 
 export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, editData }: DatabaseConfigModalProps) {
@@ -68,7 +68,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
 
     // Mutations
     const createMutation = useMutation({
-        mutationFn: (data: any) => projectsApi.createDataSource(projectId, data),
+        mutationFn: (data: unknown) => projectsApi.createDataSource(projectId, data),
         onSuccess: async () => {
             // 先让后端有时间保存数据
             await new Promise(resolve => setTimeout(resolve, 200))
@@ -82,7 +82,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
     })
 
     const updateMutation = useMutation({
-        mutationFn: (data: any) => projectsApi.updateDataSource(projectId, editData.id, data),
+        mutationFn: (data: unknown) => projectsApi.updateDataSource(projectId, editData.id, data),
         onSuccess: async () => {
             // 先让后端有时间保存数据
             await new Promise(resolve => setTimeout(resolve, 200))
@@ -130,6 +130,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                 error(res.data.message)
                 setHasTestedSuccess(false)
             }
+        /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
         } catch (e) {
             error('测试请求失败')
             setHasTestedSuccess(false)
@@ -156,7 +157,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
         }
 
         // 准备提交的数据
-        let submitData: any = { ...form }
+        const submitData: unknown = { ...form }
 
         // 编辑模式：如果密码为空，移除密码字段（后端会保留原密码）
         if (editData && !form.password) {

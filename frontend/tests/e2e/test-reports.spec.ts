@@ -16,7 +16,7 @@ import { test, expect } from '@playwright/test'
 /**
  * 登录辅助函数（简化版本，不依赖外部文件）
  */
-async function login(page: any) {
+async function login(page: { goto: (url: string) => Promise<unknown>; evaluate: (fn: () => void) => Promise<unknown> }) {
   // 开发模式：跳过登录，直接设置Token
   await page.goto('/')
   await page.evaluate(() => {
@@ -64,7 +64,7 @@ test.describe('TASK-068: 测试报告功能 - 基础测试', () => {
 
   test('应显示表格列标题', async ({ page }) => {
     // 验证表头存在
-    const tableHeaders = page.locator('th')
+    const _tableHeaders = page.locator('th')
     const expectedHeaders = ['报告名称', '状态', '执行时长', '通过率', '开始时间', '操作']
 
     for (const header of expectedHeaders) {
@@ -93,7 +93,7 @@ test.describe('TASK-068: 测试报告功能 - 基础测试', () => {
     await page.waitForTimeout(100)
 
     const loader = page.locator('.animate-spin')
-    const isVisible = await loader.isVisible().catch(() => false)
+    const _isVisible = await loader.isVisible().catch(() => false)
 
     // 加载状态可能一闪而过，所以不强制断言
     // 只是验证选择器正确

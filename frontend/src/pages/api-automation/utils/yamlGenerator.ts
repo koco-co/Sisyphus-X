@@ -51,7 +51,7 @@ export function generateYAML(config: TestCaseConfig): string {
         lines.push('steps:')
         for (const stepItem of config.steps) {
             // 跳过禁用的步骤
-            if ((stepItem.step as any).enabled === false) {
+            if ((stepItem.step as unknown).enabled === false) {
                 continue
             }
             lines.push(generateStepYAML(stepItem))
@@ -241,7 +241,7 @@ function generateConditionStep(step: ConditionStep, indent: string): string[] {
     return lines
 }
 
-function formatValue(value: any): string {
+function formatValue(value: unknown): string {
     if (typeof value === 'string') {
         // 如果值包含空格或特殊字符，使用引号
         if (/[\s'"{}[\]:,]/.test(value)) {

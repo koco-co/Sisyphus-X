@@ -26,7 +26,7 @@ interface KeywordListProps {
     is_active: boolean
     created_at: string
   }>
-  onEdit?: (keyword: any) => void
+  onEdit?: (keyword: unknown) => void
   onDelete?: (id: string) => void
   onToggle?: (id: string) => void
   onCreateNew?: () => void

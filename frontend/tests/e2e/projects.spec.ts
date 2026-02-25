@@ -362,7 +362,7 @@ test.describe('TASK-058: 项目管理功能黑盒测试', () => {
     // 注意：可能只在提交时显示，所以这里用 try-catch
     try {
       await expect(nameError).toBeVisible({ timeout: 1000 });
-    } catch (e) {
+    } catch {
       // 如果实时验证未触发，通过提交时验证
     }
 

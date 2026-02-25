@@ -19,7 +19,7 @@ export interface NodeData {
         keyword_name?: string;
     };
     extract?: Record<string, string>;
-    validate?: any[];
+    validate?: unknown[];
     executionStatus?: ExecutionStatus;
     executionLog?: string;
 }

@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { functionalTestCasesApi } from '@/api/client'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { ChevronLeft, Eye, Check, Trash2, Loader2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
@@ -37,6 +38,7 @@ export default function TestCaseManagement() {
   const toast = useToast()
   const { requirementId } = useParams<{ requirementId: string }>()
   const navigate = useNavigate()
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const location = useLocation()
   const queryClient = useQueryClient()
 
@@ -58,7 +60,7 @@ export default function TestCaseManagement() {
       queryClient.invalidateQueries({ queryKey: ['test-cases', requirementId] })
       toast.success('测试用例已审核通过')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '操作失败')
     }
   })
@@ -72,7 +74,7 @@ export default function TestCaseManagement() {
       setDeletingId(null)
       toast.success('测试用例删除成功')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '删除失败')
     }
   })

@@ -23,7 +23,7 @@ export function useVariableReplacement(options: VariableReplacementOptions = {})
   /**
    * 替换对象中的所有变量（递归）
    */
-  const replaceObject = (obj: any): any => {
+  const replaceObject = (obj: unknown): unknown => {
     if (typeof obj === 'string') {
       return replace(obj)
     }
@@ -33,9 +33,9 @@ export function useVariableReplacement(options: VariableReplacementOptions = {})
     }
 
     if (obj && typeof obj === 'object') {
-      const result: any = {}
+      const result: unknown = {}
       for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
           result[key] = replaceObject(obj[key])
         }
       }

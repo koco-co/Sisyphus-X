@@ -7,7 +7,7 @@ export interface ParsedCurlRequest {
   method: string
   url: string
   headers: Record<string, string>
-  body?: any
+  body?: unknown
   body_type: 'json' | 'form-data' | 'x-www-form-urlencoded' | 'raw' | 'none'
   params: Record<string, string>
   auth?: {

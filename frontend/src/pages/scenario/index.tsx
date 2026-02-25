@@ -28,7 +28,7 @@ interface Scenario {
     tags?: string[];
     created_at?: string;
     updated_at?: string;
-    steps?: any[];
+    steps?: unknown[];
 }
 
 interface Project {

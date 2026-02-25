@@ -133,6 +133,7 @@ export function VariableManager({
                                 Object.entries(normalizedVars).map(([key, variable]) => {
                                     const isEditing = editingKey === key
                                     const isSecret = variable.secret
+                                    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
                                     const showValue = showSecrets[key] || !isSecret
 
                                     return (

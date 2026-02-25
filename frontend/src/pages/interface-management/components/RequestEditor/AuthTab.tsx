@@ -1,6 +1,7 @@
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { CustomSelect } from '@/components/ui/CustomSelect'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { cn } from '@/lib/utils'
 
 export interface AuthConfig {

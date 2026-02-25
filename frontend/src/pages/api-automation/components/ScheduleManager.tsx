@@ -2,14 +2,9 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
     Calendar,
-    Clock,
     Plus,
     Edit2,
-    Trash2,
-    Play,
-    Pause,
-    Check,
-    X
+    Trash2
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

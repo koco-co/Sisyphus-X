@@ -25,9 +25,9 @@ interface KeywordEditorProps {
     category?: string
     description?: string
     function_code?: string
-    params_schema?: Record<string, any>
+    params_schema?: Record<string, unknown>
   }
-  onSave?: (data: any) => Promise<void>
+  onSave?: (data: unknown) => Promise<void>
   readOnly?: boolean
 }
 
@@ -59,7 +59,7 @@ export function KeywordEditor({
 
   const [testResult, setTestResult] = useState<{
     success: boolean
-    result?: any
+    result?: unknown
     error?: string
   } | null>(null)
 
@@ -77,7 +77,7 @@ export function KeywordEditor({
         // 尝试编译代码
         new Function(formData.function_code)
         setValidation({ valid: true })
-      } catch (err: any) {
+      } catch (err: unknown) {
         setValidation({ valid: false, error: err.message })
       }
     } catch (error) {
@@ -99,7 +99,7 @@ export function KeywordEditor({
         const func = new Function(formData.function_code)
         const result = func()
         setTestResult({ success: true, result })
-      } catch (err: any) {
+      } catch (err: unknown) {
         setTestResult({ success: false, error: err.message })
       }
     } catch (error) {
@@ -242,7 +242,7 @@ export function KeywordEditor({
         {readOnly ? (
           // 只读模式：显示参数列表
           <div className="space-y-3">
-            {Object.entries(formData.params_schema).map(([key, param]: [string, any]) => (
+            {Object.entries(formData.params_schema).map(([key, param]: [string, unknown]) => (
               <div key={key} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="font-semibold text-slate-900">{param.name || '未命名参数'}</span>
@@ -266,7 +266,7 @@ export function KeywordEditor({
         ) : (
           // 编辑模式：参数编辑表单
           <div className="space-y-4">
-            {Object.entries(formData.params_schema).map(([key, param]: [string, any]) => (
+            {Object.entries(formData.params_schema).map(([key, param]: [string, unknown]) => (
               <div key={key} className="p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
                 {/* 第一行：参数名 + 类型 + 必填 + 删除 */}
                 <div className="flex items-center gap-3 mb-3">

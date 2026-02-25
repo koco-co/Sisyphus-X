@@ -62,6 +62,7 @@ export function useEnvironment(projectId: number) {
 
   // 克隆环境
   const copyMutation = useMutation({
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     mutationFn: ({ envId, name }: { envId: number; name: string }) =>
       projectsApi.copyEnvironment(projectId, envId),
     onSuccess: () => {

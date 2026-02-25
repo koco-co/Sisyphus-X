@@ -1,4 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 /**
  * TASK-057: OAuth 单点登录功能黑盒测试
@@ -108,7 +108,7 @@ test.describe('TASK-057: OAuth 单点登录功能', () => {
       }
     });
 
-    test('GitHub OAuth 新用户应该自动注册', async ({ page, context }) => {
+    test('GitHub OAuth 新用户应该自动注册', async ({ page, context: _context }) => {
       // Mock GitHub OAuth 回调
       // 注意: 真实流程需要用户在 GitHub 页面授权
       // 这里模拟后端回调到前端并携带 token
@@ -135,7 +135,7 @@ test.describe('TASK-057: OAuth 单点登录功能', () => {
       // 前端只需要验证 token 被正确存储和 URL 被清理
     });
 
-    test('GitHub OAuth 老用户应该直接登录', async ({ page, context }) => {
+    test('GitHub OAuth 老用户应该直接登录', async ({ page, context: _context }) => {
       // 模拟老用户的 OAuth 回调
       const existingUserToken = 'existing_github_user_token';
 
@@ -238,7 +238,7 @@ test.describe('TASK-057: OAuth 单点登录功能', () => {
       }
     });
 
-    test('Google OAuth 新用户应该自动注册', async ({ page, context }) => {
+    test('Google OAuth 新用户应该自动注册', async ({ page, context: _context }) => {
       // Mock Google OAuth 回调
       const mockToken = 'mock_google_token_' + Date.now();
       await page.goto(`/?token=${mockToken}`);
@@ -258,7 +258,7 @@ test.describe('TASK-057: OAuth 单点登录功能', () => {
       expect(currentUrl).not.toContain('token=');
     });
 
-    test('Google OAuth 老用户应该直接登录', async ({ page, context }) => {
+    test('Google OAuth 老用户应该直接登录', async ({ page, context: _context }) => {
       // 模拟老用户的 OAuth 回调
       const existingUserToken = 'existing_google_user_token';
 
@@ -416,7 +416,7 @@ test.describe('TASK-057: OAuth 单点登录功能', () => {
       await page.waitForTimeout(2000);
 
       // 验证无效 token 被清除
-      const storedToken = await page.evaluate(() => {
+      const _storedToken = await page.evaluate(() => {
         return localStorage.getItem('sisyphus-token');
       });
 

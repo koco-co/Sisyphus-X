@@ -71,8 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 .catch(() => localStorage.removeItem(config.storageKeys.token))
                 .finally(() => setIsLoading(false))
         } else {
-            setIsLoading(false)
+            queueMicrotask(() => setIsLoading(false))
         }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
     }, [])
 
     const login = async (email: string, password: string) => {
@@ -104,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
                 return { success: false, error: 'Invalid OAuth response' }
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             const errorMessage = error.response?.data?.detail || 'GitHub 登录功能未配置'
             console.error('GitHub login failed:', error)
             return { success: false, error: errorMessage }
@@ -120,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
                 return { success: false, error: 'Invalid OAuth response' }
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             const errorMessage = error.response?.data?.detail || 'Google 登录功能未配置'
             console.error('Google login failed:', error)
             return { success: false, error: errorMessage }
@@ -150,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     )
 }
 
+/* eslint-disable-next-line react-refresh/only-export-components */
 export function useAuth() {
     const context = useContext(AuthContext)
     if (!context) {

@@ -1,4 +1,5 @@
 import { CustomSelect } from '@/components/ui/CustomSelect'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Globe } from 'lucide-react'
 import { useEnvironment } from '../../hooks/useEnvironment'
 

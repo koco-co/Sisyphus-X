@@ -22,7 +22,7 @@ test.describe('关键字配置功能', () => {
     const builtInKeywords = page.locator('[data-testid="keyword-item"][data-is-builtin="true"]')
 
     // 自定义关键字
-    const customKeywords = page.locator('[data-testid="keyword-item"][data-is-builtin="false"]')
+    const _customKeywords = page.locator('[data-testid="keyword-item"][data-is-builtin="false"]')
 
     // 验证都有内置关键字标签
     const count = await builtInKeywords.count()
@@ -220,11 +220,11 @@ test.describe('关键字配置功能', () => {
     }
   })
 
-  test('应支持关键字导入', async ({ page }) => {
+  test('应支持关键字导入', async ({ page: _page }) => {
     test.skip(true, '需要实现导入功能')
   })
 
-  test('应支持关键字导出', async ({ page }) => {
+  test('应支持关键字导出', async ({ page: _page }) => {
     test.skip(true, '需要实现导出功能')
   })
 
@@ -300,7 +300,7 @@ test.describe('关键字代码验证', () => {
     await expect(page.locator('[data-testid="syntax-error-message"]')).toBeVisible()
   })
 
-  test('应验证函数签名', async ({ page }) => {
+  test('应验证函数签名', async ({ page: _page }) => {
     test.skip(true, '需要实现函数签名验证')
   })
 })

@@ -19,6 +19,7 @@ interface TestPoint {
   created_at: string
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 interface Requirement {
   id: number
   requirement_id: string
@@ -56,13 +57,13 @@ export default function TestPointManagement() {
 
   // 生成测试点
   const generateMutation = useMutation({
-    mutationFn: (data: any) => testPointsApi.generate(data),
+    mutationFn: (data: unknown) => testPointsApi.generate(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['test-points', requirementId] })
       setShowGenerateDialog(false)
       toast.success('测试点生成成功')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '生成失败')
     }
   })
@@ -76,7 +77,7 @@ export default function TestPointManagement() {
       setDeletingId(null)
       toast.success('测试点删除成功')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '删除失败')
     }
   })
@@ -315,7 +316,7 @@ function GenerateDialog({
   onClose
 }: {
   requirementId: number
-  onGenerate: (data: any) => void
+  onGenerate: (data: unknown) => void
   onClose: () => void
 }) {
   const { t } = useTranslation()

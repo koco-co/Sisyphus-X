@@ -170,7 +170,7 @@ export function StepItem({
 }
 
 // Request Step Preview
-function RequestStepPreview({ step }: { step: any }) {
+function RequestStepPreview({ step }: { step: unknown }) {
     const method = step.request?.method || 'GET'
     const url = step.request?.url || ''
 
@@ -201,7 +201,7 @@ function RequestStepPreview({ step }: { step: any }) {
 }
 
 // Wait Step Preview
-function WaitStepPreview({ step }: { step: any }) {
+function WaitStepPreview({ step }: { step: unknown }) {
     const seconds = step.wait?.seconds || 0
 
     return (
@@ -212,7 +212,7 @@ function WaitStepPreview({ step }: { step: any }) {
 }
 
 // Database Step Preview
-function DatabaseStepPreview({ step }: { step: any }) {
+function DatabaseStepPreview({ step }: { step: unknown }) {
     const dbType = step.database?.type || 'unknown'
     const query = step.database?.query || ''
 

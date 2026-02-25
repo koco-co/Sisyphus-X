@@ -37,7 +37,7 @@ test.describe('TASK-063: 场景编排功能黑盒测试', () => {
 
   test('TEST-02: 应该能够导航到场景编辑器', async ({ page }) => {
     // Step 1: 查找创建按钮（尝试多种定位方式）
-    let createButton = page.locator('button').filter({ hasText: /创建|新建|New|Create/i }).first();
+    const createButton = page.locator('button').filter({ hasText: /创建|新建|New|Create/i }).first();
 
     // 如果找不到按钮，尝试通过导航 URL 直接跳转
     const buttonVisible = await createButton.isVisible({ timeout: 3000 }).catch(() => false);
@@ -376,7 +376,7 @@ test.describe('TASK-063: 场景编排功能黑盒测试', () => {
     await page.goto('/scenarios');
 
     // Step 2: 快速检查是否有加载指示器
-    const spinner = page.locator('[class*="spin"], [class*="load"], [role="status"]').first();
+    const _spinner = page.locator('[class*="spin"], [class*="load"], [role="status"]').first();
 
     // 加载指示器可能在页面加载后消失，所以我们只检查它是否曾经出现
     const pageLoaded = await page.waitForLoadState('domcontentloaded').then(() => true).catch(() => false);

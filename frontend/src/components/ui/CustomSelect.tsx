@@ -12,7 +12,7 @@ type Size = 'sm' | 'md' | 'lg';
 
 interface CustomSelectProps {
     value: string | number;
-    onChange: (value: any) => void;
+    onChange: (value: unknown) => void;
     options: Option[];
     placeholder?: string;
     className?: string;

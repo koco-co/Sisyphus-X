@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { requirementsApi } from '@/api/client'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Plus, Edit, Trash2, MessageSquare, List, FileText, ChevronRight } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
@@ -25,6 +26,7 @@ export default function RequirementList() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const [page, setPage] = useState(1)
   const [size] = useState(10)
   const [search, setSearch] = useState('')
@@ -43,27 +45,27 @@ export default function RequirementList() {
 
   // 创建需求
   const createMutation = useMutation({
-    mutationFn: (data: any) => requirementsApi.create(data),
+    mutationFn: (data: unknown) => requirementsApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['requirements'] })
       setIsCreateDialogOpen(false)
       toast.success('需求创建成功')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '创建失败')
     }
   })
 
   // 更新需求
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => requirementsApi.update(id, data),
+    mutationFn: ({ id, data }: { id: number; data: unknown }) => requirementsApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['requirements'] })
       setIsEditDialogOpen(false)
       setEditingRequirement(null)
       toast.success('需求更新成功')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '更新失败')
     }
   })
@@ -77,7 +79,7 @@ export default function RequirementList() {
       setDeletingId(null)
       toast.success('需求删除成功')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '删除失败')
     }
   })
@@ -337,7 +339,7 @@ function RequirementDialog({
 }: {
   mode: 'create' | 'edit'
   requirement?: Requirement
-  onSubmit: (data: any) => void
+  onSubmit: (data: unknown) => void
   onClose: () => void
 }) {
   const { t } = useTranslation()

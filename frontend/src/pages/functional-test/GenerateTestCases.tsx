@@ -7,6 +7,7 @@ import { Loader2, Wand2 } from 'lucide-react'
 import { useToast } from '@/components/ui/Toast'
 
 export default function GenerateTestCases() {
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const { t } = useTranslation()
   const toast = useToast()
   const navigate = useNavigate()
@@ -20,12 +21,12 @@ export default function GenerateTestCases() {
 
   // 生成测试用例
   const generateMutation = useMutation({
-    mutationFn: (data: any) => functionalTestCasesApi.generate(data),
+    mutationFn: (data: unknown) => functionalTestCasesApi.generate(data),
     onSuccess: (result) => {
       toast.success(`成功生成 ${result.data.total_count} 个测试用例`)
       navigate(`/functional-test/test-cases/${requirementId}`)
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '生成失败')
     }
   })

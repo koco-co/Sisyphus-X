@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Globe, Plus, Edit2, Trash2, Check, X, ChevronDown } from 'lucide-react'
@@ -27,7 +27,7 @@ export function EnvironmentSelector({
     const [isOpen, setIsOpen] = useState(false)
 
     // Fetch environments
-    const { data: environments, isLoading } = useQuery({
+    const { data: environments, isLoading: _isLoading } = useQuery({
         queryKey: ['project-environments', projectId],
         queryFn: () => projectsApi.listEnvironments(projectId).then(res => res.data),
         enabled: !!projectId
@@ -157,7 +157,7 @@ interface EnvironmentManagerProps {
 }
 
 export function EnvironmentManager({
-    projectId,
+    projectId: _projectId,
     environments,
     onAdd,
     onEdit,

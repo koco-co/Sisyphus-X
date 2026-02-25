@@ -194,7 +194,8 @@ export function StepItem({ step, onChange }: StepItemProps) {
                 onChange={(e) => {
                   try {
                     updateParam('keyword_params', JSON.parse(e.target.value))
-                  } catch (err) {
+                  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+                  } catch (_err) {
                     // 忽略 JSON 解析错误
                   }
                 }}

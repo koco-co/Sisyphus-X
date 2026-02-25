@@ -12,7 +12,9 @@ describe('cn utility function', () => {
   })
 
   it('should handle conditional classes', () => {
-    const result = cn('base-class', false && 'conditional-class', true && 'active-class')
+    const cond = false
+    const active = true
+    const result = cn('base-class', cond && 'conditional-class', active && 'active-class')
     expect(result).toBe('base-class active-class')
   })
 

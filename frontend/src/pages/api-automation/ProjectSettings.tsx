@@ -122,6 +122,7 @@ const keyValueArrayToObject = (pairs: KeyValuePair[]): Record<string, string> =>
 }
 
 export default function ProjectSettings() {
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { t } = useTranslation()
     const { id } = useParams<{ id: string }>()
     const projectId = parseInt(id || '0')
@@ -291,6 +292,7 @@ export default function ProjectSettings() {
                 password: dsForm.password
             })
             setTestResult(res.data)
+        /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
         } catch (e) {
             setTestResult({ success: false, message: '请求失败' })
         } finally {

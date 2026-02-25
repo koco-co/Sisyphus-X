@@ -13,29 +13,22 @@ import { test, expect } from '@playwright/test'
 import { login, generateRandomString } from '../../utils/helpers'
 
 /**
- * 辅助函数：处理 React 受控组件的输入
- * 原生 input 事件触发，然后手动触发 change 事件
+ * 辅助函数：处理 React 受控组件的输入（当前未使用，保留供后续用例使用）
  */
-async function fillReactInput(page, selector, value) {
+async function _fillReactInput(
+  page: { locator: (selector: string) => { first: () => { click: () => Promise<void>; fill: (v: string) => Promise<void>; evaluate: (fn: (el: HTMLInputElement, val: string) => void, val: string) => Promise<void> }; waitForTimeout: (ms: number) => Promise<void> } },
+  selector: string,
+  value: string
+) {
   const input = page.locator(selector).first()
   await input.click()
   await input.fill(value)
-
-  // 手动触发 React onChange 事件
   await input.evaluate((el, val) => {
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
-      window.HTMLInputElement.prototype,
-      'value'
-    ).set
-    nativeInputValueSetter.call(el, val)
-
-    const event = new Event('input', { bubbles: true })
-    el.dispatchEvent(event)
-
-    const changeEvent = new Event('change', { bubbles: true })
-    el.dispatchEvent(changeEvent)
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
+    setter?.call(el, val)
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+    el.dispatchEvent(new Event('change', { bubbles: true }))
   }, value)
-
   await page.waitForTimeout(300)
 }
 

@@ -32,7 +32,7 @@ interface InterfaceFolder {
 }
 
 export default function ApiManagement() {
-    const { t } = useTranslation();
+    const { t: _t } = useTranslation();
     const [expandedGroups, setExpandedGroups] = useState<number[]>([]);
     const [selectedFolderId, setSelectedFolderId] = useState<number | undefined>(undefined);
     const [page, setPage] = useState(1);

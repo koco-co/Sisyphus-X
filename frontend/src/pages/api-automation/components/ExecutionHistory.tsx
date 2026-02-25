@@ -6,10 +6,7 @@ import {
     CheckCircle,
     XCircle,
     Loader2,
-    Calendar,
-    Eye,
-    Trash2,
-    Filter
+    Eye
 } from 'lucide-react'
 import { apiTestCasesApi } from '@/api/client'
 import { cn } from '@/lib/utils'
@@ -63,7 +60,7 @@ export function ExecutionHistory({ testCaseId }: ExecutionHistoryProps) {
                 </div>
             ) : (
                 <div className="space-y-2">
-                    {executionList.map((execution: any, index: number) => (
+                    {executionList.map((execution: { id: number; [key: string]: unknown }, index: number) => (
                         <ExecutionHistoryItem
                             key={execution.id}
                             execution={execution}
@@ -82,7 +79,7 @@ function ExecutionHistoryItem({
     index,
     onClick
 }: {
-    execution: any
+    execution: { id: number; status?: string; [key: string]: unknown }
     index: number
     onClick: () => void
 }) {

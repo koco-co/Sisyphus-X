@@ -67,17 +67,17 @@ export default function ScenarioEditor() {
                 position,
                 data: {
                     label: `${type.toUpperCase()} Node`,
-                    type: type as any,
+                    type: type as unknown,
                     executionStatus: 'idle'
                 },
             };
 
-            setNodes((nds) => nds.concat(newNode as any));
+            setNodes((nds) => nds.concat(newNode as unknown));
         },
         [setNodes]
     );
 
-    const onNodeClick = (_: React.MouseEvent, node: any) => {
+    const onNodeClick = (_: React.MouseEvent, node: unknown) => {
         setSelectedNode(node);
     };
 

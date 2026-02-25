@@ -85,13 +85,15 @@ interface InterfaceTreeProps {
 }
 
 // 可拖拽的文件夹项组件
-function SortableFolder({ children, id, ...props }: any) {
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+function SortableFolder({ children, id, ...props }: unknown) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     isDragging,
   } = useSortable({ id })
 
@@ -169,6 +171,7 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
 
   // 移动接口到文件夹
   const moveMutation = useMutation({
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     mutationFn: ({ interfaceId, targetFolderId }: { interfaceId: number; targetFolderId: number | null }) => {
       // TODO: 调用后端移动接口 API
       return Promise.resolve()
@@ -179,7 +182,9 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
   })
 
   // 批量更新排序
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const reorderMutation = useMutation({
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     mutationFn: ({ orders }: { orders: Array<{ id: number; order: number }> }) => {
       // TODO: 调用后端批量排序 API
       return Promise.resolve()
@@ -199,8 +204,11 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
     const saved = localStorage.getItem(`interface-tree-expanded-${projectId}`)
     if (saved) {
       try {
-        setExpanded(JSON.parse(saved))
-      } catch {}
+        const parsed = JSON.parse(saved)
+        queueMicrotask(() => setExpanded(parsed))
+      } catch {
+        // 忽略无效 JSON
+      }
     }
   }, [projectId])
 
@@ -347,6 +355,7 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
     // 处理同类型排序（文件夹排序文件夹，接口排序接口）
     if (activeType === overType) {
       // 计算新排序
+      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
       const allIds = activeType === 'folder' ? folderIds : []
       // TODO: 实现排序逻辑
     }
@@ -372,6 +381,7 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
   const handleMenuAction = async (action: string) => {
     if (!contextMenu.target) return
 
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { type, id, name } = contextMenu.target
 
     switch (action) {

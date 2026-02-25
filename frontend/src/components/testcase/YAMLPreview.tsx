@@ -12,8 +12,8 @@ interface YAMLPreviewProps {
   formData: {
     name: string
     description?: string
-    steps: Array<any>
-    variables?: Record<string, any>
+    steps: Array<unknown>
+    variables?: Record<string, unknown>
   }
 }
 

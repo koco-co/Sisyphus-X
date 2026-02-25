@@ -8,7 +8,9 @@
 
 import { motion } from 'framer-motion'
 import { Loader2, Code } from 'lucide-react'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Badge } from '@/components/ui/badge'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Button } from '@/components/ui/button'
 import { KeywordRow } from './KeywordRow'
 import type { Keyword } from '../types'

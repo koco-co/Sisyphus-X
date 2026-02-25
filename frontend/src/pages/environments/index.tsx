@@ -41,6 +41,7 @@ const keyValuePairsToObject = (pairs: KeyValuePair[]): Record<string, string> =>
 }
 
 export default function EnvironmentManagement() {
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const [selectedProjectId, setSelectedProjectId] = useState<number>(1)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)

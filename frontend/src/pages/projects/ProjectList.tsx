@@ -131,7 +131,9 @@ export default function ProjectList() {
         if (typeof detail === 'string') {
           showError(detail)
         } else if (Array.isArray(detail)) {
-          const errorMsg = detail.map((e: any) => e.msg).join('; ')
+          const errorMsg =
+            (detail as Array<{ msg?: string }>).map((e) => e.msg ?? '').filter(Boolean).join('; ') ||
+            '创建失败'
           showError(errorMsg)
         }
       } else {

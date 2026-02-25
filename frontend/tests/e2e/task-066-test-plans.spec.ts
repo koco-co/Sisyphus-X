@@ -483,7 +483,7 @@ test.describe('TASK-066: 测试计划功能黑盒测试', () => {
     await page.goto('/plans');
 
     // Step 2: 检查是否有加载指示器
-    const spinner = page.locator('[class*="spin"], [class*="load"], [role="status"]').first();
+    const _spinner = page.locator('[class*="spin"], [class*="load"], [role="status"]').first();
 
     // 加载指示器可能在页面加载后消失，所以我们只检查页面最终加载完成
     const pageLoaded = await page.waitForLoadState('domcontentloaded').then(() => true).catch(() => false);

@@ -35,7 +35,7 @@ export function KeyValueEditor({
     onChange(pairs.filter((_, i) => i !== index))
   }
 
-  const updatePair = (index: number, field: keyof KeyValuePair, value: any) => {
+  const updatePair = (index: number, field: keyof KeyValuePair, value: unknown) => {
     const newPairs = [...pairs]
     newPairs[index] = { ...newPairs[index], [field]: value }
     onChange(newPairs)

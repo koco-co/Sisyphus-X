@@ -84,7 +84,7 @@ export function TestCaseEditor({
     }
   }
 
-  const handleStepsChange = useCallback((steps: any[]) => {
+  const handleStepsChange = useCallback((steps: unknown[]) => {
     setFormData(prev => ({ ...prev, steps }))
   }, [])
 

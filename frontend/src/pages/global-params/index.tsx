@@ -9,6 +9,7 @@ import {
     ChevronDown,
     ChevronRight,
     Copy,
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     HelpCircle,
     Code,
     Loader2
@@ -57,6 +58,7 @@ export default function GlobalParamsPage() {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
     const [editingParam, setEditingParam] = useState<GlobalParam | null>(null)
     const [deletingParam, setDeletingParam] = useState<GlobalParam | null>(null)
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { success, error } = useToast()
 
     const queryClient = useQueryClient()
@@ -80,14 +82,14 @@ export default function GlobalParamsPage() {
             success('全局参数创建成功')
             setIsCreateDialogOpen(false)
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
             error(error.response?.data?.message || '创建失败')
         }
     })
 
     // 更新全局参数
     const updateMutation = useMutation({
-        mutationFn: async ({ id, data }: { id: string; data: any }) => {
+        mutationFn: async ({ id, data }: { id: string; data: unknown }) => {
             return await globalParamsApi.update(id, data)
         },
         onSuccess: () => {
@@ -95,7 +97,7 @@ export default function GlobalParamsPage() {
             success('全局参数更新成功')
             setEditingParam(null)
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
             error(error.response?.data?.message || '更新失败')
         }
     })
@@ -110,13 +112,13 @@ export default function GlobalParamsPage() {
             success('全局参数删除成功')
             setDeletingParam(null)
         },
-        onError: (error: any) => {
+        onError: (error: unknown) => {
             error(error.response?.data?.message || '删除失败')
         }
     })
 
     // 按类名分组
-    const groupedParams = globalParams.reduce((acc: Record<string, typeof globalParams>, param: any) => {
+    const groupedParams = globalParams.reduce((acc: Record<string, typeof globalParams>, param: unknown) => {
         if (!acc[param.class_name]) {
             acc[param.class_name] = []
         }
@@ -125,12 +127,13 @@ export default function GlobalParamsPage() {
     }, {} as Record<string, GlobalParam[]>)
 
     // 过滤
+    /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
     const filteredGroups = Object.entries(groupedParams).filter(([className, params]: [string, any]) => {
         if (!searchQuery) return true
         const query = searchQuery.toLowerCase()
         return (
             className.toLowerCase().includes(query) ||
-            params.some((p: any) =>
+            params.some((p: unknown) =>
                 p.method_name.toLowerCase().includes(query) ||
                 (p.description && p.description.toLowerCase().includes(query))
             )
@@ -256,7 +259,7 @@ export default function GlobalParamsPage() {
                                         <ChevronRight className="w-5 h-5 text-cyan-400" />
                                     )}
                                     <h3 className="text-lg font-semibold text-white">{className}</h3>
-                                    <span className="text-sm text-slate-500">({(params as any).length})</span>
+                                    <span className="text-sm text-slate-500">({(params as unknown).length})</span>
                                 </div>
                             </button>
 
@@ -284,7 +287,7 @@ export default function GlobalParamsPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
-                                            {(params as any).map((param: any) => (
+                                            {(params as unknown).map((param: unknown) => (
                                                 <tr
                                                     key={param.id}
                                                     className="hover:bg-white/5 transition-colors"

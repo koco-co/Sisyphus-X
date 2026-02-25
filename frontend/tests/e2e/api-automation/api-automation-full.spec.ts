@@ -86,7 +86,7 @@ test.describe('接口自动化模块 - 完整功能测试', () => {
       // 使用辅助函数点击按钮
       try {
         await clickProjectSubmitButton(page)
-      } catch (e) {
+      } catch {
         // 可能点击失败，继续检查错误提示
       }
 
@@ -374,7 +374,7 @@ test.describe('接口自动化模块 - 用户体验测试', () => {
     // 不填写任何信息直接提交
     try {
       await clickPrimaryButton(page)
-    } catch (e) {
+    } catch {
       // 可能点击失败，继续检查错误提示
     }
 

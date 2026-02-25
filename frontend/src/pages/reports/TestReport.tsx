@@ -15,6 +15,7 @@ import {
     MinusCircle,
     AlertCircle,
     Pause,
+    type LucideIcon,
 } from 'lucide-react';
 import { Pagination } from '@/components/common/Pagination';
 import { reportsApi } from '@/api/client';
@@ -40,7 +41,7 @@ interface ReportItem {
     created_at?: string;
 }
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: LucideIcon }> = {
     completed: { label: '已完成', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', icon: CheckCircle2 },
     running: { label: '运行中', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: Loader2 },
     failed: { label: '失败', color: 'bg-red-500/10 text-red-400 border-red-500/20', icon: XCircle },
@@ -51,6 +52,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }>
 };
 
 export default function TestReport() {
+    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const { success, error: showError } = useToast();

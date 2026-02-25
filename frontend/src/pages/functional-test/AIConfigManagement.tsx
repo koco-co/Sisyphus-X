@@ -1,3 +1,4 @@
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -35,27 +36,27 @@ export default function AIConfigManagement() {
 
   // 创建配置
   const createMutation = useMutation({
-    mutationFn: (data: any) => aiConfigApi.create(data),
+    mutationFn: (data: unknown) => aiConfigApi.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-configs'] })
       setIsDialogOpen(false)
       toast.success('AI 配置创建成功')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '创建失败')
     }
   })
 
   // 更新配置
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => aiConfigApi.update(id, data),
+    mutationFn: ({ id, data }: { id: number; data: unknown }) => aiConfigApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-configs'] })
       setIsDialogOpen(false)
       setEditingConfig(null)
       toast.success('AI 配置更新成功')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '更新失败')
     }
   })
@@ -68,7 +69,7 @@ export default function AIConfigManagement() {
       setShowDeleteDialog(false)
       toast.success('AI 配置删除成功')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '删除失败')
     }
   })
@@ -80,7 +81,7 @@ export default function AIConfigManagement() {
       queryClient.invalidateQueries({ queryKey: ['ai-configs'] })
       toast.success('已设为默认配置')
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(error.response?.data?.detail || '操作失败')
     }
   })
@@ -99,7 +100,7 @@ export default function AIConfigManagement() {
     setDefaultMutation.mutate(id)
   }
 
-  const handleSubmit = (data: any) => {
+  const handleSubmit = (data: unknown) => {
     if (editingConfig) {
       updateMutation.mutate({ id: editingConfig.id, data })
     } else {
@@ -286,7 +287,7 @@ function AIConfigDialog({
   onClose
 }: {
   config: AIProviderConfig | null
-  onSubmit: (data: any) => void
+  onSubmit: (data: unknown) => void
   onClose: () => void
 }) {
   const { t } = useTranslation()

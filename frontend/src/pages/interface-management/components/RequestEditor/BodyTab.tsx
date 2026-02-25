@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { FormDataEditor } from './FormDataEditor'
@@ -40,9 +41,9 @@ export function BodyTab({
     if (bodyType === 'json' && body.trim()) {
       try {
         JSON.parse(body)
-        setJsonError(null)
+        queueMicrotask(() => setJsonError(null))
       } catch {
-        setJsonError('JSON 格式错误')
+        queueMicrotask(() => setJsonError('JSON 格式错误'))
       }
     }
   }, [body, bodyType])

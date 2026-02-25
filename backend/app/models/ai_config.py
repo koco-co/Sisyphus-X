@@ -5,31 +5,32 @@ AI配置模型 - 功能测试模块
 
 from datetime import datetime
 
-from sqlmodel import Field, SQLModel
-from typing import Optional, Dict, Any, List
+from sqlalchemy import Boolean, DateTime, Float, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.base import Base
 
 
-class AIProviderConfig(SQLModel, table=True):
+class AIProviderConfig(Base):
     """AI厂商配置表"""
 
-    __tablename__ = "ai_provider_configs"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "ai_provider_configs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    provider_name: str = Field(index=True)  # OpenAI/Anthropic/通义千问/文心一言
-    provider_type: str = Field(index=True)  # openai/anthropic/qwen/qianfan
-    api_key_encrypted: str  # AES加密存储
-    api_endpoint: Optional[str] = None  # 自定义endpoint
-    model_name: str
-    temperature: float = Field(default=0.7)
-    max_tokens: int = Field(default=4000)
-    is_enabled: bool = Field(default=True)
-    is_default: bool = Field(default=False)
-    user_id: int = Field(index=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow())
-    updated_at: datetime = Field(default_factory=datetime.utcnow())
+    __table_args__ = (
+        Index("idx_ai_provider_user_type", "user_id", "provider_type"),
+        Index("idx_ai_provider_enabled_default", "is_enabled", "is_default"),
+    )
 
-    class Config:
-        indexes = [
-            ["user_id", "provider_type"],
-            ["is_enabled", "is_default"],
-        ]
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    provider_name: Mapped[str] = mapped_column(String(255), index=True)
+    provider_type: Mapped[str] = mapped_column(String(100), index=True)
+    api_key_encrypted: Mapped[str] = mapped_column(String(500), nullable=False)
+    api_endpoint: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    model_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    temperature: Mapped[float] = mapped_column(Float, default=0.7)
+    max_tokens: Mapped[int] = mapped_column(Integer, default=4000)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    is_default: Mapped[bool] = mapped_column(Boolean, default=False)
+    user_id: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

@@ -2,9 +2,10 @@
 用户和权限管理 API 端点
 """
 
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, select
 
 from app.api import deps
 from app.core.db import get_session
@@ -14,8 +15,6 @@ from app.models.user_management import (
     AuditLog,
     Permission,
 )
-from typing import Optional
-
 from app.schemas.user_management import (
     AuditLogResponse,
     PermissionCreate,
@@ -72,7 +71,7 @@ async def list_users(
 ):
     """获取用户列表（需要超级用户权限）"""
     skip = (page - 1) * size
-    statement = select(User).order_by(col(User.created_at).desc()).offset(skip).limit(size)
+    statement = select(User).order_by(User.created_at.desc()).offset(skip).limit(size)
     result = await session.execute(statement)
     users = result.scalars().all()
     return [_to_user_response(user) for user in users]
@@ -88,7 +87,7 @@ async def create_user(
     # 检查用户名和邮箱是否已存在
     existing = await session.execute(
         select(User).where(
-            (col(User.username) == user_data.username) | (col(User.email) == user_data.email)
+            (User.username == user_data.username) | (User.email == user_data.email)
         )
     )
     if existing.first():
@@ -168,7 +167,7 @@ async def list_roles(
     current_user: User = Depends(deps.get_current_user),
 ):
     """获取角色列表"""
-    result = await session.execute(select(Role).order_by(col(Role.name)))
+    result = await session.execute(select(Role).order_by(Role.name))
     roles = result.scalars().all()
     return [_to_role_response(role) for role in roles]
 
@@ -254,19 +253,19 @@ async def create_permission(
 async def list_audit_logs(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    user_id: Optional[int] = None,
-    resource_type: Optional[str] = None,
+    user_id: int | None = None,
+    resource_type: str | None = None,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(deps.get_current_superuser),
 ):
     """获取审计日志（需要超级用户权限）"""
     skip = (page - 1) * size
-    statement = select(AuditLog).order_by(col(AuditLog.created_at).desc())
+    statement = select(AuditLog).order_by(AuditLog.created_at.desc())
 
     if user_id is not None:
-        statement = statement.where(col(AuditLog.user_id) == user_id)
+        statement = statement.where(AuditLog.user_id == user_id)
     if resource_type:
-        statement = statement.where(col(AuditLog.resource_type) == resource_type)
+        statement = statement.where(AuditLog.resource_type == resource_type)
 
     statement = statement.offset(skip).limit(size)
     result = await session.execute(statement)

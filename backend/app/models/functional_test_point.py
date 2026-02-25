@@ -1,40 +1,34 @@
 """
 测试点模型 - 功能测试模块
-管理测试点（测试用例的抽象描述）
 """
 
 from datetime import datetime
 
-from sqlmodel import Field, SQLModel
-from typing import Optional, Dict, Any, List
+from sqlalchemy import DateTime, Float, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.base import Base
 
 
-class TestPoint(SQLModel, table=True):
+class TestPoint(Base):
     """测试点表"""
 
-    __tablename__ = "test_points"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "test_points"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    requirement_id: int = Field(index=True)  # 关联需求
-    category: str  # functional/performance/security/compatibility/usability
-    sub_category: Optional[str] = None  # 正常流程/异常流程/边界值
+    __table_args__ = (
+        Index("idx_test_points_req_cat_pri", "requirement_id", "category", "priority"),
+    )
 
-    title: str
-    description: Optional[str] = None
-    priority: str  # p0/p1/p2/p3
-    risk_level: Optional[str] = None  # high/medium/low
-
-    # AI生成信息
-    is_ai_generated: bool = Field(default=True)
-    confidence_score: Optional[float] = None  # 0.00-1.00
-
-    # 状态
-    status: str = Field(default="draft")  # draft/approved/rejected
-
-    created_at: datetime = Field(default_factory=datetime.utcnow())
-    updated_at: datetime = Field(default_factory=datetime.utcnow())
-
-    class Config:
-        indexes = [
-            ["requirement_id", "category", "priority"],
-        ]
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    requirement_id: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    category: Mapped[str] = mapped_column(String(50), nullable=False)
+    sub_category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    priority: Mapped[str] = mapped_column(String(20), nullable=False)
+    risk_level: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    is_ai_generated: Mapped[bool] = mapped_column(default=True)
+    confidence_score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="draft")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

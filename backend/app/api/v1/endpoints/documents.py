@@ -5,23 +5,23 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, func, select
 
 from app.core.db import get_session
 from app.models.document import Document, DocumentVersion
+from app.schemas.document import DocumentRead, DocumentVersionRead
 from app.schemas.pagination import PageResponse
-from typing import Optional
 
 router = APIRouter()
 
 
-@router.get("/", response_model=PageResponse[Document])
+@router.get("/", response_model=PageResponse[DocumentRead])
 async def list_documents(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
-    project_id: Optional[int] = Query(None),
-    doc_type: Optional[str] = Query(None),
+    project_id: str | None = Query(None),
+    doc_type: str | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """获取文档列表"""
@@ -30,18 +30,19 @@ async def list_documents(
     count_statement = select(func.count()).select_from(Document)
 
     if project_id is not None:
-        statement = statement.where(col(Document.project_id) == project_id)
-        count_statement = count_statement.where(col(Document.project_id) == project_id)
+        statement = statement.where(Document.project_id == project_id)
+        count_statement = count_statement.where(Document.project_id == project_id)
 
     if doc_type:
-        statement = statement.where(col(Document.doc_type) == doc_type)
-        count_statement = count_statement.where(col(Document.doc_type) == doc_type)
+        statement = statement.where(Document.doc_type == doc_type)
+        count_statement = count_statement.where(Document.doc_type == doc_type)
 
     total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(
-        statement.offset(skip).limit(size).order_by(col(Document.order_index))
+        statement.offset(skip).limit(size).order_by(Document.order_index)
     )
-    items = list(result.scalars().all())
+    rows = result.scalars().all()
+    items = [DocumentRead.model_validate(d) for d in rows]
 
     return PageResponse(
         items=items, total=total, page=page, size=size, pages=(total + size - 1) // size
@@ -50,20 +51,23 @@ async def list_documents(
 
 @router.get("/tree")
 async def get_document_tree(
-    project_id: int = Query(...),
-    doc_type: Optional[str] = Query(None),
+    project_id: str = Query(...),
+    doc_type: str | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """获取文档树形结构"""
-    statement = select(Document).where(col(Document.project_id) == project_id)
+    statement = select(Document).where(Document.project_id == project_id)
     if doc_type:
-        statement = statement.where(col(Document.doc_type) == doc_type)
+        statement = statement.where(Document.doc_type == doc_type)
 
-    result = await session.execute(statement.order_by(col(Document.order_index)))
+    result = await session.execute(statement.order_by(Document.order_index))
     documents = result.scalars().all()
 
-    # 构建树形结构
-    doc_map = {doc.id: {**doc.dict(), "children": []} for doc in documents}
+    # 构建树形结构 (SQLAlchemy 模型无 .dict()，手动构建)
+    doc_map = {
+        doc.id: {**{c.key: getattr(doc, c.key) for c in doc.__table__.columns}, "children": []}
+        for doc in documents
+    }
     tree = []
 
     for doc in documents:
@@ -75,26 +79,26 @@ async def get_document_tree(
     return tree
 
 
-@router.post("/", response_model=Document)
+@router.post("/", response_model=DocumentRead)
 async def create_document(data: dict = Body(...), session: AsyncSession = Depends(get_session)):
     """创建文档"""
     document = Document(**data)
     session.add(document)
     await session.commit()
     await session.refresh(document)
-    return document
+    return DocumentRead.model_validate(document)
 
 
-@router.get("/{document_id}", response_model=Document)
+@router.get("/{document_id}", response_model=DocumentRead)
 async def get_document(document_id: int, session: AsyncSession = Depends(get_session)):
     """获取文档详情"""
     document = await session.get(Document, document_id)
     if not document:
         raise HTTPException(status_code=404, detail="文档不存在")
-    return document
+    return DocumentRead.model_validate(document)
 
 
-@router.put("/{document_id}")
+@router.put("/{document_id}", response_model=DocumentRead)
 async def update_document(
     document_id: int,
     data: dict = Body(...),
@@ -129,7 +133,7 @@ async def update_document(
     document.updated_at = datetime.utcnow()
     await session.commit()
     await session.refresh(document)
-    return document
+    return DocumentRead.model_validate(document)
 
 
 @router.delete("/{document_id}")
@@ -144,15 +148,15 @@ async def delete_document(document_id: int, session: AsyncSession = Depends(get_
     return {"deleted": document_id}
 
 
-@router.get("/{document_id}/versions", response_model=list[DocumentVersion])
+@router.get("/{document_id}/versions", response_model=list[DocumentVersionRead])
 async def get_document_versions(document_id: int, session: AsyncSession = Depends(get_session)):
     """获取文档版本历史"""
     result = await session.execute(
         select(DocumentVersion)
-        .where(col(DocumentVersion.document_id) == document_id)
-        .order_by(col(DocumentVersion.version).desc())
+        .where(DocumentVersion.document_id == document_id)
+        .order_by(DocumentVersion.version.desc())
     )
-    return result.scalars().all()
+    return [DocumentVersionRead.model_validate(v) for v in result.scalars().all()]
 
 
 @router.post("/{document_id}/versions/{version}/restore")
@@ -198,7 +202,7 @@ async def restore_document_version(
 @router.post("/ai/search")
 async def ai_search_documents(
     query: str = Body(..., embed=True),
-    project_id: Optional[int] = Body(None, embed=True),
+    project_id: str | None = Body(None, embed=True),
     session: AsyncSession = Depends(get_session),
 ):
     """AI文档检索"""
@@ -206,7 +210,7 @@ async def ai_search_documents(
     # 获取文档内容
     statement = select(Document)
     if project_id is not None:
-        statement = statement.where(col(Document.project_id) == project_id)
+        statement = statement.where(Document.project_id == project_id)
 
     result = await session.execute(statement)
     documents = result.scalars().all()

@@ -1,60 +1,46 @@
 """
-用户和权限管理模型
+用户和权限管理模型 (SQLAlchemy 2.0)
 """
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Column, ForeignKey, Integer, Table, Text
-from sqlmodel import Field, SQLModel
-from typing import Optional, Dict, Any, List
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Table, Text
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.base import Base
 
 # 角色-权限关联表
 role_permission_table = Table(
     "role_permissions",
-    SQLModel.metadata,
+    Base.metadata,
     Column("role_id", Integer, ForeignKey("roles.id", ondelete="CASCADE")),
     Column("permission_id", Integer, ForeignKey("permissions.id", ondelete="CASCADE")),
 )
 
 
-class Permission(SQLModel, table=True):
+class Permission(Base):
     """权限模型"""
 
-    __tablename__ = "permissions"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "permissions"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    resource: str = Field(max_length=50, description="资源名称，如 projects, testcases")
-    action: str = Field(max_length=50, description="操作，如 create, read, update, delete, execute")
-    description: Optional[str] = Field(default=None, max_length=200)
-    created_at: datetime = Field(default_factory=datetime.utcnow())
-
-    # 关系 - 使用 TYPE_CHECKING 避免循环导入
-    # roles: list["Role"] = Relationship(
-    #     back_populates="permission_list",
-    #     sa_relationship_kwargs={"secondary": role_permission_table},
-    # )
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    resource: Mapped[str] = mapped_column(String(50), nullable=False)
+    action: Mapped[str] = mapped_column(String(50), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)
 
 
-class AuditLog(SQLModel, table=True):
+class AuditLog(Base):
     """审计日志模型"""
 
-    __tablename__ = "audit_logs"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "audit_logs"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id")
-    action: str = Field(max_length=50, description="操作类型，如 create, update, delete")
-    resource_type: str = Field(max_length=50, description="资源类型")
-    resource_id: Optional[int] = Field(default=None, description="资源ID")
-    details: Optional[str] = Field(default=None, sa_column=Column(Text))
-    ip_address: Optional[str] = Field(default=None, max_length=50)
-    user_agent: Optional[str] = Field(default=None, max_length=500)
-    created_at: datetime = Field(default_factory=datetime.utcnow())
-
-    # 关系 - 使用 TYPE_CHECKING 避免循环导入
-    # user: "User" = Relationship(back_populates="audit_logs")
-
-
-# 导入 User 类，但放在文件末尾避免循环导入
-# 注意: 这个 User 是 user_management.py 中定义的版本，与 user.User 不同
-# 为了避免冲突，重命名为 UserModel
-# from app.models.user import User as UserModel  # noqa: E402
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    action: Mapped[str] = mapped_column(String(50), nullable=False)
+    resource_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    resource_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    details: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ip_address: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)

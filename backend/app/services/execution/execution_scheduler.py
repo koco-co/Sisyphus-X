@@ -12,7 +12,6 @@ from app.models.test_execution import TestExecution
 from . import ExecutionResult
 from .executor_adapter import ExecutorAdapter
 from .parameter_parser import ParameterParser
-from typing import Optional
 
 
 class ExecutionScheduler:
@@ -23,7 +22,7 @@ class ExecutionScheduler:
         self.parser = ParameterParser()
 
     async def execute_test_case(
-        self, session: AsyncSession, test_case_id: int, environment_id: Optional[int] = None
+        self, session: AsyncSession, test_case_id: int, environment_id: int | None = None
     ) -> ExecutionResult:
         """
         执行单个测试用例（同步）

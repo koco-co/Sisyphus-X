@@ -1,59 +1,44 @@
 """
-测试用例模型 - 功能测试模块
-管理详细的测试用例（包含步骤和预期结果）
+测试用例模型 - 功能测试模块 (SQLAlchemy 2.0)
 """
 
 from datetime import datetime
 
-from sqlmodel import JSON, Column, Field, SQLModel
-from typing import Optional, Dict, Any, List
+from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.base import Base
 
 
-class FunctionalTestCase(SQLModel, table=True):
+class FunctionalTestCase(Base):
     """测试用例表 (功能测试模块)"""
 
-    __tablename__ = "test_cases"  # pyright: ignore[reportAssignmentType]
-    id: Optional[int] = Field(default=None, primary_key=True)
-    case_id: str = Field(unique=True, index=True)  # TC-2025-001-001
+    __tablename__ = "test_cases"
 
-    # 关联
-    requirement_id: int = Field(index=True)
-    test_suite_id: Optional[int] = None
-    test_point_id: Optional[int] = None
+    __table_args__ = (
+        Index("idx_functional_tc_req_module", "requirement_id", "module_name", "page_name"),
+    )
 
-    # 基础信息
-    module_name: str
-    page_name: str
-    title: str
-    priority: str  # p0/p1/p2/p3
-    case_type: str  # functional/performance/security/compatibility
-
-    # 用例内容
-    preconditions: List[str] = Field(default=list, sa_column=Column(JSON))  # 前置条件
-    steps: List[Dict[str, Any]] = Field(default=list, sa_column=Column(JSON))  # 测试步骤
-    tags: List[str] = Field(default=list, sa_column=Column(JSON))  # 标签数组
-
-    # 元数据
-    is_automated: bool = Field(default=False)
-    complexity: Optional[str] = None  # low/medium/high
-    estimated_time: int = Field(default=0)  # 预估执行时间(分钟)
-
-    # AI生成信息
-    is_ai_generated: bool = Field(default=False)
-    ai_model: Optional[str] = None
-
-    # 状态
-    status: str = Field(default="draft")  # draft/review/approved/cancelled
-
-    # 创建信息
-    created_by: int
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-    version: int = Field(default=1)
-
-    class Config:
-        indexes = [
-            "case_id",
-            ["requirement_id", "module_name", "page_name"],
-            "priority",
-        ]
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    case_id: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    requirement_id: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    test_suite_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    test_point_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    module_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    page_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    priority: Mapped[str] = mapped_column(String(20), nullable=False)
+    case_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    preconditions: Mapped[list] = mapped_column(JSON, default=list)
+    steps: Mapped[list] = mapped_column(JSON, default=list)
+    tags: Mapped[list] = mapped_column(JSON, default=list)
+    is_automated: Mapped[bool] = mapped_column(Boolean, default=False)
+    complexity: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    estimated_time: Mapped[int] = mapped_column(Integer, default=0)
+    is_ai_generated: Mapped[bool] = mapped_column(Boolean, default=False)
+    ai_model: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="draft")
+    created_by: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1)

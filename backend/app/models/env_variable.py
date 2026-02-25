@@ -4,11 +4,10 @@
 """
 from datetime import datetime
 
-from sqlalchemy import DateTime, Boolean, ForeignKey, String, Text, Index
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Base
-from typing import Optional, Dict, Any, List
+from app.core.base import Base
 
 
 class EnvVariable(Base):
@@ -34,7 +33,7 @@ class EnvVariable(Base):
     # 变量信息
     name: Mapped[str] = mapped_column(String(255), nullable=False)  # 变量名
     value: Mapped[str] = mapped_column(Text, nullable=False)  # 变量值
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 描述
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)  # 描述
 
     # 全局变量标记
     is_global: Mapped[bool] = mapped_column(Boolean, default=False, index=True)  # 是否全局变量

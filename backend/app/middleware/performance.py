@@ -4,16 +4,14 @@
 提供多种性能优化中间件，包括缓存控制、响应压缩、请求监控等。
 """
 
-import time
 import gzip
-import json
-from typing import Callable, Awaitable
+import time
 
 from fastapi import Request, Response
 from fastapi.middleware.gzip import GZipMiddleware
+from sqlalchemy.engine import Engine
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-from sqlalchemy.engine import Engine
 
 from app.utils.rich_logger import get_logger
 
@@ -89,7 +87,7 @@ class PerformanceMonitoringMiddleware(BaseHTTPMiddleware):
         # 记录慢请求
         if self.enable_logging and process_time > self.slow_request_threshold:
             logger.warning(
-                f'Slow request detected',
+                'Slow request detected',
                 extra={
                     'method': request.method,
                     'path': request.url.path,
@@ -175,7 +173,7 @@ class DatabaseQueryMonitoringMiddleware:
             # 记录慢查询
             if total > self.slow_query_threshold:
                 logger.warning(
-                    f'Slow database query',
+                    'Slow database query',
                     extra={
                         'query_time': f'{total:.3f}s',
                         'statement': statement[:200],  # 只记录前 200 字符

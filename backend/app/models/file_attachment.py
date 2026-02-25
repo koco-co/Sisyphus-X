@@ -1,36 +1,31 @@
 """
 文件附件模型 - 功能测试模块
-管理MinIO文件存储记录
 """
 
 from datetime import datetime
 
-from sqlmodel import Field, SQLModel
+from sqlalchemy import DateTime, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.base import Base
 
 
-class FileAttachment(SQLModel, table=True):
+class FileAttachment(Base):
     """文件存储记录表"""
 
-    __tablename__ = "file_attachments"  # pyright: ignore[reportAssignmentType]
-    id: int = Field(primary_key=True)
-    file_id: str = Field(unique=True, index=True)  # UUID
+    __tablename__ = "file_attachments"
 
-    # 文件信息
-    filename: str
-    file_type: str  # image/png/application/pdf
-    file_size: int  # 字节
-    file_path: str  # MinIO存储路径
+    __table_args__ = (
+        Index("idx_file_attachments_entity", "entity_type", "entity_id"),
+    )
 
-    # 关联
-    entity_type: str  # requirement/test_case
-    entity_id: int
-
-    # 元数据
-    uploaded_by: int
-    created_at: datetime = Field(default_factory=datetime.utcnow())
-
-    class Config:
-        indexes = [
-            "file_id",
-            ["entity_type", "entity_id"],
-        ]
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    file_id: Mapped[str] = mapped_column(String(36), unique=True, index=True)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    entity_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    uploaded_by: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)

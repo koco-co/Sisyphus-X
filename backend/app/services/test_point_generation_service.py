@@ -5,8 +5,8 @@
 
 import json
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
 
 from app.models.functional_test_case import FunctionalTestCase
 from app.models.functional_test_point import TestPoint

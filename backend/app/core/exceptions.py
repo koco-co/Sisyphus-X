@@ -2,7 +2,7 @@
 自定义异常类
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from fastapi import HTTPException, status
 
@@ -10,7 +10,7 @@ from fastapi import HTTPException, status
 class SisyphusException(Exception):  # noqa: N818
     """基础异常类"""
 
-    def __init__(self, message: str, details: Optional[Any] = None):
+    def __init__(self, message: str, details: Any | None = None):
         self.message = message
         self.details = details
         super().__init__(self.message)

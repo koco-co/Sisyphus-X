@@ -5,12 +5,12 @@
 from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
 
 from app.core.db import get_session
 from app.models.settings import GlobalConfig, NotificationChannel, Role
-from typing import Optional
+from app.schemas.settings import GlobalConfigRead, NotificationChannelRead, RoleRead
 
 router = APIRouter()
 
@@ -18,9 +18,9 @@ router = APIRouter()
 # ==================== 全局配置 ====================
 
 
-@router.get("/config", response_model=list[GlobalConfig])
+@router.get("/config", response_model=list[GlobalConfigRead])
 async def list_configs(
-    category: Optional[str] = Query(None), session: AsyncSession = Depends(get_session)
+    category: str | None = Query(None), session: AsyncSession = Depends(get_session)
 ):
     """获取全局配置列表"""
     statement = select(GlobalConfig)
@@ -29,12 +29,14 @@ async def list_configs(
     result = await session.execute(statement)
     configs = result.scalars().all()
 
-    # 隐藏敏感信息
+    # 隐藏敏感信息并转为 schema
+    out = []
     for config in configs:
+        d = GlobalConfigRead.model_validate(config)
         if config.is_secret:
-            config.value = "******"
-
-    return configs
+            d.value = "******"
+        out.append(d)
+    return out
 
 
 @router.get("/config/{key}")
@@ -111,14 +113,14 @@ async def batch_update_configs(
 # ==================== 消息通知 ====================
 
 
-@router.get("/notifications", response_model=list[NotificationChannel])
+@router.get("/notifications", response_model=list[NotificationChannelRead])
 async def list_notification_channels(session: AsyncSession = Depends(get_session)):
     """获取通知渠道列表"""
     result = await session.execute(select(NotificationChannel))
-    return result.scalars().all()
+    return [NotificationChannelRead.model_validate(c) for c in result.scalars().all()]
 
 
-@router.post("/notifications", response_model=NotificationChannel)
+@router.post("/notifications", response_model=NotificationChannelRead)
 async def create_notification_channel(
     data: dict = Body(...), session: AsyncSession = Depends(get_session)
 ):
@@ -127,7 +129,7 @@ async def create_notification_channel(
     session.add(channel)
     await session.commit()
     await session.refresh(channel)
-    return channel
+    return NotificationChannelRead.model_validate(channel)
 
 
 @router.put("/notifications/{channel_id}")
@@ -146,7 +148,7 @@ async def update_notification_channel(
     channel.updated_at = datetime.utcnow()
     await session.commit()
     await session.refresh(channel)
-    return channel
+    return NotificationChannelRead.model_validate(channel)
 
 
 @router.delete("/notifications/{channel_id}")
@@ -166,21 +168,21 @@ async def delete_notification_channel(
 # ==================== 角色管理 ====================
 
 
-@router.get("/roles", response_model=list[Role])
+@router.get("/roles", response_model=list[RoleRead])
 async def list_roles(session: AsyncSession = Depends(get_session)):
     """获取角色列表"""
     result = await session.execute(select(Role))
-    return result.scalars().all()
+    return [RoleRead.model_validate(r) for r in result.scalars().all()]
 
 
-@router.post("/roles", response_model=Role)
+@router.post("/roles", response_model=RoleRead)
 async def create_role(data: dict = Body(...), session: AsyncSession = Depends(get_session)):
     """创建角色"""
     role = Role(**data)
     session.add(role)
     await session.commit()
     await session.refresh(role)
-    return role
+    return RoleRead.model_validate(role)
 
 
 @router.put("/roles/{role_id}")
@@ -198,7 +200,7 @@ async def update_role(
 
     await session.commit()
     await session.refresh(role)
-    return role
+    return RoleRead.model_validate(role)
 
 
 @router.delete("/roles/{role_id}")

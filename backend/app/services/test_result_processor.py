@@ -3,7 +3,7 @@
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -264,7 +264,7 @@ class TestResultProcessor:
         }
         return status_mapping.get(status, "error")
 
-    def _parse_datetime(self, datetime_str: str) -> Optional[datetime]:
+    def _parse_datetime(self, datetime_str: str) -> datetime | None:
         """
         解析 datetime 字符串
 

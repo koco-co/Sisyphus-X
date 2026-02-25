@@ -1,37 +1,31 @@
-"""Interface request history model."""
+"""Interface request history model - SQLAlchemy 2.0."""
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index
-from sqlmodel import JSON, Column, Field, SQLModel
-from typing import Optional, Dict, Any, List
+from sqlalchemy import JSON, DateTime, Float, ForeignKey, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.base import Base
 
 
-class InterfaceHistory(SQLModel, table=True):
+class InterfaceHistory(Base):
     """Interface request history record."""
 
-    __tablename__ = "interfacehistory"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "interfacehistory"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    interface_id: int = Field(foreign_key="interface.id", index=True, description="Interface ID")
-    user_id: int = Field(foreign_key="users.id", index=True, description="User ID")
+    __table_args__ = (Index("idx_interface_history_created_at", "created_at"),)
 
-    # Request snapshot
-    url: str = Field(description="Request URL")
-    method: str = Field(max_length=10, description="Request method")
-    headers: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON), description="Request headers")
-    params: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON), description="Query parameters")
-    body: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON), description="Request body")
-
-    # Response snapshot
-    status_code: Optional[int] = Field(default=None, description="Response status code")
-    response_headers: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON), description="Response headers")
-    response_body: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON), description="Response body")
-    elapsed: Optional[float] = Field(default=None, description="Request elapsed time (seconds)")
-    timeline: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON), description="Timeline data (DNS/TCP/TTFB/Download)")
-
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow(), index=True, description="Created at")
-
-    __table_args__ = (
-        Index("idx_interface_history_created_at", "created_at"),
-    )
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    interface_id: Mapped[str] = mapped_column(String(36), ForeignKey("interfaces.id"), index=True, nullable=False)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    url: Mapped[str] = mapped_column(String(2000), nullable=False)
+    method: Mapped[str] = mapped_column(String(10), nullable=False)
+    headers: Mapped[dict] = mapped_column(JSON, default=dict)
+    params: Mapped[dict] = mapped_column(JSON, default=dict)
+    body: Mapped[dict] = mapped_column(JSON, default=dict)
+    status_code: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    response_headers: Mapped[dict] = mapped_column(JSON, default=dict)
+    response_body: Mapped[dict] = mapped_column(JSON, default=dict)
+    elapsed: Mapped[float | None] = mapped_column(Float, nullable=True)
+    timeline: Mapped[dict] = mapped_column(JSON, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, index=True, nullable=False)

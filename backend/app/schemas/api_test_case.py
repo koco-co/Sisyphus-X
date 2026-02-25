@@ -3,7 +3,7 @@ API 测试用例相关的 Pydantic schemas
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -15,11 +15,11 @@ from pydantic import BaseModel, Field
 class ApiTestCaseCreate(BaseModel):
     """创建 API 测试用例"""
 
-    project_id: Optional[int] = None  # 从 URL 路径中获取，请求体中可选
+    project_id: int | None = None  # 从 URL 路径中获取，请求体中可选
     name: str = Field(..., min_length=1, max_length=200)
-    description: Optional[str] = Field(None, max_length=1000)
+    description: str | None = Field(None, max_length=1000)
     config_data: dict[str, Any] = Field(default_factory=dict)
-    environment_id: Optional[str] = None
+    environment_id: str | None = None
     tags: list[str] = Field(default_factory=list)
     enabled: bool = Field(default=True)
 
@@ -27,12 +27,12 @@ class ApiTestCaseCreate(BaseModel):
 class ApiTestCaseUpdate(BaseModel):
     """更新 API 测试用例"""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=200)
-    description: Optional[str] = Field(None, max_length=1000)
+    name: str | None = Field(None, min_length=1, max_length=200)
+    description: str | None = Field(None, max_length=1000)
     config_data: dict[str, Any] | None = None
-    environment_id: Optional[str] = None
+    environment_id: str | None = None
     tags: list[str] | None = None
-    enabled: Optional[bool] = None
+    enabled: bool | None = None
 
 
 class ApiTestCaseResponse(BaseModel):
@@ -41,14 +41,14 @@ class ApiTestCaseResponse(BaseModel):
     id: str
     project_id: str
     name: str
-    description: Optional[str]
+    description: str | None
     config_data: dict[str, Any]
-    environment_id: Optional[str]
+    environment_id: str | None
     tags: list[str]
     enabled: bool
     yaml_content: str
     created_at: datetime
-    updated_at: Optional[datetime]
+    updated_at: datetime | None
 
     model_config = {"from_attributes": True}
 
@@ -68,7 +68,7 @@ class ApiTestCaseListResponse(BaseModel):
 class ApiTestExecutionRequest(BaseModel):
     """API 测试执行请求"""
 
-    environment_id: Optional[str] = None
+    environment_id: str | None = None
     verbose: bool = Field(default=True, description="是否详细输出")
     execution_options: dict[str, Any] = Field(default_factory=dict)
 
@@ -78,16 +78,16 @@ class ApiTestExecutionResponse(BaseModel):
 
     id: str
     test_case_id: str
-    environment_id: Optional[str]
+    environment_id: str | None
     status: str
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    duration: Optional[float]
+    started_at: datetime | None
+    completed_at: datetime | None
+    duration: float | None
     total_steps: int
     passed_steps: int
     failed_steps: int
     skipped_steps: int
-    error_message: Optional[str]
+    error_message: str | None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -98,19 +98,19 @@ class ApiTestExecutionDetail(BaseModel):
 
     id: str
     test_case_id: str
-    environment_id: Optional[str]
+    environment_id: str | None
     status: str
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    duration: Optional[float]
+    started_at: datetime | None
+    completed_at: datetime | None
+    duration: float | None
     result_data: dict[str, Any]
     total_steps: int
     passed_steps: int
     failed_steps: int
     skipped_steps: int
-    error_message: Optional[str]
-    error_type: Optional[str]
-    error_category: Optional[str]
+    error_message: str | None
+    error_type: str | None
+    error_category: str | None
     execution_options: dict[str, Any]
     created_at: datetime
 
@@ -122,11 +122,11 @@ class StepValidationResult(BaseModel):
 
     passed: bool
     type: str
-    path: Optional[str]
+    path: str | None
     actual: Any
     expected: Any
-    description: Optional[str]
-    error: Optional[str]
+    description: str | None
+    error: str | None
 
 
 class ApiTestStepResultResponse(BaseModel):
@@ -138,9 +138,9 @@ class ApiTestStepResultResponse(BaseModel):
     step_order: int
     step_type: str
     status: str
-    started_at: Optional[datetime]
-    completed_at: Optional[datetime]
-    duration: Optional[float]
+    started_at: datetime | None
+    completed_at: datetime | None
+    duration: float | None
     retry_count: int
     performance_metrics: dict[str, Any]
     response_data: dict[str, Any]

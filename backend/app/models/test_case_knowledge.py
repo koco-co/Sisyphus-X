@@ -1,41 +1,28 @@
 """
-测试用例知识库模型 - 功能测试模块
-使用pgvector存储向量，支持语义搜索
+测试用例知识库模型 - 功能测试模块 (SQLAlchemy 2.0)
 """
 
 from datetime import datetime
 
-from sqlmodel import JSON, Column, Field, SQLModel
-from typing import Optional, Dict, Any, List
+from sqlalchemy import JSON, DateTime, Float, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.base import Base
 
 
-class TestCaseKnowledge(SQLModel, table=True):
+class TestCaseKnowledge(Base):
     """测试用例知识库表（向量存储）"""
 
-    __tablename__ = "test_case_knowledge"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "test_case_knowledge"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    test_case_id: int = Field(unique=True, index=True)  # 关联test_cases
-
-    # 向量化数据（SQLite不支持ARRAY，使用JSON存储）
-    embedding: List[float] = Field(
-        default=list, sa_column=Column(JSON)
-    )  # 1536维向量
-
-    # 元数据 (用于过滤)
-    embedding_model: str  # text-embedding-3-small/bert-base-chinese
-    module_name: str
-    priority: str
-    case_type: str
-    tags: List[str] = Field(default=list, sa_column=Column(JSON))
-
-    # 质量指标
-    quality_score: float = Field(default=0.0)  # 0.0-10.0
-    usage_count: int = Field(default=0)  # 被引用次数
-
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-
-    class Config:
-        indexes = [
-            "test_case_id",
-        ]
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    test_case_id: Mapped[int] = mapped_column(Integer, unique=True, index=True, nullable=False)
+    embedding: Mapped[list] = mapped_column(JSON, default=list)
+    embedding_model: Mapped[str] = mapped_column(String(100), nullable=False)
+    module_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    priority: Mapped[str] = mapped_column(String(20), nullable=False)
+    case_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    tags: Mapped[list] = mapped_column(JSON, default=list)
+    quality_score: Mapped[float] = mapped_column(Float, default=0.0)
+    usage_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)

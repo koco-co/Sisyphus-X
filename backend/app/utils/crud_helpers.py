@@ -6,26 +6,27 @@ CRUD 工具函数 - 消除重复的数据库操作代码
 
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, Generic, Optional, TypeVar, cast
+from typing import Any, TypeVar, cast
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlmodel import SQLModel, select
 
+from app.core.base import Base
 from app.schemas.pagination import PageResponse
 
 # 泛型类型变量
-ModelType = TypeVar("ModelType", bound=SQLModel)
-CreateSchemaType = TypeVar("CreateSchemaType", bound=SQLModel)
-UpdateSchemaType = TypeVar("UpdateSchemaType", bound=SQLModel)
+ModelType = TypeVar("ModelType", bound=Base)
+CreateSchemaType = TypeVar("CreateSchemaType", bound=Base)
+UpdateSchemaType = TypeVar("UpdateSchemaType", bound=Base)
 
 
-async def get_or_404(
+async def get_or_404[ModelType: Base](
     session: AsyncSession,
     model: type[ModelType],
     item_id: int,
-    resource_name: Optional[str] = None,
+    resource_name: str | None = None,
 ) -> ModelType:
     """
     获取对象或抛出 404 错误
@@ -52,7 +53,7 @@ async def get_or_404(
     return item
 
 
-async def create_item(
+async def create_item[ModelType: Base](
     session: AsyncSession,
     item: ModelType,
     auto_refresh: bool = True,
@@ -75,7 +76,7 @@ async def create_item(
     return item
 
 
-async def update_item(
+async def update_item[ModelType: Base](
     session: AsyncSession,
     item: ModelType,
     update_data: dict[str, Any],
@@ -116,7 +117,7 @@ async def update_item(
 
 async def delete_item(
     session: AsyncSession,
-    item: SQLModel,
+    item: Base,
 ) -> None:
     """
     删除对象并提交
@@ -129,7 +130,7 @@ async def delete_item(
     await session.commit()
 
 
-async def delete_by_id(
+async def delete_by_id[ModelType: Base](
     session: AsyncSession,
     model: type[ModelType],
     item_id: int,
@@ -176,7 +177,7 @@ async def paginate_query(
         )
         pages = (total + size - 1) // size
     """
-    from sqlmodel import func
+    from sqlalchemy import func
 
     # 计算总数
     count_statement = select(func.count()).select_from(statement.subquery())
@@ -229,13 +230,13 @@ async def paginated_response(
     )
 
 
-async def list_items(
+async def list_items[ModelType: Base](
     session: AsyncSession,
     model: type[ModelType],
     page: int = 1,
     size: int = 10,
     filters: dict[str, Any] | None = None,
-    order_by: Optional[Any] = None,
+    order_by: Any | None = None,
     load_relations: Sequence[str] | None = None,
 ) -> PageResponse[ModelType]:
     """
@@ -285,7 +286,7 @@ async def list_items(
     return await paginated_response(session, statement, page, size)
 
 
-class CRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
+class CRUDService[ModelType: Base, CreateSchemaType: Base, UpdateSchemaType: Base]:
     """
     通用 CRUD 服务基类
 
@@ -370,7 +371,7 @@ class CRUDService(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         page: int = 1,
         size: int = 10,
         filters: dict[str, Any] | None = None,
-        order_by: Optional[Any] = None,
+        order_by: Any | None = None,
     ) -> PageResponse[ModelType]:
         """列表查询（带分页）"""
         return await list_items(session, self.model, page, size, filters, order_by)

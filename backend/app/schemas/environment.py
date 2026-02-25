@@ -1,14 +1,11 @@
 from datetime import datetime
 
-from pydantic import BaseModel
-
-
 # ============================================
 # Environment Schemas
 # ============================================
-from typing import Any, Optional
+from typing import Any
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
 class EnvironmentCreate(BaseModel):
@@ -24,11 +21,11 @@ class EnvironmentCreate(BaseModel):
 class EnvironmentUpdate(BaseModel):
     """更新环境配置"""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=50)
-    domain: Optional[str] = Field(None, min_length=1)
+    name: str | None = Field(None, min_length=1, max_length=50)
+    domain: str | None = Field(None, min_length=1)
     variables: dict[str, Any] | None = None
     headers: dict[str, Any] | None = None
-    is_preupload: Optional[bool] = None
+    is_preupload: bool | None = None
 
 
 class EnvironmentResponse(BaseModel):
@@ -88,15 +85,15 @@ class DataSourceCreate(BaseModel):
 class DataSourceUpdate(BaseModel):
     """更新数据源"""
 
-    name: Optional[str] = None
-    db_type: Optional[str] = None
-    host: Optional[str] = None
-    port: Optional[int] = None
-    db_name: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None  # 如果提供则更新密码
-    variable_name: Optional[str] = None
-    is_enabled: Optional[bool] = None
+    name: str | None = None
+    db_type: str | None = None
+    host: str | None = None
+    port: int | None = None
+    db_name: str | None = None
+    username: str | None = None
+    password: str | None = None  # 如果提供则更新密码
+    variable_name: str | None = None
+    is_enabled: bool | None = None
 
 
 class DataSourceResponse(BaseModel):
@@ -114,8 +111,8 @@ class DataSourceResponse(BaseModel):
     variable_name: str
     is_enabled: bool
     status: str
-    last_test_at: Optional[datetime]
-    error_msg: Optional[str]
+    last_test_at: datetime | None
+    error_msg: str | None
 
     created_at: datetime
     updated_at: datetime

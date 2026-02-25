@@ -8,14 +8,13 @@ from datetime import datetime
 
 from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, func, select
 
 from app.core.db import get_session
 from app.models import FunctionalTestCase, Requirement
 from app.schemas.pagination import PageResponse
-from app.schemas.requirement import RequirementResponse
-from typing import Optional
+from app.schemas.requirement import FunctionalTestCaseResponse, RequirementResponse
 
 router = APIRouter()
 
@@ -27,7 +26,7 @@ router = APIRouter()
 async def list_requirements(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    project_id: Optional[int] = Query(None),
+    project_id: int | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """获取需求列表"""
@@ -41,7 +40,7 @@ async def list_requirements(
 
     total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(
-        statement.offset(skip).limit(size).order_by(col(Requirement.created_at).desc())
+        statement.offset(skip).limit(size).order_by(Requirement.created_at.desc())
     )
     items = list(result.scalars().all())
 
@@ -73,7 +72,7 @@ async def create_requirement(data: dict = Body(...), session: AsyncSession = Dep
 
     # 查询当天已有的需求数量，生成序号
     result = await session.execute(
-        select(Requirement).where(col(Requirement.requirement_id).like(f"REQ-{date_prefix}-%"))
+        select(Requirement).where(Requirement.requirement_id.like(f"REQ-{date_prefix}-%"))
     )
     existing_count = len(result.scalars().all())
     seq_number = existing_count + 1
@@ -109,12 +108,12 @@ async def delete_requirement(requirement_id: int, session: AsyncSession = Depend
 # ==================== 用例管理 ====================
 
 
-@router.get("/cases", response_model=PageResponse[FunctionalTestCase])
+@router.get("/cases", response_model=PageResponse[FunctionalTestCaseResponse])
 async def list_cases(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
-    requirement_id: Optional[int] = Query(None),
-    priority: Optional[str] = Query(None),
+    requirement_id: int | None = Query(None),
+    priority: str | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ):
     """获取用例列表"""
@@ -123,41 +122,42 @@ async def list_cases(
     count_statement = select(func.count()).select_from(FunctionalTestCase)
 
     if requirement_id is not None:
-        statement = statement.where(col(FunctionalTestCase.requirement_id) == requirement_id)
-        count_statement = count_statement.where(col(FunctionalTestCase.requirement_id) == requirement_id)
+        statement = statement.where(FunctionalTestCase.requirement_id == requirement_id)
+        count_statement = count_statement.where(FunctionalTestCase.requirement_id == requirement_id)
 
     if priority:
-        statement = statement.where(col(FunctionalTestCase.priority) == priority)
-        count_statement = count_statement.where(col(FunctionalTestCase.priority) == priority)
+        statement = statement.where(FunctionalTestCase.priority == priority)
+        count_statement = count_statement.where(FunctionalTestCase.priority == priority)
 
     total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(
-        statement.offset(skip).limit(size).order_by(col(FunctionalTestCase.created_at).desc())
+        statement.offset(skip).limit(size).order_by(FunctionalTestCase.created_at.desc())
     )
-    items = list(result.scalars().all())
+    rows = result.scalars().all()
+    items = [FunctionalTestCaseResponse.model_validate(r) for r in rows]
 
     return PageResponse(
         items=items, total=total, page=page, size=size, pages=(total + size - 1) // size
     )
 
 
-@router.post("/cases", response_model=FunctionalTestCase)
+@router.post("/cases", response_model=FunctionalTestCaseResponse)
 async def create_case(data: dict = Body(...), session: AsyncSession = Depends(get_session)):
     """创建用例"""
     case = FunctionalTestCase(**data)
     session.add(case)
     await session.commit()
     await session.refresh(case)
-    return case
+    return FunctionalTestCaseResponse.model_validate(case)
 
 
-@router.get("/cases/{case_id}", response_model=FunctionalTestCase)
+@router.get("/cases/{case_id}", response_model=FunctionalTestCaseResponse)
 async def get_case(case_id: int, session: AsyncSession = Depends(get_session)):
     """获取用例详情"""
     case = await session.get(FunctionalTestCase, case_id)
     if not case:
         raise HTTPException(status_code=404, detail="用例不存在")
-    return case
+    return FunctionalTestCaseResponse.model_validate(case)
 
 
 @router.put("/cases/{case_id}")
@@ -206,7 +206,7 @@ async def import_cases(
     imported = 0
     date_prefix = datetime.now().strftime("%Y%m%d")
     existing_result = await session.execute(
-        select(FunctionalTestCase).where(col(FunctionalTestCase.case_id).like(f"TC-{date_prefix}-%"))
+        select(FunctionalTestCase).where(FunctionalTestCase.case_id.like(f"TC-{date_prefix}-%"))
     )
     seq_number = len(existing_result.scalars().all()) + 1
 
@@ -241,14 +241,14 @@ async def import_cases(
 
 @router.get("/cases/export")
 async def export_cases(
-    requirement_id: Optional[int] = Query(None),
+    requirement_id: int | None = Query(None),
     format: str = Query("csv"),
     session: AsyncSession = Depends(get_session),
 ):
     """导出用例"""
     statement = select(FunctionalTestCase)
     if requirement_id is not None:
-        statement = statement.where(col(FunctionalTestCase.requirement_id) == requirement_id)
+        statement = statement.where(FunctionalTestCase.requirement_id == requirement_id)
 
     result = await session.execute(statement)
     cases = result.scalars().all()

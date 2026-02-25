@@ -2,10 +2,10 @@
 
 按照 docs/数据库设计.md 定义的用户表结构
 """
+import uuid
 from datetime import datetime
-from typing import Optional, Dict, Any, List
 
-from sqlalchemy import DateTime, Boolean, String, Index
+from sqlalchemy import Boolean, DateTime, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
@@ -36,23 +36,23 @@ class User(Base):
     email: Mapped[str] = mapped_column(
         String(100), unique=True, nullable=False, index=True
     )
-    hashed_password: Mapped[Optional[str]] = mapped_column(
+    hashed_password: Mapped[str | None] = mapped_column(
         String(255), nullable=True
     )  # NULL 表示 OAuth 用户
 
     # 可选信息
-    avatar: Mapped[Optional[str]] = mapped_column(
+    avatar: Mapped[str | None] = mapped_column(
         String(500), nullable=True
     )
-    full_name: Mapped[Optional[str]] = mapped_column(
+    full_name: Mapped[str | None] = mapped_column(
         String(100), nullable=True
     )
 
     # OAuth 字段
-    oauth_provider: Mapped[Optional[str]] = mapped_column(
+    oauth_provider: Mapped[str | None] = mapped_column(
         String(50), nullable=True
     )  # 'github' / 'google' / NULL
-    oauth_id: Mapped[Optional[str]] = mapped_column(
+    oauth_id: Mapped[str | None] = mapped_column(
         String(255), nullable=True
     )  # OAuth 提供商的用户 ID
 
@@ -69,7 +69,3 @@ class User(Base):
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username={self.username}, email={self.email}, is_active={self.is_active})>"
-
-
-# 导入 uuid
-import uuid

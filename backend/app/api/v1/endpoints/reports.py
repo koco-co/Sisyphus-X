@@ -4,8 +4,8 @@
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, func, select
 
 from app.core.db import get_session
 from app.models import TestReport, TestReportDetail
@@ -22,7 +22,7 @@ router = APIRouter()
 async def list_reports(
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(10, ge=1, le=100, description="每页数量"),
-    scenario_id: int | None = Query(None, description="场景ID筛选"),
+    scenario_id: str | None = Query(None, description="场景ID筛选"),
     status: str | None = Query(None, description="状态筛选: success/failed/running"),
     session: AsyncSession = Depends(get_session),
 ):
@@ -37,16 +37,16 @@ async def list_reports(
 
         # 场景ID筛选
         if scenario_id is not None:
-            statement = statement.where(col(TestReport.scenario_id) == scenario_id)
-            count_statement = count_statement.where(col(TestReport.scenario_id) == scenario_id)
+            statement = statement.where(TestReport.scenario_id == scenario_id)
+            count_statement = count_statement.where(TestReport.scenario_id == scenario_id)
 
         # 状态筛选
         if status is not None:
-            statement = statement.where(col(TestReport.status) == status)
-            count_statement = count_statement.where(col(TestReport.status) == status)
+            statement = statement.where(TestReport.status == status)
+            count_statement = count_statement.where(TestReport.status == status)
 
         # 按创建时间倒序
-        statement = statement.order_by(col(TestReport.created_at).desc())
+        statement = statement.order_by(TestReport.created_at.desc())
 
         # 执行查询
         total = int((await session.execute(count_statement)).scalar_one() or 0)
@@ -98,8 +98,8 @@ async def get_report_with_details(
 
         # 获取详情记录
         stmt = select(TestReportDetail).where(
-            col(TestReportDetail.report_id) == report_id
-        ).order_by(col(TestReportDetail.created_at).asc())
+            TestReportDetail.report_id == report_id
+        ).order_by(TestReportDetail.created_at.asc())
         result = await session.execute(stmt)
         details = list(result.scalars().all())
 
@@ -139,7 +139,7 @@ async def get_report_statistics(
             TestReportDetail.status,
             func.count()  # 使用 count(*) 而不是 count(id)
         ).where(
-            col(TestReportDetail.report_id) == report_id
+            TestReportDetail.report_id == report_id
         ).group_by(TestReportDetail.status)
 
         result = await session.execute(count_stmt)
@@ -255,7 +255,7 @@ async def delete_report(
 
         # 先删除关联的详情记录
         details_stmt = select(TestReportDetail).where(
-            col(TestReportDetail.report_id) == report_id
+            TestReportDetail.report_id == report_id
         )
         details_result = await session.execute(details_stmt)
         details = details_result.scalars().all()

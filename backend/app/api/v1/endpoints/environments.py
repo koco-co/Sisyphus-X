@@ -1,8 +1,8 @@
 """Environment management API endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, Path
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, select
 
 from app.core.db import get_session
 from app.models.project import ProjectEnvironment
@@ -35,7 +35,7 @@ async def list_environments(
         List of environments
     """
     statement = select(ProjectEnvironment).where(
-        col(ProjectEnvironment.project_id) == project_id
+        ProjectEnvironment.project_id == project_id
     )
     result = await session.execute(statement)
     return list(result.scalars().all())
@@ -62,7 +62,7 @@ async def create_environment(
         HTTPException: If environment name already exists
     """
     # Check for duplicate name
-    from sqlmodel import select
+    from sqlalchemy import select
 
     statement = select(ProjectEnvironment).where(
         ProjectEnvironment.project_id == project_id,
@@ -146,7 +146,7 @@ async def update_environment(
     """
     from datetime import datetime
 
-    from sqlmodel import select
+    from sqlalchemy import select
 
     # Get environment
     environment = await session.get(ProjectEnvironment, environment_id)
@@ -238,7 +238,7 @@ async def copy_environment(
     import uuid
     from datetime import datetime
 
-    from sqlmodel import select
+    from sqlalchemy import select
 
     # Get source environment
     source = await session.get(ProjectEnvironment, environment_id)
@@ -301,7 +301,7 @@ async def clone_environment(
     import uuid
     from datetime import datetime
 
-    from sqlmodel import select
+    from sqlalchemy import select
 
     # Get source environment
     source = await session.get(ProjectEnvironment, environment_id)

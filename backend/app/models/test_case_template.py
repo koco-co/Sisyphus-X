@@ -1,36 +1,29 @@
 """
-测试用例模板模型 - 功能测试模块
-管理测试用例模板(快速生成用例)
+测试用例模板模型 - 功能测试模块 (SQLAlchemy 2.0)
 """
 
 from datetime import datetime
-from typing import Any, Optional, Dict, List
 
-from sqlmodel import JSON, Column, Field, SQLModel
+from sqlalchemy import JSON, Boolean, DateTime, Index, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.base import Base
 
 
-class TestCaseTemplate(SQLModel, table=True):
+class TestCaseTemplate(Base):
     """测试用例模板表"""
 
-    __tablename__ = "test_case_templates"  # pyright: ignore[reportAssignmentType]
-    id: int = Field(primary_key=True)
-    name: str
-    description: Optional[str] = None
-    category: Optional[str] = None  # form_submission/list_query/file_upload等
+    __tablename__ = "test_case_templates"
 
-    # 模板内容
-    template_structure: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON))
+    __table_args__ = (Index("idx_test_case_templates_category", "category"),)
 
-    # 统计
-    usage_count: int = Field(default=0)
-
-    # 元数据
-    is_system: bool = Field(default=False)  # 系统模板/用户自定义
-    created_by: Optional[int] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-
-    class Config:
-        indexes = [
-            "category",
-        ]
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    template_structure: Mapped[dict] = mapped_column(JSON, default=dict)
+    usage_count: Mapped[int] = mapped_column(Integer, default=0)
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_by: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

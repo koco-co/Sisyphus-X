@@ -1,6 +1,5 @@
 """用户相关的 Pydantic Schemas"""
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -35,8 +34,8 @@ class UserLogin(BaseModel):
 class UserUpdate(BaseModel):
     """用户更新 Schema"""
 
-    email: Optional[EmailStr] = Field(None, description="用户邮箱")
-    is_active: Optional[bool] = Field(None, description="账户是否激活")
+    email: EmailStr | None = Field(None, description="用户邮箱")
+    is_active: bool | None = Field(None, description="账户是否激活")
 
 
 class UserResponse(UserBase):
@@ -47,7 +46,7 @@ class UserResponse(UserBase):
     updated_at: datetime = Field(..., description="更新时间")
 
     # OAuth 字段(仅展示)
-    oauth_provider: Optional[str] = Field(None, description="OAuth 提供商")
+    oauth_provider: str | None = Field(None, description="OAuth 提供商")
 
     model_config = {"from_attributes": True}
 
@@ -62,4 +61,4 @@ class OAuthCallbackRequest(BaseModel):
     """OAuth 回调请求 Schema"""
 
     code: str = Field(..., description="授权码")
-    state: Optional[str] = Field(None, description="状态参数")
+    state: str | None = Field(None, description="状态参数")

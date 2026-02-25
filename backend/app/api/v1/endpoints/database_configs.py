@@ -10,7 +10,6 @@ import pymysql
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col
 
 from app.api.deps import get_current_user
 from app.core.crypto import decrypt_password, encrypt_password
@@ -114,10 +113,10 @@ async def list_database_configs(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
 
     # 构建查询
-    query = select(DatabaseConfig).where(col(DatabaseConfig.project_id) == project_id)
+    query = select(DatabaseConfig).where(DatabaseConfig.project_id == project_id)
 
     if is_enabled is not None:
-        query = query.where(col(DatabaseConfig.is_enabled) == is_enabled)
+        query = query.where(DatabaseConfig.is_enabled == is_enabled)
 
     # 获取总数
     count_statement = select(func.count()).select_from(query.subquery())
@@ -126,7 +125,7 @@ async def list_database_configs(
 
     # 分页查询
     skip = (page - 1) * size
-    statement = query.order_by(col(DatabaseConfig.created_at).desc()).offset(skip).limit(size)
+    statement = query.order_by(DatabaseConfig.created_at.desc()).offset(skip).limit(size)
     result = await session.execute(statement)
     configs = result.scalars().all()
 
@@ -192,8 +191,8 @@ async def create_database_config(
     # 检查变量名唯一性
     if config_in.variable_name:
         existing_statement = select(DatabaseConfig).where(
-            col(DatabaseConfig.project_id) == project_id,
-            col(DatabaseConfig.variable_name) == config_in.variable_name,
+            DatabaseConfig.project_id == project_id,
+            DatabaseConfig.variable_name == config_in.variable_name,
         )
         existing_result = await session.execute(existing_statement)
         if existing_result.scalar_one_or_none():
@@ -317,9 +316,9 @@ async def update_database_config(
     # 检查变量名唯一性
     if config_in.variable_name and config_in.variable_name != config.variable_name:
         existing_statement = select(DatabaseConfig).where(
-            col(DatabaseConfig.project_id) == project_id,
-            col(DatabaseConfig.variable_name) == config_in.variable_name,
-            col(DatabaseConfig.id) != db_id,
+            DatabaseConfig.project_id == project_id,
+            DatabaseConfig.variable_name == config_in.variable_name,
+            DatabaseConfig.id != db_id,
         )
         existing_result = await session.execute(existing_statement)
         if existing_result.scalar_one_or_none():

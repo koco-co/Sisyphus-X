@@ -4,9 +4,8 @@
 """
 import uuid
 from datetime import datetime
-from typing import Optional, Dict, Any, List
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
@@ -52,17 +51,17 @@ class TestReport(Base):
     status: Mapped[str] = mapped_column(
         String(50), nullable=False
     )  # 'passed' / 'failed' / 'skipped'
-    duration: Mapped[Optional[int]] = mapped_column(
+    duration: Mapped[int | None] = mapped_column(
         Integer, nullable=True
     )  # 耗时（秒）
 
     # JSONB 字段
-    result: Mapped[Optional[dict]] = mapped_column(
+    result: Mapped[dict | None] = mapped_column(
         Text, nullable=True
     )  # 详细结果（JSON 存储，SQLite 兼容）
 
     # Allure 报告
-    allure_report_path: Mapped[Optional[str]] = mapped_column(
+    allure_report_path: Mapped[str | None] = mapped_column(
         Text, nullable=True
     )
 

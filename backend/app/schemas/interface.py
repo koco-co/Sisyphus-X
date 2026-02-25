@@ -1,6 +1,6 @@
 """接口相关 Schema"""
 from datetime import datetime
-from typing import Any, Optional, List
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -37,9 +37,9 @@ class InterfaceSendResponse(BaseModel):
 
 class EngineExecuteRequest(BaseModel):
     """通过引擎执行测试用例的请求"""
-    interface_id: Optional[str] = Field(None, description="接口 ID (可选)")
-    environment_id: Optional[str] = Field(None, description="环境 ID (可选)")
-    yaml_content: Optional[str] = Field(None, description="YAML 内容 (可选)")
+    interface_id: str | None = Field(None, description="接口 ID (可选)")
+    environment_id: str | None = Field(None, description="环境 ID (可选)")
+    yaml_content: str | None = Field(None, description="YAML 内容 (可选)")
     variables: dict[str, Any] = Field(default_factory=dict, description="额外变量")
     timeout: int = Field(default=300, description="执行超时时间(秒)")
 
@@ -48,7 +48,7 @@ class EngineExecuteResponse(BaseModel):
     """引擎执行响应"""
     success: bool
     result: dict[str, Any] | None = None
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class CurlParseRequest(BaseModel):
@@ -80,7 +80,7 @@ class InterfaceBase(BaseModel):
         ..., pattern="^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)$", description="HTTP 方法"
     )
     status: str = Field(default="draft", description="状态: draft/stable/deprecated")
-    description: Optional[str] = Field(None, description="接口描述")
+    description: str | None = Field(None, description="接口描述")
     headers: dict[str, str] = Field(default_factory=dict, description="请求头")
     params: dict[str, Any] = Field(default_factory=dict, description="Query 参数")
     body: Any = Field(default_factory=dict, description="请求体")
@@ -92,26 +92,26 @@ class InterfaceBase(BaseModel):
 class InterfaceCreate(InterfaceBase):
     """创建接口请求"""
     project_id: str = Field(..., description="所属项目 ID")
-    folder_id: Optional[str] = Field(None, description="所属文件夹 ID")
+    folder_id: str | None = Field(None, description="所属文件夹 ID")
     order: int = Field(default=0, description="排序序号")
 
 
 class InterfaceUpdate(BaseModel):
     """更新接口请求"""
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="接口名称")
-    url: Optional[str] = Field(None, min_length=1, max_length=2048, description="接口路径")
-    method: Optional[str] = Field(
+    name: str | None = Field(None, min_length=1, max_length=255, description="接口名称")
+    url: str | None = Field(None, min_length=1, max_length=2048, description="接口路径")
+    method: str | None = Field(
         None, pattern="^(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)$", description="HTTP 方法"
     )
-    status: Optional[str] = Field(None, description="状态: draft/stable/deprecated")
-    description: Optional[str] = Field(None, description="接口描述")
+    status: str | None = Field(None, description="状态: draft/stable/deprecated")
+    description: str | None = Field(None, description="接口描述")
     headers: dict[str, str] | None = Field(None, description="请求头")
     params: dict[str, Any] | None = Field(None, description="Query 参数")
     body: Any | None = Field(None, description="请求体")
-    body_type: Optional[str] = Field(None, description="请求体类型")
+    body_type: str | None = Field(None, description="请求体类型")
     cookies: dict[str, str] | None = Field(None, description="Cookies")
-    folder_id: Optional[str] = Field(None, description="所属文件夹 ID")
-    order: Optional[int] = Field(None, description="排序序号")
+    folder_id: str | None = Field(None, description="所属文件夹 ID")
+    order: int | None = Field(None, description="排序序号")
     auth_config: dict[str, Any] | None = Field(None, description="认证配置")
 
 
@@ -119,7 +119,7 @@ class InterfaceResponse(InterfaceBase):
     """接口响应"""
     id: str
     project_id: str
-    folder_id: Optional[str]
+    folder_id: str | None
     order: int
     created_at: datetime
     updated_at: datetime
@@ -135,9 +135,9 @@ class InterfaceResponse(InterfaceBase):
 class FolderCreate(BaseModel):
     """Create folder request."""
 
-    project_id: Optional[str] = None  # UUID (从URL路径获取，可选)
+    project_id: str | None = None  # UUID (从URL路径获取，可选)
     name: str = Field(..., min_length=1, max_length=255)
-    parent_id: Optional[str] = None  # UUID
+    parent_id: str | None = None  # UUID
     order: int = 0
 
 
@@ -147,7 +147,7 @@ class FolderResponse(BaseModel):
     id: str
     project_id: str
     name: str
-    parent_id: Optional[str]
+    parent_id: str | None
     order: int
     created_at: datetime
 
@@ -157,8 +157,8 @@ class FolderResponse(BaseModel):
 class FolderMoveRequest(BaseModel):
     """Move folder request."""
 
-    target_parent_id: Optional[str] = None
-    target_order: Optional[int] = None
+    target_parent_id: str | None = None
+    target_order: int | None = None
 
 
 # ============================================
@@ -169,19 +169,19 @@ class FolderMoveRequest(BaseModel):
 class InterfaceMoveRequest(BaseModel):
     """Move interface request."""
 
-    target_folder_id: Optional[int] = None
+    target_folder_id: int | None = None
 
 
 class InterfaceCopyRequest(BaseModel):
     """Copy interface request."""
 
     name: str = Field(..., min_length=1, max_length=255)
-    target_folder_id: Optional[int] = None
+    target_folder_id: int | None = None
 
 
 class ImportFromCurlRequest(BaseModel):
     """从cURL导入接口请求"""
 
     curl_command: str = Field(..., description="cURL 命令字符串")
-    folder_id: Optional[str] = Field(None, description="所属文件夹 ID")
-    name: Optional[str] = Field(None, description="接口名称")
+    folder_id: str | None = Field(None, description="所属文件夹 ID")
+    name: str | None = Field(None, description="接口名称")

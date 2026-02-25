@@ -5,7 +5,6 @@
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
-from typing import Optional
 
 # ============================================================================
 # 用户相关 Schemas
@@ -17,7 +16,7 @@ class UserBase(BaseModel):
 
     username: str = Field(..., min_length=3, max_length=50)
     email: EmailStr
-    full_name: Optional[str] = Field(None, max_length=100)
+    full_name: str | None = Field(None, max_length=100)
     is_active: bool = True
 
 
@@ -31,10 +30,10 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     """更新用户"""
 
-    email: Optional[EmailStr] = None
-    full_name: Optional[str] = None
-    password: Optional[str] = Field(None, min_length=6, max_length=100)
-    is_active: Optional[bool] = None
+    email: EmailStr | None = None
+    full_name: str | None = None
+    password: str | None = Field(None, min_length=6, max_length=100)
+    is_active: bool | None = None
     role_ids: list[int] | None = None
 
 
@@ -58,7 +57,7 @@ class RoleBase(BaseModel):
     """角色基础 Schema"""
 
     name: str = Field(..., min_length=2, max_length=50)
-    description: Optional[str] = Field(None, max_length=200)
+    description: str | None = Field(None, max_length=200)
 
 
 class RoleCreate(RoleBase):
@@ -70,8 +69,8 @@ class RoleCreate(RoleBase):
 class RoleUpdate(BaseModel):
     """更新角色"""
 
-    name: Optional[str] = Field(None, min_length=2, max_length=50)
-    description: Optional[str] = None
+    name: str | None = Field(None, min_length=2, max_length=50)
+    description: str | None = None
     permission_ids: list[int] | None = None
 
 
@@ -96,7 +95,7 @@ class PermissionBase(BaseModel):
 
     resource: str = Field(..., max_length=50)
     action: str = Field(..., max_length=50)
-    description: Optional[str] = Field(None, max_length=200)
+    description: str | None = Field(None, max_length=200)
 
 
 class PermissionCreate(PermissionBase):
@@ -108,9 +107,9 @@ class PermissionCreate(PermissionBase):
 class PermissionUpdate(BaseModel):
     """更新权限"""
 
-    resource: Optional[str] = None
-    action: Optional[str] = None
-    description: Optional[str] = None
+    resource: str | None = None
+    action: str | None = None
+    description: str | None = None
 
 
 class PermissionResponse(PermissionBase):
@@ -136,9 +135,9 @@ class AuditLogResponse(BaseModel):
     user_id: int
     action: str
     resource_type: str
-    resource_id: Optional[int]
-    details: Optional[str]
-    ip_address: Optional[str]
+    resource_id: int | None
+    details: str | None
+    ip_address: str | None
     created_at: datetime
 
 
@@ -165,7 +164,7 @@ class ProjectMemberResponse(BaseModel):
 
     user_id: int
     username: str
-    full_name: Optional[str]
+    full_name: str | None
     email: str
     role: str
     joined_at: datetime

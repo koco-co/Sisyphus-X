@@ -53,7 +53,7 @@ ExecutionStep:
 - idx_execution_steps_status: status 索引
 """
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, List, Dict, Any
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -92,10 +92,10 @@ class TestPlan(Base):
 
     # 基本信息
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # 调度和状态信息
-    cron_expression: Mapped[Optional[str]] = mapped_column(
+    cron_expression: Mapped[str | None] = mapped_column(
         String(255), nullable=True, default=None
     )  # Cron 定时表达式
     status: Mapped[str] = mapped_column(
@@ -103,10 +103,10 @@ class TestPlan(Base):
     )  # active, paused, archived
 
     # 运行时间信息
-    next_run: Mapped[Optional[datetime]] = mapped_column(
+    next_run: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, default=None
     )  # 下次运行时间
-    last_run: Mapped[Optional[datetime]] = mapped_column(
+    last_run: Mapped[datetime | None] = mapped_column(
         DateTime, nullable=True, default=None
     )  # 最后运行时间
 
@@ -117,13 +117,13 @@ class TestPlan(Base):
     )
 
     # 关系
-    plan_scenarios: Mapped[List["PlanScenario"]] = relationship(
+    plan_scenarios: Mapped[list["PlanScenario"]] = relationship(
         "PlanScenario",
         back_populates="test_plan",
         cascade="all, delete-orphan",
         order_by="PlanScenario.execution_order",
     )
-    test_plan_executions: Mapped[List["TestPlanExecution"]] = relationship(
+    test_plan_executions: Mapped[list["TestPlanExecution"]] = relationship(
         "TestPlanExecution",
         back_populates="test_plan",
         cascade="all, delete-orphan",
@@ -215,8 +215,8 @@ class TestPlanExecution(Base):
     )  # pending, running, completed, failed, cancelled
 
     # 时间信息
-    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # 统计信息
     total_scenarios: Mapped[int] = mapped_column(Integer, default=0)
@@ -229,7 +229,7 @@ class TestPlanExecution(Base):
 
     # 关系
     test_plan: Mapped["TestPlan"] = relationship("TestPlan", back_populates="test_plan_executions")
-    execution_steps: Mapped[List["PlanExecutionStep"]] = relationship(
+    execution_steps: Mapped[list["PlanExecutionStep"]] = relationship(
         "PlanExecutionStep",
         back_populates="test_plan_execution",
         cascade="all, delete-orphan",
@@ -275,11 +275,11 @@ class PlanExecutionStep(Base):
     )  # pending, running, passed, failed, skipped
 
     # 时间信息
-    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # 错误信息
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)

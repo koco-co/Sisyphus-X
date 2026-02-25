@@ -9,7 +9,6 @@ import tempfile
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Optional
 
 router = APIRouter()
 ENGINE_CMD = "sisyphus-api-engine"
@@ -19,8 +18,8 @@ class RunRequest(BaseModel):
     """执行请求"""
 
     yaml_content: str  # YAML 内容
-    base_url: Optional[str] = None
-    timeout: Optional[int] = None
+    base_url: str | None = None
+    timeout: int | None = None
 
 
 class RunResponse(BaseModel):
@@ -28,7 +27,7 @@ class RunResponse(BaseModel):
 
     success: bool
     result: dict
-    error: Optional[str] = None
+    error: str | None = None
 
 
 @router.post("/run", response_model=RunResponse)

@@ -1,8 +1,8 @@
 """Interface request history API endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, func, select
 
 from app.api.deps import get_current_user
 from app.core.db import get_session
@@ -38,12 +38,12 @@ async def get_interface_history(
     # Build query
     statement = (
         select(InterfaceHistory)
-        .where(col(InterfaceHistory.interface_id) == interface_id)
-        .order_by(col(InterfaceHistory.created_at).desc())
+        .where(InterfaceHistory.interface_id == interface_id)
+        .order_by(InterfaceHistory.created_at.desc())
     )
 
     count_statement = select(func.count()).select_from(InterfaceHistory).where(
-        col(InterfaceHistory.interface_id) == interface_id
+        InterfaceHistory.interface_id == interface_id
     )
 
     # Get total count
@@ -108,7 +108,7 @@ async def clear_interface_history(
     """
     # Get all history items for this interface
     statement = select(InterfaceHistory).where(
-        col(InterfaceHistory.interface_id) == interface_id
+        InterfaceHistory.interface_id == interface_id
     )
     result = await session.execute(statement)
     items = result.scalars().all()

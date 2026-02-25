@@ -4,8 +4,8 @@
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, select
 
 from app.api.deps import get_current_user, require_user_id
 from app.core.db import get_session
@@ -73,7 +73,7 @@ async def get_test_points_by_requirement(
     result = await session.execute(
         select(TestPoint)
         .where(TestPoint.requirement_id == requirement_id)
-        .order_by(col(TestPoint.priority), col(TestPoint.id))
+        .order_by(TestPoint.priority, TestPoint.id)
     )
     test_points = result.scalars().all()
 

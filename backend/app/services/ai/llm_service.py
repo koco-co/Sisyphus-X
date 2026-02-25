@@ -3,13 +3,13 @@
 支持OpenAI、Anthropic、通义千问、文心一言
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from langchain_anthropic import ChatAnthropic
 from langchain_community.chat_models import QianfanChatEndpoint
 from langchain_openai import ChatOpenAI
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, select
 
 from app.models.ai_config import AIProviderConfig
 from app.services.ai_config_service import AIConfigService
@@ -101,7 +101,7 @@ class MultiVendorLLMService:
     @staticmethod
     async def get_default_llm_service(
         session: AsyncSession, user_id: int
-    ) -> "Optional[MultiVendorLLMService]":
+    ) -> "MultiVendorLLMService | None":
         """
         获取用户的默认LLM服务实例
 
@@ -119,9 +119,9 @@ class MultiVendorLLMService:
         # 获取默认配置
         result = await session.execute(
             select(AIProviderConfig)
-            .where(col(AIProviderConfig.user_id) == user_id)
-            .where(col(AIProviderConfig.is_default).is_(True))
-            .where(col(AIProviderConfig.is_enabled).is_(True))
+            .where(AIProviderConfig.user_id == user_id)
+            .where(AIProviderConfig.is_default.is_(True))
+            .where(AIProviderConfig.is_enabled.is_(True))
         )
         config = result.scalar_one_or_none()
 
@@ -155,7 +155,7 @@ class MultiVendorLLMService:
     @staticmethod
     async def get_llm_by_provider(
         session: AsyncSession, user_id: int, provider_type: str
-    ) -> Optional[Any]:
+    ) -> Any | None:
         """
         根据厂商类型获取LLM实例
 
@@ -170,10 +170,10 @@ class MultiVendorLLMService:
         # 获取指定厂商的配置
         result = await session.execute(
             select(AIProviderConfig)
-            .where(col(AIProviderConfig.user_id) == user_id)
-            .where(col(AIProviderConfig.provider_type) == provider_type)
-            .where(col(AIProviderConfig.is_enabled).is_(True))
-            .order_by(col(AIProviderConfig.is_default).desc())
+            .where(AIProviderConfig.user_id == user_id)
+            .where(AIProviderConfig.provider_type == provider_type)
+            .where(AIProviderConfig.is_enabled.is_(True))
+            .order_by(AIProviderConfig.is_default.desc())
         )
         config = result.scalar_one_or_none()
 
@@ -288,7 +288,7 @@ class MultiVendorLLMService:
     @staticmethod
     async def get_default_llm(
         session: AsyncSession, user_id: int
-    ) -> "Optional[MultiVendorLLMService]":
+    ) -> "MultiVendorLLMService | None":
         """兼容旧调用名。"""
         return await MultiVendorLLMService.get_default_llm_service(session, user_id)
 

@@ -2,7 +2,6 @@ import logging
 import socket
 
 import aiomysql
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ async def test_mysql_connection(
     port: int,
     username: str,
     password: str,
-    database: Optional[str] = None,
+    database: str | None = None,
     timeout: int = 5,
 ) -> tuple[bool, str]:
     """

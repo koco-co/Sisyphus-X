@@ -3,16 +3,16 @@
 按照 docs/数据库设计.md §3.16 定义
 """
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 
 class TestReportBase(BaseModel):
     """测试报告基础 Schema"""
     status: str  # 'passed' / 'failed' / 'skipped'
-    duration: Optional[int] = None  # 耗时（秒）
-    result: Optional[dict] = None  # 详细结果
-    allure_report_path: Optional[str] = None  # Allure 报告路径
+    duration: int | None = None  # 耗时（秒）
+    result: dict | None = None  # 详细结果
+    allure_report_path: str | None = None  # Allure 报告路径
 
 
 class TestReportCreate(TestReportBase):
@@ -23,10 +23,10 @@ class TestReportCreate(TestReportBase):
 
 class TestReportUpdate(BaseModel):
     """更新测试报告 Schema"""
-    status: Optional[str] = None
-    duration: Optional[int] = None
-    result: Optional[dict] = None
-    allure_report_path: Optional[str] = None
+    status: str | None = None
+    duration: int | None = None
+    result: dict | None = None
+    allure_report_path: str | None = None
 
 
 class TestReportResponse(TestReportBase):

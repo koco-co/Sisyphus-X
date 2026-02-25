@@ -1,24 +1,22 @@
 import time
 from typing import Any
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, func, select
 
 from app.core.db import get_session, sync_session_maker
-from app.core.storage import MINIO_BUCKET, get_minio_client
 from app.models.project import Interface, InterfaceFolder
 from app.schemas.interface import (
     EngineExecuteRequest,
     EngineExecuteResponse,
+    FolderCreate,
+    FolderResponse,
     ImportFromCurlRequest,
     InterfaceCreate,
     InterfaceResponse,
     InterfaceSendRequest,
     InterfaceSendResponse,
-    FolderCreate,
-    FolderResponse,
 )
 from app.schemas.interface_test_case import (
     GenerateTestCaseRequest,
@@ -47,12 +45,12 @@ async def read_interfaces(
     count_statement = select(func.count()).select_from(Interface)
 
     if project_id is not None:
-        statement = statement.where(col(Interface.project_id) == project_id)
-        count_statement = count_statement.where(col(Interface.project_id) == project_id)
+        statement = statement.where(Interface.project_id == project_id)
+        count_statement = count_statement.where(Interface.project_id == project_id)
 
     if folder_id is not None:
-        statement = statement.where(col(Interface.folder_id) == folder_id)
-        count_statement = count_statement.where(col(Interface.folder_id) == folder_id)
+        statement = statement.where(Interface.folder_id == folder_id)
+        count_statement = count_statement.where(Interface.folder_id == folder_id)
 
     total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(statement.offset(skip).limit(size))
@@ -84,7 +82,7 @@ async def list_folders(
     """获取接口文件夹树"""
     statement = select(InterfaceFolder)
     if project_id is not None:
-        statement = statement.where(col(InterfaceFolder.project_id) == project_id)
+        statement = statement.where(InterfaceFolder.project_id == project_id)
 
     result = await session.execute(statement)
     folders = result.scalars().all()
@@ -114,12 +112,12 @@ async def delete_folder(folder_id: int, session: AsyncSession = Depends(get_sess
     child_folders_stmt = (
         select(func.count())
         .select_from(InterfaceFolder)
-        .where(col(InterfaceFolder.parent_id) == folder_id)
+        .where(InterfaceFolder.parent_id == folder_id)
     )
     child_count = int((await session.execute(child_folders_stmt)).scalar_one() or 0)
 
     interfaces_stmt = (
-        select(func.count()).select_from(Interface).where(col(Interface.folder_id) == folder_id)
+        select(func.count()).select_from(Interface).where(Interface.folder_id == folder_id)
     )
     interface_count = int((await session.execute(interfaces_stmt)).scalar_one() or 0)
 
@@ -241,10 +239,10 @@ async def send_interface_request(request: InterfaceSendRequest):
     - Requests can be replayed via engine
     - Consistent with sisyphus-api-engine integration
     """
+    from app.models.project import ProjectEnvironment
     from app.services.engine_executor import EngineExecutor
     from app.services.variable_replacer import VariableReplacer
     from app.services.yaml_generator import YAMLGenerator
-    from app.models.project import ProjectEnvironment
 
     # Get interface from database
     async with get_session() as session:
@@ -579,29 +577,29 @@ async def search_interfaces(
     """
     skip = (page - 1) * size
 
-    statement = select(Interface).where(col(Interface.project_id) == project_id)
+    statement = select(Interface).where(Interface.project_id == project_id)
     count_statement = select(func.count()).select_from(Interface).where(
-        col(Interface.project_id) == project_id
+        Interface.project_id == project_id
     )
 
     if q:
         search_pattern = f"%{q}%"
         statement = statement.where(
-            (col(Interface.name).ilike(search_pattern))
-            | (col(Interface.url).ilike(search_pattern))
+            (Interface.name.ilike(search_pattern))
+            | (Interface.url.ilike(search_pattern))
         )
         count_statement = count_statement.where(
-            (col(Interface.name).ilike(search_pattern))
-            | (col(Interface.url).ilike(search_pattern))
+            (Interface.name.ilike(search_pattern))
+            | (Interface.url.ilike(search_pattern))
         )
 
     if method:
-        statement = statement.where(col(Interface.method) == method.upper())
-        count_statement = count_statement.where(col(Interface.method) == method.upper())
+        statement = statement.where(Interface.method == method.upper())
+        count_statement = count_statement.where(Interface.method == method.upper())
 
     if folder_id is not None:
-        statement = statement.where(col(Interface.folder_id) == folder_id)
-        count_statement = count_statement.where(col(Interface.folder_id) == folder_id)
+        statement = statement.where(Interface.folder_id == folder_id)
+        count_statement = count_statement.where(Interface.folder_id == folder_id)
 
     total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(statement.offset(skip).limit(size))

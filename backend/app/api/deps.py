@@ -4,8 +4,8 @@ API 依赖注入模块
 
 
 from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, select
 
 from app.core.config import settings
 from app.core.db import get_session
@@ -52,7 +52,7 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="令牌无效或已过期")
 
     user_id = int(payload["sub"])
-    result = await session.execute(select(User).where(col(User.id) == user_id))
+    result = await session.execute(select(User).where(User.id == str(user_id)))
     user = result.scalar_one_or_none()
 
     if not user or not user.is_active:

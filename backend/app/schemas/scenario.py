@@ -4,9 +4,9 @@
 遵循 API 接口定义: docs/接口定义.md §6 场景编排模块
 """
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, ConfigDict, HttpUrl
+from typing import Any
 
+from pydantic import BaseModel, ConfigDict, Field
 
 # ========== Scenario Schemas ==========
 
@@ -14,12 +14,12 @@ from pydantic import BaseModel, Field, ConfigDict, HttpUrl
 class ScenarioBase(BaseModel):
     """场景基础 Schema"""
     name: str = Field(..., min_length=1, max_length=255, description="场景名称")
-    description: Optional[str] = Field(None, description="场景描述")
+    description: str | None = Field(None, description="场景描述")
     priority: str = Field(default="P2", pattern=r"^P[0-3]$", description="优先级 (P0/P1/P2/P3)")
-    tags: Optional[List[str]] = Field(default=None, description="标签列表")
-    variables: Optional[Dict[str, Any]] = Field(default=None, description="场景级变量")
-    pre_sql: Optional[str] = Field(None, description="前置 SQL")
-    post_sql: Optional[str] = Field(None, description="后置 SQL")
+    tags: list[str] | None = Field(default=None, description="标签列表")
+    variables: dict[str, Any] | None = Field(default=None, description="场景级变量")
+    pre_sql: str | None = Field(None, description="前置 SQL")
+    post_sql: str | None = Field(None, description="后置 SQL")
 
 
 class ScenarioCreate(ScenarioBase):
@@ -29,22 +29,22 @@ class ScenarioCreate(ScenarioBase):
 
 class ScenarioUpdate(BaseModel):
     """更新场景请求 Schema (所有字段可选)"""
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="场景名称")
-    description: Optional[str] = Field(None, description="场景描述")
-    priority: Optional[str] = Field(None, pattern=r"^P[0-3]$", description="优先级 (P0/P1/P2/P3)")
-    tags: Optional[List[str]] = Field(None, description="标签列表")
-    variables: Optional[Dict[str, Any]] = Field(None, description="场景级变量")
-    pre_sql: Optional[str] = Field(None, description="前置 SQL")
-    post_sql: Optional[str] = Field(None, description="后置 SQL")
+    name: str | None = Field(None, min_length=1, max_length=255, description="场景名称")
+    description: str | None = Field(None, description="场景描述")
+    priority: str | None = Field(None, pattern=r"^P[0-3]$", description="优先级 (P0/P1/P2/P3)")
+    tags: list[str] | None = Field(None, description="标签列表")
+    variables: dict[str, Any] | None = Field(None, description="场景级变量")
+    pre_sql: str | None = Field(None, description="前置 SQL")
+    post_sql: str | None = Field(None, description="后置 SQL")
 
 
 class ScenarioStepSummary(BaseModel):
     """场景步骤摘要 Schema (用于场景详情响应)"""
     id: str
-    description: Optional[str] = None
+    description: str | None = None
     keyword_type: str
     keyword_name: str
-    parameters: Optional[Dict[str, Any]] = None
+    parameters: dict[str, Any] | None = None
     sort_order: int
 
     model_config = ConfigDict(from_attributes=True)
@@ -67,12 +67,12 @@ class ScenarioResponse(ScenarioBase):
     created_by: str
     created_at: datetime
     updated_at: datetime
-    steps: List[ScenarioStepSummary] = []
+    steps: list[ScenarioStepSummary] = []
 
 
 class ScenarioDetailResponse(ScenarioResponse):
     """场景详情响应 Schema (包含完整步骤和数据集)"""
-    datasets: List[DatasetSummary] = []
+    datasets: list[DatasetSummary] = []
 
 
 # ========== ScenarioStep Schemas ==========
@@ -80,10 +80,10 @@ class ScenarioDetailResponse(ScenarioResponse):
 
 class ScenarioStepBase(BaseModel):
     """场景步骤基础 Schema"""
-    description: Optional[str] = Field(None, description="步骤描述")
+    description: str | None = Field(None, description="步骤描述")
     keyword_type: str = Field(..., description="关键字类型 (request/assertion/extract/db/custom)")
     keyword_name: str = Field(..., min_length=1, max_length=255, description="关键字名称")
-    parameters: Optional[Dict[str, Any]] = Field(None, description="关键字参数")
+    parameters: dict[str, Any] | None = Field(None, description="关键字参数")
     sort_order: int = Field(..., ge=0, description="排序顺序")
 
 
@@ -94,11 +94,11 @@ class ScenarioStepCreate(ScenarioStepBase):
 
 class ScenarioStepUpdate(BaseModel):
     """更新场景步骤请求 Schema (所有字段可选)"""
-    description: Optional[str] = Field(None, description="步骤描述")
-    keyword_type: Optional[str] = Field(None, description="关键字类型")
-    keyword_name: Optional[str] = Field(None, min_length=1, max_length=255, description="关键字名称")
-    parameters: Optional[Dict[str, Any]] = Field(None, description="关键字参数")
-    sort_order: Optional[int] = Field(None, ge=0, description="排序顺序")
+    description: str | None = Field(None, description="步骤描述")
+    keyword_type: str | None = Field(None, description="关键字类型")
+    keyword_name: str | None = Field(None, min_length=1, max_length=255, description="关键字名称")
+    parameters: dict[str, Any] | None = Field(None, description="关键字参数")
+    sort_order: int | None = Field(None, ge=0, description="排序顺序")
 
 
 class ScenarioStepResponse(ScenarioStepBase):
@@ -113,7 +113,7 @@ class ScenarioStepResponse(ScenarioStepBase):
 
 class ReorderStepsRequest(BaseModel):
     """批量更新步骤排序请求 Schema"""
-    step_ids: List[str] = Field(..., min_length=1, description="按新顺序排列的步骤 ID 数组")
+    step_ids: list[str] = Field(..., min_length=1, description="按新顺序排列的步骤 ID 数组")
 
 
 # ========== Dataset Schemas ==========
@@ -131,8 +131,8 @@ class DatasetCreate(DatasetBase):
 
 class DatasetUpdate(BaseModel):
     """更新数据集请求 Schema (所有字段可选)"""
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="数据集名称")
-    csv_data: Optional[str] = Field(None, description="CSV 格式数据")
+    name: str | None = Field(None, min_length=1, max_length=255, description="数据集名称")
+    csv_data: str | None = Field(None, description="CSV 格式数据")
 
 
 class DatasetResponse(DatasetBase):
@@ -141,7 +141,7 @@ class DatasetResponse(DatasetBase):
 
     id: str
     project_id: str
-    scenario_id: Optional[str] = None
+    scenario_id: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -157,7 +157,7 @@ class ImportCsvResponse(BaseModel):
     id: str
     name: str
     row_count: int
-    columns: List[str]
+    columns: list[str]
 
 
 # ========== Debug Schemas ==========
@@ -165,9 +165,9 @@ class ImportCsvResponse(BaseModel):
 
 class DebugScenarioRequest(BaseModel):
     """调试场景请求 Schema"""
-    environment_id: Optional[str] = Field(None, description="环境 ID")
-    dataset_id: Optional[str] = Field(None, description="数据集 ID")
-    variables: Optional[Dict[str, Any]] = Field(None, description="变量覆盖")
+    environment_id: str | None = Field(None, description="环境 ID")
+    dataset_id: str | None = Field(None, description="数据集 ID")
+    variables: dict[str, Any] | None = Field(None, description="变量覆盖")
 
 
 class DebugScenarioStepResult(BaseModel):
@@ -175,11 +175,11 @@ class DebugScenarioStepResult(BaseModel):
     step_id: str
     status: str  # "passed" | "failed"
     duration: float
-    error: Optional[str] = None
+    error: str | None = None
 
 
 class DebugScenarioResponse(BaseModel):
     """调试场景响应 Schema"""
     execution_id: str
     report_url: str  # Allure 报告 URL
-    results: List[DebugScenarioStepResult]
+    results: list[DebugScenarioStepResult]

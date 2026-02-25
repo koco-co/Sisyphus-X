@@ -18,9 +18,9 @@ from app.api.v1.endpoints import (
     execution,
     functional,
     global_params,
+    interface_folders,
     # history,  # TEMP: 暂时禁用
     interfaces,
-    interface_folders,
     keywords,
     plans,
     point_generation,

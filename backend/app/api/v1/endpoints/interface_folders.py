@@ -9,7 +9,6 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col
 
 from app.api.deps import get_current_user
 from app.core.db import get_session
@@ -84,8 +83,8 @@ async def list_interface_folders(
     # 查询所有文件夹
     statement = (
         select(InterfaceFolder)
-        .where(col(InterfaceFolder.project_id) == project_id)
-        .order_by(col(InterfaceFolder.order))
+        .where(InterfaceFolder.project_id == project_id)
+        .order_by(InterfaceFolder.order)
     )
 
     result = await session.execute(statement)
@@ -249,14 +248,14 @@ async def delete_interface_folder(
     child_folders_statement = (
         select(func.count())
         .select_from(InterfaceFolder)
-        .where(col(InterfaceFolder.parent_id) == folder_id)
+        .where(InterfaceFolder.parent_id == folder_id)
     )
     child_count_result = await session.execute(child_folders_statement)
     child_count = int(child_count_result.scalar_one() or 0)
 
     # 检查是否有接口
     interfaces_statement = (
-        select(func.count()).select_from(Interface).where(col(Interface.folder_id) == folder_id)
+        select(func.count()).select_from(Interface).where(Interface.folder_id == folder_id)
     )
     interface_count_result = await session.execute(interfaces_statement)
     interface_count = int(interface_count_result.scalar_one() or 0)

@@ -1,37 +1,43 @@
+"""Test report models - SQLAlchemy 2.0 ORM."""
+
 from datetime import datetime
 
-from sqlmodel import JSON, Column, Field, SQLModel
-from typing import Optional, Dict, Any, List
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.base import Base
 
 
-class TestReport(SQLModel, table=True):
-    """测试报告主表 - 存储测试执行的总体信息"""
+class TestReport(Base):
+    """测试报告主表"""
 
-    __tablename__ = "testreport"  # pyright: ignore[reportAssignmentType]
-    id: Optional[int] = Field(default=None, primary_key=True)
-    scenario_id: Optional[int] = Field(default=None, foreign_key="testscenario.id")  # 关联的测试场景
-    name: str  # 报告名称
-    status: str  # 'success', 'failed', 'running'
-    total: int = 0  # 总步骤数
-    success: int = 0  # 成功步骤数
-    failed: int = 0  # 失败步骤数
-    duration: str = "0s"  # 执行时长(格式化后的字符串, 如 "12m 30s")
-    start_time: datetime = Field(default_factory=datetime.utcnow())  # 开始时间
-    end_time: Optional[datetime] = None  # 结束时间
-    created_at: datetime = Field(default_factory=datetime.utcnow())  # 创建时间
+    __tablename__ = "testreport"
+
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    scenario_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scenarios.id"), nullable=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    total: Mapped[int] = mapped_column(Integer, default=0)
+    success: Mapped[int] = mapped_column(Integer, default=0)
+    failed: Mapped[int] = mapped_column(Integer, default=0)
+    duration: Mapped[str] = mapped_column(String(50), default="0s")
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)
+    end_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)
 
 
-class TestReportDetail(SQLModel, table=True):
-    """测试报告详情表 - 存储每个节点的执行详情"""
+class TestReportDetail(Base):
+    """测试报告详情表"""
 
-    __tablename__ = "testreportdetail"  # pyright: ignore[reportAssignmentType]
-    id: Optional[int] = Field(default=None, primary_key=True)
-    report_id: int = Field(foreign_key="testreport.id")  # 关联的报告ID
-    node_id: str  # 节点ID
-    node_name: str  # 节点名称
-    status: str  # 'success', 'failed', 'skipped'
-    request_data: Optional[dict] = Field(default=None, sa_column=Column(JSON))  # 请求数据
-    response_data: Optional[dict] = Field(default=None, sa_column=Column(JSON))  # 响应数据
-    error_msg: Optional[str] = None  # 错误信息
-    elapsed: float = 0.0  # 执行耗时(秒)
-    created_at: datetime = Field(default_factory=datetime.utcnow())
+    __tablename__ = "testreportdetail"
+
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    report_id: Mapped[int] = mapped_column(Integer, ForeignKey("testreport.id"), nullable=False)
+    node_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    node_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    request_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    response_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    error_msg: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    elapsed: Mapped[float] = mapped_column(default=0.0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)

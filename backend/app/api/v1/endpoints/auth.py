@@ -3,8 +3,8 @@
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import RedirectResponse
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, select
 
 from app.api import deps
 from app.core.config import settings
@@ -33,13 +33,13 @@ def _user_id_or_raise(user: User) -> str:
 async def register(data: UserRegister, session: AsyncSession = Depends(get_session)):
     """用户注册"""
     # 检查邮箱是否已存在
-    result = await session.execute(select(User).where(col(User.email) == data.email))
+    result = await session.execute(select(User).where(User.email == data.email))
     existing_user = result.scalar_one_or_none()
     if existing_user:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="该邮箱已被注册")
 
     # 检查用户名是否已存在
-    result = await session.execute(select(User).where(col(User.username) == data.username))
+    result = await session.execute(select(User).where(User.username == data.username))
     existing_username = result.scalar_one_or_none()
     if existing_username:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="该用户名已被使用")
@@ -70,7 +70,7 @@ async def register(data: UserRegister, session: AsyncSession = Depends(get_sessi
 @router.post("/login", response_model=TokenResponse)
 async def login(data: UserLogin, session: AsyncSession = Depends(get_session)):
     """用户登录"""
-    result = await session.execute(select(User).where(col(User.email) == data.email))
+    result = await session.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
 
     if not user or not user.hashed_password or not verify_password(data.password, user.hashed_password):
@@ -188,13 +188,13 @@ async def github_callback(code: str, session: AsyncSession = Depends(get_session
 
     # 4. 查找或创建用户
     result = await session.execute(
-        select(User).where(col(User.oauth_provider) == "github", col(User.oauth_id) == github_id)
+        select(User).where(User.oauth_provider == "github", User.oauth_id == github_id)
     )
     user = result.scalar_one_or_none()
 
     if not user:
         # 检查邮箱是否已被使用
-        result = await session.execute(select(User).where(col(User.email) == email))
+        result = await session.execute(select(User).where(User.email == email))
         existing_user = result.scalar_one_or_none()
 
         if existing_user:
@@ -210,7 +210,7 @@ async def github_callback(code: str, session: AsyncSession = Depends(get_session
             base_username = username
             counter = 1
             while True:
-                result = await session.execute(select(User).where(col(User.username) == username))
+                result = await session.execute(select(User).where(User.username == username))
                 if not result.scalar_one_or_none():
                     break
                 username = f"{base_username}_{counter}"
@@ -304,13 +304,13 @@ async def google_callback(code: str, session: AsyncSession = Depends(get_session
 
     # 3. 查找或创建用户
     result = await session.execute(
-        select(User).where(col(User.oauth_provider) == "google", col(User.oauth_id) == google_id)
+        select(User).where(User.oauth_provider == "google", User.oauth_id == google_id)
     )
     user = result.scalar_one_or_none()
 
     if not user:
         # 检查邮箱是否已被使用
-        result = await session.execute(select(User).where(col(User.email) == email))
+        result = await session.execute(select(User).where(User.email == email))
         existing_user = result.scalar_one_or_none()
 
         if existing_user:
@@ -326,7 +326,7 @@ async def google_callback(code: str, session: AsyncSession = Depends(get_session
             base_username = username
             counter = 1
             while True:
-                result = await session.execute(select(User).where(col(User.username) == username))
+                result = await session.execute(select(User).where(User.username == username))
                 if not result.scalar_one_or_none():
                     break
                 username = f"{base_username}_{counter}"

@@ -9,7 +9,6 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col
 
 from app.api.deps import get_current_user
 from app.core.db import get_session
@@ -51,23 +50,23 @@ async def list_keywords(
 
     # 过滤条件
     if project_id is not None:
-        query = query.where(col(Keyword.project_id) == project_id)
+        query = query.where(Keyword.project_id == project_id)
     else:
         # 如果未指定项目，返回内置关键字
-        query = query.where(col(Keyword.is_built_in))
+        query = query.where(Keyword.is_built_in)
 
     if type:
-        query = query.where(col(Keyword.class_name) == type)
+        query = query.where(Keyword.class_name == type)
 
     if is_builtin is not None:
-        query = query.where(col(Keyword.is_built_in) == is_builtin)
+        query = query.where(Keyword.is_built_in == is_builtin)
 
     if is_enabled is not None:
-        query = query.where(col(Keyword.is_enabled) == is_enabled)
+        query = query.where(Keyword.is_enabled == is_enabled)
 
     if search:
         query = query.where(
-            col(Keyword.name).contains(search) | col(Keyword.method_name).contains(search)
+            Keyword.name.contains(search) | Keyword.method_name.contains(search)
         )
 
     # 获取总数
@@ -77,7 +76,7 @@ async def list_keywords(
 
     # 分页查询
     skip = (page - 1) * size
-    statement = query.order_by(col(Keyword.created_at).desc()).offset(skip).limit(size)
+    statement = query.order_by(Keyword.created_at.desc()).offset(skip).limit(size)
     result = await session.execute(statement)
     keywords = result.scalars().all()
 
@@ -108,8 +107,8 @@ async def create_keyword(
     """
     # 检查 class_name + method_name 唯一性
     existing_statement = select(Keyword).where(
-        col(Keyword.class_name) == keyword_in.class_name,
-        col(Keyword.method_name) == keyword_in.method_name,
+        Keyword.class_name == keyword_in.class_name,
+        Keyword.method_name == keyword_in.method_name,
     )
     existing_result = await session.execute(existing_statement)
     if existing_result.scalar_one_or_none():
@@ -203,9 +202,9 @@ async def update_keyword(
         new_method_name = keyword_in.method_name or keyword.method_name
 
         existing_statement = select(Keyword).where(
-            col(Keyword.class_name) == new_class_name,
-            col(Keyword.method_name) == new_method_name,
-            col(Keyword.id) != keyword_id,
+            Keyword.class_name == new_class_name,
+            Keyword.method_name == new_method_name,
+            Keyword.id != keyword_id,
         )
         existing_result = await session.execute(existing_statement)
         if existing_result.scalar_one_or_none():

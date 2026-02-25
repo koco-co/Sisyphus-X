@@ -1,13 +1,13 @@
 """项目相关模型 - SQLAlchemy 2.0 ORM"""
-from datetime import datetime
 import uuid
+from datetime import datetime
+from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, Index
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Base
-from typing import Optional, Dict, Any
+from app.core.base import Base
 
 
 class Project(Base):
@@ -31,14 +31,14 @@ class Project(Base):
         index=True,
         default=lambda: f"PROJ-{uuid.uuid4().hex[:8].upper()}"
     )  # 项目唯一标识 (自动生成，如: PROJ-0A572E0E)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 项目描述
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)  # 项目描述
     created_by: Mapped[str] = mapped_column(
         String(36),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True
     )  # 创建人 (外键 → users)
-    owner: Mapped[Optional[str]] = mapped_column(
+    owner: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True
@@ -66,7 +66,7 @@ class InterfaceFolder(Base):
         index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)  # 文件夹名称
-    parent_id: Mapped[Optional[str]] = mapped_column(
+    parent_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("interface_folders.id", ondelete="CASCADE"),
         nullable=True
@@ -87,7 +87,7 @@ class Interface(Base):
         nullable=False,
         index=True
     )
-    folder_id: Mapped[Optional[str]] = mapped_column(
+    folder_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("interface_folders.id", ondelete="SET NULL"),
         nullable=True
@@ -98,17 +98,17 @@ class Interface(Base):
     status: Mapped[str] = mapped_column(
         String(20), default="draft"
     )  # draft/stable/deprecated
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # 接口描述
-    headers: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # 请求头
-    params: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # Query 参数
-    body: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # 请求体
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)  # 接口描述
+    headers: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # 请求头
+    params: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # Query 参数
+    body: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # 请求体
     body_type: Mapped[str] = mapped_column(
         String(50), default="json"
     )  # none/json/form-data/x-www-form-urlencoded/raw
-    cookies: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # Cookies
+    cookies: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # Cookies
     order: Mapped[int] = mapped_column(Integer, default=0)  # 同级排序序号
-    auth_config: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # 认证配置
-    schema_snapshot: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # Swagger 原始结构
+    auth_config: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # 认证配置
+    schema_snapshot: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # Swagger 原始结构
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
@@ -131,8 +131,8 @@ class ProjectEnvironment(Base):
     domain: Mapped[str] = mapped_column(
         String(500), default=""
     )  # Base URL (如: https://api-dev.example.com)
-    variables: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # 全局变量
-    headers: Mapped[Dict[str, Any]] = mapped_column(JSON, default=dict)  # 全局请求头
+    variables: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # 全局变量
+    headers: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)  # 全局请求头
     is_preupload: Mapped[bool] = mapped_column(Boolean, default=False)  # 是否预上传
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
@@ -164,8 +164,8 @@ class ProjectDataSource(Base):
     variable_name: Mapped[str] = mapped_column(String(100), default="")  # 引用变量名
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True)  # 是否启用
     status: Mapped[str] = mapped_column(String(20), default="unchecked")  # unchecked, connected, error
-    last_test_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
-    error_msg: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    last_test_at: Mapped[datetime | None] = mapped_column(nullable=True)
+    error_msg: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False

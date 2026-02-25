@@ -8,22 +8,22 @@ from .ai_conversation import AIConversation
 from .api_test_case import ApiTestCase, ApiTestExecution, ApiTestStep, ApiTestStepResult
 
 # 其他模型
-from .document import Document
+from .document import Document, DocumentVersion
 from .file_attachment import FileAttachment
-from .global_param import GlobalParam
 from .functional_test_case import FunctionalTestCase
 from .functional_test_point import TestPoint
+from .global_param import GlobalParam
 from .keyword import Keyword
-from .plan import TestPlan
 from .project import Interface, InterfaceFolder, Project, ProjectDataSource, ProjectEnvironment
 from .report import TestReport, TestReportDetail
 from .requirement import Requirement
-from .scenario import Scenario, ScenarioStep, Dataset
-from .settings import GlobalConfig, NotificationChannel
+from .scenario import Dataset, Scenario, ScenarioStep
+from .settings import GlobalConfig, NotificationChannel, Role, UserRole
 from .test_case import TestCase
 from .test_case_knowledge import TestCaseKnowledge
 from .test_case_template import TestCaseTemplate
 from .test_execution import TestExecution
+from .test_plan import PlanExecutionStep, PlanScenario, TestPlan, TestPlanExecution
 from .user import User
 from .user_management import AuditLog, Permission
 
@@ -59,10 +59,16 @@ __all__ = [
     "FileAttachment",
     # 其他模型
     "Document",
+    "DocumentVersion",
     "GlobalParam",
     "TestExecution",
+    "PlanScenario",
+    "TestPlanExecution",
+    "PlanExecutionStep",
     "GlobalConfig",
     "NotificationChannel",
+    "Role",
+    "UserRole",
     "Permission",
     "AuditLog",
 ]

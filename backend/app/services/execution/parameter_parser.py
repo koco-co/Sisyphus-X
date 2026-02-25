@@ -2,7 +2,7 @@
 参数解析器 - 组装完整的执行参数
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,12 +22,12 @@ class ParameterParser:
         self.keyword_injector = KeywordInjector()
 
     async def parse_execution_request(
-        self, session: AsyncSession, test_case: TestCase, environment_id: Optional[int] = None
+        self, session: AsyncSession, test_case: TestCase, environment_id: int | None = None
     ) -> ExecutionRequest:
         """
         解析执行请求，组装完整的执行参数
         """
-        base_url: Optional[str] = None
+        base_url: str | None = None
         env_variables: dict[str, Any] = {}
 
         if environment_id:

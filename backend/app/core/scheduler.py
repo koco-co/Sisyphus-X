@@ -2,8 +2,8 @@ import asyncio
 import logging
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
-from sqlmodel import col, select
 
 from app.core.db import engine
 from app.core.network import test_tcp_connection
@@ -23,7 +23,7 @@ async def check_datasources():
     try:
         async with async_session() as session:
             # Get all enabled datasources
-            statement = select(ProjectDataSource).where(col(ProjectDataSource.is_enabled).is_(True))
+            statement = select(ProjectDataSource).where(ProjectDataSource.is_enabled.is_(True))
             result = await session.execute(statement)
             datasources = result.scalars().all()
 

@@ -4,11 +4,10 @@
 """
 from datetime import datetime
 
-from sqlalchemy import DateTime, Boolean, ForeignKey, Integer, String, Index
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Base
-from typing import Optional, Dict, Any, List
+from app.core.base import Base
 
 
 class DatabaseConfig(Base):
@@ -34,7 +33,7 @@ class DatabaseConfig(Base):
 
     # 基本信息
     name: Mapped[str] = mapped_column(String(255), nullable=False)  # 连接名称
-    variable_name: Mapped[Optional[str]] = mapped_column(
+    variable_name: Mapped[str | None] = mapped_column(
         String(255), nullable=True
     )  # 引用变量名 (用于测试场景)
 
@@ -42,7 +41,7 @@ class DatabaseConfig(Base):
     db_type: Mapped[str] = mapped_column(String(50), nullable=False)  # 数据库类型
     host: Mapped[str] = mapped_column(String(255), nullable=False)
     port: Mapped[int] = mapped_column(Integer, nullable=False)
-    initial_database: Mapped[Optional[str]] = mapped_column(
+    initial_database: Mapped[str | None] = mapped_column(
         String(255), nullable=True
     )  # 初始数据库名
     username: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -55,7 +54,7 @@ class DatabaseConfig(Base):
     connection_status: Mapped[str] = mapped_column(
         String(50), default="unknown"
     )  # 连接状态: 'unknown', 'connected', 'failed'
-    last_tested_at: Mapped[Optional[datetime]] = mapped_column(
+    last_tested_at: Mapped[datetime | None] = mapped_column(
         nullable=True
     )  # 最后测试连接时间
 

@@ -1,7 +1,7 @@
 """环境变量 Pydantic Schemas"""
 from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from typing import Optional
 
 
 class EnvVariableBase(BaseModel):
@@ -9,7 +9,7 @@ class EnvVariableBase(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=255, description="变量名")
     value: str = Field(..., description="变量值")
-    description: Optional[str] = Field(None, description="变量描述")
+    description: str | None = Field(None, description="变量描述")
     is_global: bool = Field(False, description="是否全局变量")
 
 
@@ -22,10 +22,10 @@ class EnvVariableCreate(EnvVariableBase):
 class EnvVariableUpdate(BaseModel):
     """更新环境变量时的请求模型"""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="变量名")
-    value: Optional[str] = Field(None, description="变量值")
-    description: Optional[str] = Field(None, description="变量描述")
-    is_global: Optional[bool] = Field(None, description="是否全局变量")
+    name: str | None = Field(None, min_length=1, max_length=255, description="变量名")
+    value: str | None = Field(None, description="变量值")
+    description: str | None = Field(None, description="变量描述")
+    is_global: bool | None = Field(None, description="是否全局变量")
 
     @field_validator("name", "description")
     @classmethod

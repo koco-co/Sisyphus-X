@@ -6,7 +6,6 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler, TimedRotatingFileHandler
 from pathlib import Path
-from typing import Optional
 
 
 def setup_logging(log_level: str = "INFO", log_dir: str = "logs", app_name: str = "sisyphus"):
@@ -105,8 +104,8 @@ def get_audit_logger() -> logging.Logger:
 def log_operation(
     operation: str,
     resource_type: str,
-    resource_id: Optional[int] = None,
-    user_id: Optional[int] = None,
+    resource_id: int | None = None,
+    user_id: int | None = None,
     details: dict[str, object] | None = None,
     success: bool = True,
 ):

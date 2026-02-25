@@ -5,12 +5,11 @@ AI配置服务 - 功能测试模块
 
 import base64
 import os
-from typing import Optional
 
 import httpx
 from cryptography.fernet import Fernet
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, select
 
 from app.models.ai_config import AIProviderConfig
 from app.schemas.ai_config import (
@@ -75,8 +74,8 @@ class AIConfigService:
         """获取用户的所有AI配置"""
         result = await session.execute(
             select(AIProviderConfig)
-            .where(col(AIProviderConfig.user_id) == user_id)
-            .order_by(col(AIProviderConfig.is_default).desc(), col(AIProviderConfig.created_at))
+            .where(AIProviderConfig.user_id == user_id)
+            .order_by(AIProviderConfig.is_default.desc(), AIProviderConfig.created_at)
         )
         configs = result.scalars().all()
 
@@ -115,14 +114,14 @@ class AIConfigService:
     @staticmethod
     async def get_default_config(
         session: AsyncSession, user_id: int
-    ) -> Optional[AIProviderConfigResponse]:
+    ) -> AIProviderConfigResponse | None:
         """获取用户的默认AI配置"""
         result = await session.execute(
             select(AIProviderConfig)
-            .where(col(AIProviderConfig.user_id) == user_id)
-            .where(col(AIProviderConfig.is_default).is_(True))
-            .where(col(AIProviderConfig.is_enabled).is_(True))
-            .order_by(col(AIProviderConfig.created_at).desc())  # 按创建时间降序，获取最新的
+            .where(AIProviderConfig.user_id == user_id)
+            .where(AIProviderConfig.is_default.is_(True))
+            .where(AIProviderConfig.is_enabled.is_(True))
+            .order_by(AIProviderConfig.created_at.desc())  # 按创建时间降序，获取最新的
             .limit(1)  # 只获取一条记录
         )
         config = result.scalar_one_or_none()
@@ -159,7 +158,7 @@ class AIConfigService:
     @staticmethod
     async def get_config_by_id(
         session: AsyncSession, config_id: int, user_id: int
-    ) -> Optional[AIProviderConfigResponse]:
+    ) -> AIProviderConfigResponse | None:
         """根据ID获取AI配置"""
         config = await session.get(AIProviderConfig, config_id)
 
@@ -225,7 +224,7 @@ class AIConfigService:
     @staticmethod
     async def update_config(
         session: AsyncSession, config_id: int, user_id: int, data: AIProviderConfigUpdate
-    ) -> Optional[AIProviderConfigResponse]:
+    ) -> AIProviderConfigResponse | None:
         """更新AI配置"""
         config = await session.get(AIProviderConfig, config_id)
 
@@ -276,9 +275,9 @@ class AIConfigService:
         """清除用户指定厂商类型的默认标记"""
         result = await session.execute(
             select(AIProviderConfig)
-            .where(col(AIProviderConfig.user_id) == user_id)
-            .where(col(AIProviderConfig.provider_type) == provider_type)
-            .where(col(AIProviderConfig.is_default).is_(True))
+            .where(AIProviderConfig.user_id == user_id)
+            .where(AIProviderConfig.provider_type == provider_type)
+            .where(AIProviderConfig.is_default.is_(True))
         )
         configs = result.scalars().all()
 
@@ -294,7 +293,7 @@ class AIConfigService:
 
     @staticmethod
     async def test_api_connection(
-        provider_type: str, api_key: str, model_name: str, api_endpoint: Optional[str] = None
+        provider_type: str, api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """
         测试API连接是否有效
@@ -332,7 +331,7 @@ class AIConfigService:
 
     @staticmethod
     async def _test_zhipu(
-        api_key: str, model_name: str, api_endpoint: Optional[str] = None
+        api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """测试智谱AI API连接"""
         endpoint = api_endpoint or "https://open.bigmodel.cn/api/paas/v4/chat/completions"
@@ -379,7 +378,7 @@ class AIConfigService:
 
     @staticmethod
     async def _test_openai(
-        api_key: str, model_name: str, api_endpoint: Optional[str] = None
+        api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """测试OpenAI API连接"""
         endpoint = api_endpoint or "https://api.openai.com/v1/chat/completions"
@@ -413,7 +412,7 @@ class AIConfigService:
 
     @staticmethod
     async def _test_anthropic(
-        api_key: str, model_name: str, api_endpoint: Optional[str] = None
+        api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """测试Anthropic API连接"""
         endpoint = api_endpoint or "https://api.anthropic.com/v1/messages"
@@ -451,7 +450,7 @@ class AIConfigService:
 
     @staticmethod
     async def _test_qwen(
-        api_key: str, model_name: str, api_endpoint: Optional[str] = None
+        api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """测试通义千问API连接"""
         endpoint = (
@@ -487,7 +486,7 @@ class AIConfigService:
 
     @staticmethod
     async def _test_qianfan(
-        api_key: str, model_name: str, api_endpoint: Optional[str] = None
+        api_key: str, model_name: str, api_endpoint: str | None = None
     ) -> TestResult:
         """测试文心一言API连接"""
         endpoint = (

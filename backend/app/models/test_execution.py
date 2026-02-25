@@ -7,8 +7,7 @@ from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.db import Base
-from typing import Optional, Dict, Any, List
+from app.core.base import Base
 
 
 class TestExecution(Base):
@@ -18,7 +17,7 @@ class TestExecution(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)  # UUID 主键
     test_case_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)  # TODO: Add foreign key after testcase table is created
-    environment_id: Mapped[Optional[str]] = mapped_column(
+    environment_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("project_environments.id", ondelete="SET NULL"),
         nullable=True,
@@ -28,12 +27,12 @@ class TestExecution(Base):
     status: Mapped[str] = mapped_column(
         String(20), default="pending"
     )  # pending, running, success, failed, error
-    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
-    duration: Mapped[Optional[float]] = mapped_column(nullable=True)  # 执行时长（秒）
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    duration: Mapped[float | None] = mapped_column(nullable=True)  # 执行时长（秒）
 
-    result_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    result_data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
-    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

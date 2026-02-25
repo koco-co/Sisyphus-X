@@ -4,7 +4,6 @@
 内置关键字不可编辑和删除, 代码会回显在前端页面作为参考.
 """
 
-import uuid
 import json
 from datetime import datetime
 
@@ -12,7 +11,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.keyword import Keyword
-
 
 # 内置关键字定义
 BUILTIN_KEYWORDS = [

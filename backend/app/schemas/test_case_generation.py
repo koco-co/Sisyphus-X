@@ -3,7 +3,7 @@
 """
 
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -56,7 +56,7 @@ class GeneratedTestCase(BaseModel):
     steps: list[TestStep]
     tags: list[str]
     estimated_time: int = Field(description="预估执行时间(分钟)")
-    complexity: Optional[str] = None
+    complexity: str | None = None
 
 
 class GeneratedTestCases(BaseModel):
@@ -73,5 +73,5 @@ class TestCaseGenerationResult(BaseModel):
 
     success: bool
     message: str
-    data: Optional[GeneratedTestCases] = None
-    error: Optional[str] = None
+    data: GeneratedTestCases | None = None
+    error: str | None = None

@@ -10,14 +10,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.core.config import settings
-from app.core.base import Base
-
 # 导入所有模型以确保它们被注册到 Base.metadata
 # 这对于 Alembic 自动生成迁移至关重要
 # 注意：必须放在 Base 定义之后，避免循环导入
 from app import models  # noqa: F401
-
+from app.core.base import Base
+from app.core.config import settings
 
 # 判断是否使用 SQLite（本地开发）或 PostgreSQL（生产）
 if "sqlite" in settings.DATABASE_URL:

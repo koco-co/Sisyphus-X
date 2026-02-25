@@ -1,13 +1,13 @@
 """Test case generator service."""
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
-from sqlmodel import Session
+from sqlalchemy.orm import Session
 
-from app.models.project import Interface, ProjectEnvironment
 from app.models.interface_test_case import InterfaceTestCase
+from app.models.project import Interface, ProjectEnvironment
 
 
 class TestCaseGenerator:
@@ -39,7 +39,7 @@ class TestCaseGenerator:
         case_name: str,
         keyword_name: str,
         environment_id: str,
-        scenario_id: Optional[str] = None,
+        scenario_id: str | None = None,
         auto_assertion: bool = True,
     ) -> dict[str, Any]:
         """Generate test case from interface.
@@ -277,7 +277,7 @@ def generate_test_case(
     case_name: str,
     keyword_name: str,
     environment_id: int,
-    scenario_id: Optional[int] = None,
+    scenario_id: int | None = None,
     auto_assertion: bool = True,
 ) -> dict[str, Any]:
     """Generate test case from interface.

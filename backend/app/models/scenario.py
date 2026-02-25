@@ -47,16 +47,15 @@ Dataset:
 - idx_scenario_steps_scenario_order: (scenario_id, sort_order)
 """
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, List, Dict, Any
+from typing import TYPE_CHECKING, Any, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, JSON
+from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import Base
 
 if TYPE_CHECKING:
     from app.models.user import User
-    from app.models.keyword import Keyword
 
 
 class Scenario(Base):
@@ -91,16 +90,16 @@ class Scenario(Base):
 
     # 基本信息
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # 优先级、标签、变量
     priority: Mapped[str] = mapped_column(String(10), nullable=False, default="P2")  # P0/P1/P2/P3
-    tags: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)  # JSONB
-    variables: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)  # JSONB
+    tags: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)  # JSONB
+    variables: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)  # JSONB
 
     # SQL 预处理和后处理
-    pre_sql: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    post_sql: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    pre_sql: Mapped[str | None] = mapped_column(Text, nullable=True)
+    post_sql: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
@@ -109,13 +108,13 @@ class Scenario(Base):
     )
 
     # 关系
-    steps: Mapped[List["ScenarioStep"]] = relationship(
+    steps: Mapped[list["ScenarioStep"]] = relationship(
         "ScenarioStep",
         back_populates="scenario",
         cascade="all, delete-orphan",
         order_by="ScenarioStep.sort_order",
     )
-    datasets: Mapped[List["Dataset"]] = relationship(
+    datasets: Mapped[list["Dataset"]] = relationship(
         "Dataset",
         back_populates="scenario",
         cascade="all, delete-orphan",
@@ -150,10 +149,10 @@ class ScenarioStep(Base):
     )
 
     # 步骤信息
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     keyword_type: Mapped[str] = mapped_column(String(50), nullable=False)  # request/assertion/extract/db/custom
     keyword_name: Mapped[str] = mapped_column(String(255), nullable=False)
-    parameters: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)  # JSONB
+    parameters: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)  # JSONB
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     # 时间戳
@@ -200,7 +199,7 @@ class Dataset(Base):
         nullable=False,
         index=True,
     )
-    scenario_id: Mapped[Optional[str]] = mapped_column(
+    scenario_id: Mapped[str | None] = mapped_column(
         String(36),
         ForeignKey("scenarios.id", ondelete="CASCADE"),
         nullable=True,

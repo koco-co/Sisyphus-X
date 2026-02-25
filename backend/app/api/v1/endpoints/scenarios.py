@@ -6,36 +6,35 @@
 import csv
 import io
 import uuid
-import yaml
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+import yaml
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from sqlmodel import col
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import get_current_user
 from app.core.db import get_session
-from app.models.scenario import Scenario, ScenarioStep, Dataset
-from app.models.user import User
 from app.models.env_variable import EnvVariable
 from app.models.project import ProjectEnvironment
+from app.models.scenario import Dataset, Scenario, ScenarioStep
+from app.models.user import User
 from app.schemas.pagination import PageResponse
 from app.schemas.scenario import (
-    ScenarioCreate,
-    ScenarioUpdate,
-    ScenarioResponse,
-    ScenarioDetailResponse,
-    ScenarioStepCreate,
-    ScenarioStepResponse,
-    ReorderStepsRequest,
     DatasetCreate,
     DatasetResponse,
-    ImportCsvResponse,
     DebugScenarioRequest,
     DebugScenarioResponse,
     DebugScenarioStepResult,
+    ImportCsvResponse,
+    ReorderStepsRequest,
+    ScenarioCreate,
+    ScenarioDetailResponse,
+    ScenarioResponse,
+    ScenarioStepCreate,
+    ScenarioStepResponse,
+    ScenarioUpdate,
 )
 from app.services.engine_executor import EngineExecutor
 
@@ -51,9 +50,9 @@ router = APIRouter()
 async def list_scenarios(
     page: int = Query(1, ge=1, description="页码"),
     limit: int = Query(10, ge=1, le=100, description="每页条数"),
-    project_id: Optional[str] = Query(None, description="项目 ID"),
-    priority: Optional[str] = Query(None, pattern=r"^P[0-3]$", description="优先级 (P0/P1/P2/P3)"),
-    search: Optional[str] = Query(None, description="搜索关键词"),
+    project_id: str | None = Query(None, description="项目 ID"),
+    priority: str | None = Query(None, pattern=r"^P[0-3]$", description="优先级 (P0/P1/P2/P3)"),
+    search: str | None = Query(None, description="搜索关键词"),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> PageResponse[ScenarioResponse]:
@@ -64,17 +63,17 @@ async def list_scenarios(
 
     # 筛选条件
     if project_id is not None:
-        statement = statement.where(col(Scenario.project_id) == project_id)
-        count_statement = count_statement.where(col(Scenario.project_id) == project_id)
+        statement = statement.where(Scenario.project_id == project_id)
+        count_statement = count_statement.where(Scenario.project_id == project_id)
 
     if priority is not None:
-        statement = statement.where(col(Scenario.priority) == priority)
-        count_statement = count_statement.where(col(Scenario.priority) == priority)
+        statement = statement.where(Scenario.priority == priority)
+        count_statement = count_statement.where(Scenario.priority == priority)
 
     if search:
         search_pattern = f"%{search}%"
-        statement = statement.where(col(Scenario.name).like(search_pattern))
-        count_statement = count_statement.where(col(Scenario.name).like(search_pattern))
+        statement = statement.where(Scenario.name.like(search_pattern))
+        count_statement = count_statement.where(Scenario.name.like(search_pattern))
 
     # 排序
     statement = statement.order_by(Scenario.updated_at.desc())
@@ -251,13 +250,13 @@ async def create_or_update_step(
         return ScenarioStepResponse.model_validate(step)
 
 
-@router.put("/{scenario_id}/steps/reorder", response_model=List[ScenarioStepResponse])
+@router.put("/{scenario_id}/steps/reorder", response_model=list[ScenarioStepResponse])
 async def reorder_steps(
     scenario_id: str,
     data: ReorderStepsRequest,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
-) -> List[ScenarioStepResponse]:
+) -> list[ScenarioStepResponse]:
     """批量更新步骤排序 (6.7)"""
     # 验证场景存在
     scenario = await session.get(Scenario, scenario_id)
@@ -318,12 +317,12 @@ async def delete_step(
 # ========== ========== ========== ========== ========== ==========
 
 
-@router.get("/{scenario_id}/datasets", response_model=List[DatasetResponse])
+@router.get("/{scenario_id}/datasets", response_model=list[DatasetResponse])
 async def list_datasets(
     scenario_id: str,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
-) -> List[DatasetResponse]:
+) -> list[DatasetResponse]:
     """获取测试数据集列表 (6.9)"""
     # 验证场景存在
     scenario = await session.get(Scenario, scenario_id)
@@ -444,10 +443,10 @@ async def export_csv(
 
 def _generate_scenario_yaml(
     scenario: Scenario,
-    steps: List[ScenarioStep],
-    env_vars: Optional[Dict[str, str]] = None,
-    dataset_vars: Optional[Dict[str, Any]] = None,
-    override_vars: Optional[Dict[str, Any]] = None,
+    steps: list[ScenarioStep],
+    env_vars: dict[str, str] | None = None,
+    dataset_vars: dict[str, Any] | None = None,
+    override_vars: dict[str, Any] | None = None,
 ) -> str:
     """生成场景测试的 YAML 内容
 
@@ -502,7 +501,7 @@ def _generate_scenario_yaml(
     return yaml.dump(yaml_dict, allow_unicode=True, sort_keys=False, default_flow_style=False)
 
 
-def _convert_step_to_yaml(step: ScenarioStep) -> Optional[Dict[str, Any]]:
+def _convert_step_to_yaml(step: ScenarioStep) -> dict[str, Any] | None:
     """将场景步骤转换为 YAML 格式
 
     Args:

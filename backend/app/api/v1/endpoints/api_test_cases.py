@@ -5,9 +5,8 @@ API 测试用例相关的 API 端点
 from datetime import datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, select
 
 from app.api import deps
 from app.core.db import get_session
@@ -30,7 +29,6 @@ from app.schemas.api_test_case import (
 from app.services.api_engine_adapter import APIEngineAdapter
 from app.services.test_result_processor import TestResultProcessor
 from app.services.yaml_generator import YAMLGenerator
-from typing import Optional
 
 router = APIRouter()
 
@@ -116,8 +114,8 @@ async def list_api_test_cases(
     project_id: str,
     page: int = 1,
     size: int = 10,
-    search: Optional[str] = None,
-    tags: Optional[str] = None,
+    search: str | None = None,
+    tags: str | None = None,
     enabled_only: bool = False,
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(deps.get_current_user),
@@ -137,25 +135,25 @@ async def list_api_test_cases(
 
     # 构建查询
     query = select(ApiTestCase).where(
-        col(ApiTestCase.project_id) == project_id, col(ApiTestCase.is_deleted).is_(False)
+        ApiTestCase.project_id == project_id, ApiTestCase.is_deleted.is_(False)
     )
 
     # 搜索过滤
     if search:
         search_pattern = f"%{search}%"
         query = query.where(
-            (col(ApiTestCase.name).like(search_pattern))
-            | (col(ApiTestCase.description).like(search_pattern))
+            (ApiTestCase.name.like(search_pattern))
+            | (ApiTestCase.description.like(search_pattern))
         )
 
     # 标签过滤
     if tags:
         tag_list = tags.split(",")
-        query = query.where(col(ApiTestCase.tags).contains(tag_list))
+        query = query.where(ApiTestCase.tags.contains(tag_list))
 
     # 仅显示启用的
     if enabled_only:
-        query = query.where(col(ApiTestCase.enabled).is_(True))
+        query = query.where(ApiTestCase.enabled.is_(True))
 
     # 获取总数
     count_query = select(func.count()).select_from(query.subquery())
@@ -164,7 +162,7 @@ async def list_api_test_cases(
 
     # 分页
     query = query.offset((page - 1) * size).limit(size)
-    query = query.order_by(col(ApiTestCase.created_at).desc())
+    query = query.order_by(ApiTestCase.created_at.desc())
 
     # 执行查询
     result = await session.execute(query)
@@ -367,8 +365,8 @@ async def list_test_executions(
     # 查询执行记录
     query = (
         select(ApiTestExecution)
-        .where(col(ApiTestExecution.test_case_id) == test_case_id)
-        .order_by(col(ApiTestExecution.created_at).desc())
+        .where(ApiTestExecution.test_case_id == test_case_id)
+        .order_by(ApiTestExecution.created_at.desc())
         .limit(limit)
     )
 
@@ -422,8 +420,8 @@ async def get_execution_step_results(
     # 查询步骤结果
     query = (
         select(ApiTestStepResult)
-        .where(col(ApiTestStepResult.execution_id) == execution_id)
-        .order_by(col(ApiTestStepResult.step_order))
+        .where(ApiTestStepResult.execution_id == execution_id)
+        .order_by(ApiTestStepResult.step_order)
     )
 
     result = await session.execute(query)

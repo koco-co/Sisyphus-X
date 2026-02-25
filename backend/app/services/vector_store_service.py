@@ -3,10 +3,10 @@
 使用pgvector进行语义搜索
 """
 
-from typing import Any, Optional
+from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, select
 
 from app.models.functional_test_case import FunctionalTestCase
 from app.models.test_case_knowledge import TestCaseKnowledge
@@ -59,16 +59,16 @@ class VectorStoreService:
             TestCaseKnowledge,
             FunctionalTestCase,
             func.cosine_distance(TestCaseKnowledge.embedding, query_embedding).label("distance"),
-        ).join(FunctionalTestCase, col(TestCaseKnowledge.test_case_id) == col(FunctionalTestCase.id))
+        ).join(FunctionalTestCase, TestCaseKnowledge.test_case_id == FunctionalTestCase.id)
 
         # 3. 应用过滤条件
         if filters:
             if "module_name" in filters:
-                statement = statement.where(col(TestCaseKnowledge.module_name) == filters["module_name"])
+                statement = statement.where(TestCaseKnowledge.module_name == filters["module_name"])
             if "priority" in filters:
-                statement = statement.where(col(TestCaseKnowledge.priority) == filters["priority"])
+                statement = statement.where(TestCaseKnowledge.priority == filters["priority"])
             if "case_type" in filters:
-                statement = statement.where(col(TestCaseKnowledge.case_type) == filters["case_type"])
+                statement = statement.where(TestCaseKnowledge.case_type == filters["case_type"])
 
         # 4. 按相似度排序并限制结果数量
         # 余弦距离越小，相似度越高（距离 = 1 - 相似度）
@@ -106,20 +106,20 @@ class VectorStoreService:
     ) -> list[dict[str, Any]]:
         """回退到文本搜索"""
         statement = select(TestCaseKnowledge).join(
-            FunctionalTestCase, col(TestCaseKnowledge.test_case_id) == col(FunctionalTestCase.id)
+            FunctionalTestCase, TestCaseKnowledge.test_case_id == FunctionalTestCase.id
         )
 
         # 应用过滤条件
         if filters:
             if "module_name" in filters:
-                statement = statement.where(col(TestCaseKnowledge.module_name) == filters["module_name"])
+                statement = statement.where(TestCaseKnowledge.module_name == filters["module_name"])
             if "priority" in filters:
-                statement = statement.where(col(TestCaseKnowledge.priority) == filters["priority"])
+                statement = statement.where(TestCaseKnowledge.priority == filters["priority"])
             if "case_type" in filters:
-                statement = statement.where(col(TestCaseKnowledge.case_type) == filters["case_type"])
+                statement = statement.where(TestCaseKnowledge.case_type == filters["case_type"])
 
         # 执行查询
-        statement = statement.order_by(col(TestCaseKnowledge.quality_score).desc()).limit(k)
+        statement = statement.order_by(TestCaseKnowledge.quality_score.desc()).limit(k)
 
         result = await self.session.execute(statement)
         knowledge_list = result.scalars().all()
@@ -218,7 +218,7 @@ class VectorStoreService:
         """
         # 检查是否已存在
         result = await self.session.execute(
-            select(TestCaseKnowledge).where(col(TestCaseKnowledge.test_case_id) == test_case.id)
+            select(TestCaseKnowledge).where(TestCaseKnowledge.test_case_id == test_case.id)
         )
         existing = result.scalar_one_or_none()
 
@@ -249,7 +249,7 @@ class VectorStoreService:
 
         await self.session.commit()
 
-    async def get_knowledge_stats(self, module_name: Optional[str] = None) -> dict[str, Any]:
+    async def get_knowledge_stats(self, module_name: str | None = None) -> dict[str, Any]:
         """
         获取知识库统计信息
 
@@ -262,7 +262,7 @@ class VectorStoreService:
         statement = select(TestCaseKnowledge)
 
         if module_name:
-            statement = statement.where(col(TestCaseKnowledge.module_name) == module_name)
+            statement = statement.where(TestCaseKnowledge.module_name == module_name)
 
         result = await self.session.execute(statement)
         knowledge_list = result.scalars().all()

@@ -4,8 +4,8 @@
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, select
 
 from app.api.deps import get_current_user, require_user_id
 from app.core.db import get_session
@@ -75,7 +75,7 @@ async def get_test_cases_by_requirement(
     result = await session.execute(
         select(FunctionalTestCase)
         .where(FunctionalTestCase.requirement_id == requirement_id)
-        .order_by(col(FunctionalTestCase.priority), col(FunctionalTestCase.id))
+        .order_by(FunctionalTestCase.priority, FunctionalTestCase.id)
     )
     test_cases = result.scalars().all()
 

@@ -1,7 +1,7 @@
 """Interface history schemas."""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -15,10 +15,10 @@ class InterfaceHistoryBase(BaseModel):
     headers: dict[str, Any] = {}
     params: dict[str, Any] = {}
     body: dict[str, Any] = {}
-    status_code: Optional[int] = None
+    status_code: int | None = None
     response_headers: dict[str, Any] = {}
     response_body: dict[str, Any] = {}
-    elapsed: Optional[float] = None
+    elapsed: float | None = None
     timeline: dict[str, Any] = {}
 
 

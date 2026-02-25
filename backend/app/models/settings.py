@@ -1,67 +1,63 @@
 """
-系统设置模块 - 全局配置模型
+系统设置模块 - 全局配置模型 (SQLAlchemy 2.0)
 """
 
 from datetime import datetime
 
-from sqlmodel import JSON, Column, Field, SQLModel
-from typing import Optional, Dict, Any, List
+from sqlalchemy import JSON, Boolean, DateTime, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.base import Base
 
 
-class GlobalConfig(SQLModel, table=True):
+class GlobalConfig(Base):
     """全局配置表"""
 
-    __tablename__ = "globalconfig"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "globalconfig"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    key: str = Field(unique=True, index=True)  # 配置键
-    value: str = ""  # 配置值
-    category: str = "general"  # 分类: general, minio, llm, notification
-    description: Optional[str] = None  # 配置描述
-    is_secret: bool = False  # 是否为敏感信息（隐藏显示）
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    key: Mapped[str] = mapped_column(String(100), unique=True, index=True, nullable=False)
+    value: Mapped[str] = mapped_column(String(1000), default="")
+    category: Mapped[str] = mapped_column(String(50), default="general")
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    is_secret: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 
-class NotificationChannel(SQLModel, table=True):
+class NotificationChannel(Base):
     """消息通知渠道配置"""
 
-    __tablename__ = "notificationchannel"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "notificationchannel"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str  # 渠道名称
-    channel_type: str  # feishu, wecom, dingtalk, email, sms, custom
-    config: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON))  # 配置信息 (webhook, token等)
-    is_enabled: bool = True
-    description: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-    updated_at: datetime = Field(default_factory=lambda: datetime.utcnow())
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    channel_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    config: Mapped[dict] = mapped_column(JSON, default=dict)
+    is_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 
-class Role(SQLModel, table=True):
+class Role(Base):
     """角色表"""
 
-    __tablename__ = "roles"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "roles"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(unique=True)  # 角色名称
-    code: str = Field(unique=True)  # 角色代码: admin, tester, viewer
-    permissions: Dict[str, Any] = Field(default=dict, sa_column=Column(JSON))  # 权限配置
-    description: Optional[str] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.utcnow())
-
-    # 关系
-    # 注意: Permission 在 user_management.py 中定义，避免循环导入
-    # permission_list: list["Permission"] = Relationship(
-    #     back_populates="roles", sa_relationship_kwargs={"secondary": "role_permissions"}
-    # )
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    permissions: Mapped[dict] = mapped_column(JSON, default=dict)
+    description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=datetime.utcnow, nullable=False)
 
 
-class UserRole(SQLModel, table=True):
+class UserRole(Base):
     """用户角色关联表"""
 
-    __tablename__ = "userrole"  # pyright: ignore[reportAssignmentType]
+    __tablename__ = "userrole"
 
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id")
-    role_id: int = Field(foreign_key="roles.id")
+    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)  # 若 users.id 为 UUID 则需改为 String
+    role_id: Mapped[int] = mapped_column(Integer, nullable=False)

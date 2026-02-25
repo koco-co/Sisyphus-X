@@ -4,7 +4,8 @@
 提供标准化的异常处理和错误响应格式。
 """
 
-from typing import Any, Optional
+from typing import Any
+
 from fastapi import HTTPException, status
 from fastapi.responses import JSONResponse
 
@@ -20,7 +21,7 @@ class AppException(HTTPException):
         self,
         status_code: int,
         detail: str,
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
         **kwargs: Any,
     ):
         """
@@ -52,8 +53,8 @@ class NotFoundError(AppException):
     def __init__(
         self,
         resource_name: str,
-        resource_id: Optional[Any] = None,
-        error_code: Optional[str] = None,
+        resource_id: Any | None = None,
+        error_code: str | None = None,
     ):
         """
         Args:
@@ -78,8 +79,8 @@ class ValidationError(AppException):
     def __init__(
         self,
         detail: str,
-        field: Optional[str] = None,
-        error_code: Optional[str] = None,
+        field: str | None = None,
+        error_code: str | None = None,
     ):
         """
         Args:
@@ -104,9 +105,9 @@ class ConflictError(AppException):
     def __init__(
         self,
         detail: str,
-        conflict_field: Optional[str] = None,
-        conflict_value: Optional[Any] = None,
-        error_code: Optional[str] = None,
+        conflict_field: str | None = None,
+        conflict_value: Any | None = None,
+        error_code: str | None = None,
     ):
         """
         Args:
@@ -132,7 +133,7 @@ class UnauthorizedError(AppException):
     def __init__(
         self,
         detail: str = "Unauthorized",
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
     ):
         super().__init__(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -147,7 +148,7 @@ class ForbiddenError(AppException):
     def __init__(
         self,
         detail: str = "Forbidden",
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
     ):
         super().__init__(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -162,7 +163,7 @@ class InternalServerError(AppException):
     def __init__(
         self,
         detail: str = "Internal server error",
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
     ):
         super().__init__(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -177,7 +178,7 @@ class BusinessError(AppException):
     def __init__(
         self,
         detail: str,
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
         **kwargs: Any,
     ):
         super().__init__(
@@ -189,25 +190,25 @@ class BusinessError(AppException):
 
 
 # 便捷函数
-def raise_not_found(resource_name: str, resource_id: Optional[Any] = None) -> None:
+def raise_not_found(resource_name: str, resource_id: Any | None = None) -> None:
     """抛出 404 错误"""
     raise NotFoundError(resource_name, resource_id)
 
 
-def raise_validation(detail: str, field: Optional[str] = None) -> None:
+def raise_validation(detail: str, field: str | None = None) -> None:
     """抛出验证错误"""
     raise ValidationError(detail, field)
 
 
 def raise_conflict(
     detail: str,
-    conflict_field: Optional[str] = None,
-    conflict_value: Optional[Any] = None,
+    conflict_field: str | None = None,
+    conflict_value: Any | None = None,
 ) -> None:
     """抛出冲突错误"""
     raise ConflictError(detail, conflict_field, conflict_value)
 
 
-def raise_business(detail: str, error_code: Optional[str] = None) -> None:
+def raise_business(detail: str, error_code: str | None = None) -> None:
     """抛出业务错误"""
     raise BusinessError(detail, error_code)

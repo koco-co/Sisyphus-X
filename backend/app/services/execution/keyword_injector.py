@@ -2,18 +2,18 @@
 关键字注入器 - 管理动态关键字的收集和注入
 """
 
+
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
 
 from app.models.keyword import Keyword
-from typing import Optional
 
 
 class KeywordInjector:
     """关键字动态注入管理"""
 
     async def collect_keywords(
-        self, session: AsyncSession, project_id: str, category: Optional[str] = None
+        self, session: AsyncSession, project_id: str, category: str | None = None
     ) -> list[Keyword]:
         """
         收集项目的活跃关键字

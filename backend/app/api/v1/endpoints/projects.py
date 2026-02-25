@@ -5,7 +5,6 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col
 
 from app.api.deps import get_current_user, require_user_id
 from app.core.db import get_session
@@ -24,9 +23,6 @@ from app.schemas.environment import (
     DataSourceTestRequest,
     DataSourceTestResponse,
     DataSourceUpdate,
-    EnvironmentCreate,
-    EnvironmentResponse,
-    EnvironmentUpdate,
 )
 from app.schemas.pagination import PageResponse
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
@@ -53,7 +49,7 @@ async def list_projects(
 
     # 搜索过滤
     if search:
-        query = query.where(col(Project.name).contains(search))
+        query = query.where(Project.name.contains(search))
 
     # 获取总数
     count_statement = select(func.count()).select_from(query.subquery())
@@ -62,7 +58,7 @@ async def list_projects(
 
     # 分页查询
     skip = (page - 1) * size
-    statement = query.order_by(col(Project.updated_at).desc()).offset(skip).limit(size)
+    statement = query.order_by(Project.updated_at.desc()).offset(skip).limit(size)
     result = await session.execute(statement)
     projects = result.scalars().all()
 
@@ -102,7 +98,7 @@ async def create_project(
 
     # 检查项目名称是否重复
     existing_statement = select(Project).where(
-        col(Project.created_by) == user_id, col(Project.name) == project_in.name
+        Project.created_by == user_id, Project.name == project_in.name
     )
     existing_result = await session.execute(existing_statement)
     if existing_result.scalar_one_or_none():
@@ -192,9 +188,9 @@ async def update_project(
     # 检查名称是否重复(如果修改了名称)
     if project_in.name and project_in.name != project.name:
         existing_statement = select(Project).where(
-            col(Project.created_by) == user_id,
-            col(Project.name) == project_in.name,
-            col(Project.id) != project_id,
+            Project.created_by == user_id,
+            Project.name == project_in.name,
+            Project.id != project_id,
         )
         existing_result = await session.execute(existing_statement)
         if existing_result.scalar_one_or_none():
@@ -248,7 +244,7 @@ async def delete_project(
     # from app.models.interface import Interface
     # from app.models.scenario import Scenario
     # interface_exists = await session.execute(
-    #     select(Interface).where(col(Interface.project_id) == project_id).limit(1)
+    #     select(Interface).where(Interface.project_id == project_id).limit(1)
     # )
     # if interface_exists.scalar_one_or_none():
     #     raise HTTPException(

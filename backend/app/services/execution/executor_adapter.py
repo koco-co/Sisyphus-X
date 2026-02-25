@@ -19,7 +19,6 @@ from . import (
     TestCaseInfo,
 )
 from .exceptions import ExecutionTimeoutException, ExecutorException
-from typing import Optional
 
 
 class ExecutorAdapter:
@@ -239,7 +238,7 @@ class ExecutorAdapter:
         except json.JSONDecodeError as e:
             raise ExecutorException(f"Failed to parse executor output: {e}\nOutput: {stdout[:500]}")
 
-    def _extract_error(self, steps: list[StepResult]) -> Optional[str]:
+    def _extract_error(self, steps: list[StepResult]) -> str | None:
         """从步骤中提取错误信息"""
         for step in steps:
             if step.status == "failed" or step.status == "error":

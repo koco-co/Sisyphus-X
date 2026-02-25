@@ -1,7 +1,7 @@
 """Interface test case schemas."""
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -12,7 +12,7 @@ class InterfaceTestCaseBase(BaseModel):
     name: str = Field(..., max_length=100)
     keyword_name: str = Field(..., max_length=100)
     yaml_path: str = Field(..., max_length=255)
-    scenario_id: Optional[int] = None
+    scenario_id: int | None = None
     assertions: dict[str, Any] = {}
 
 
@@ -41,7 +41,7 @@ class GenerateTestCaseRequest(BaseModel):
 
     case_name: str = Field(..., max_length=100)
     keyword_name: str = Field(..., max_length=100)
-    scenario_id: Optional[int] = None
+    scenario_id: int | None = None
     auto_assertion: bool = True
     environment_id: int
 

@@ -1,21 +1,18 @@
+import asyncio
 from datetime import datetime
 from uuid import uuid4
-from typing import Optional
-import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, func, select
 
 from app.core.db import get_session
-from app.models.test_plan import TestPlan, PlanScenario, TestPlanExecution, PlanExecutionStep
 from app.models.scenario import Scenario
-from app.schemas.pagination import PageResponse
-from app.schemas.plan import PlanCreate, PlanResponse, PlanUpdate
+from app.models.test_plan import PlanExecutionStep, PlanScenario, TestPlan, TestPlanExecution
+from app.schemas.plan import PlanCreate, PlanUpdate
 from app.schemas.test_plan import (
-    TestPlanExecutionResponse,
     PlanExecutionStepResponse,
-    TestPlanExecutionUpdate,
+    TestPlanExecutionResponse,
 )
 
 router = APIRouter()
@@ -114,7 +111,7 @@ class ExecutionManager:
             self.status[execution_id] = "completed"
             await session.commit()
 
-        except Exception as e:
+        except Exception:
             # 执行失败
             self.status[execution_id] = "failed"
             if execution:
@@ -131,7 +128,7 @@ class ExecutionManager:
 execution_manager = ExecutionManager()
 
 
-async def get_plan_scenario_id(plan_id: str, session: AsyncSession) -> Optional[str]:
+async def get_plan_scenario_id(plan_id: str, session: AsyncSession) -> str | None:
     """获取测试计划关联的第一个场景ID"""
     result = await session.execute(
         select(PlanScenario.scenario_id)
@@ -169,7 +166,7 @@ async def list_plans(
 ):
     """获取测试计划列表 (分页)"""
     skip = (page - 1) * size
-    statement = select(TestPlan).order_by(col(TestPlan.created_at).desc())
+    statement = select(TestPlan).order_by(TestPlan.created_at.desc())
     count_statement = select(func.count()).select_from(TestPlan)
 
     total = int((await session.execute(count_statement)).scalar_one() or 0)
@@ -461,7 +458,7 @@ async def list_plan_executions(
     statement = (
         select(TestPlanExecution)
         .where(TestPlanExecution.test_plan_id == plan_id)
-        .order_by(col(TestPlanExecution.created_at).desc())
+        .order_by(TestPlanExecution.created_at.desc())
     )
     count_statement = select(func.count()).select_from(TestPlanExecution).where(
         TestPlanExecution.test_plan_id == plan_id

@@ -2,13 +2,13 @@
 执行 API - 测试执行相关端点
 """
 
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
 from app.services.execution.execution_scheduler import ExecutionScheduler
-from typing import Optional
 
 router = APIRouter()
 scheduler = ExecutionScheduler()
@@ -17,7 +17,7 @@ scheduler = ExecutionScheduler()
 class ExecuteRequest(BaseModel):
     """执行请求"""
 
-    environment_id: Optional[int] = None
+    environment_id: int | None = None
 
 
 class ExecutionResponse(BaseModel):
@@ -27,8 +27,8 @@ class ExecutionResponse(BaseModel):
     test_case: dict
     steps: list
     statistics: dict
-    duration: Optional[float] = None
-    error: Optional[str] = None
+    duration: float | None = None
+    error: str | None = None
 
 
 @router.post("/testcases/{test_case_id}/execute", response_model=ExecutionResponse)

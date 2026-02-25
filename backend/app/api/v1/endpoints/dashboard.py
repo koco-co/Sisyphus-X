@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import col, func, select
 
 from app.core.db import get_session
 from app.models import Project, TestReport
@@ -75,7 +75,7 @@ async def get_test_trend(session: AsyncSession = Depends(get_session)):
 async def get_recent_activities(session: AsyncSession = Depends(get_session)):
     """获取最近活动记录"""
     # 获取最近5条测试报告
-    stmt = select(TestReport).order_by(col(TestReport.created_at).desc()).limit(5)
+    stmt = select(TestReport).order_by(TestReport.created_at.desc()).limit(5)
     result = await session.execute(stmt)
     reports = result.scalars().all()
 

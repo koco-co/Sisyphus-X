@@ -5,7 +5,6 @@
 import os
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
@@ -21,7 +20,7 @@ router = APIRouter()
 
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...), folder: Optional[str] = "uploads"):
+async def upload_file(file: UploadFile = File(...), folder: str | None = "uploads"):
     """
     上传文件到 MinIO
     返回文件访问 URL

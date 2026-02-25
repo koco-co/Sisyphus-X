@@ -32,7 +32,7 @@ class KeywordCreate(KeywordBase):
     """创建关键字请求"""
 
     id: str  # UUID
-    project_id: str  # 项目 ID (None 表示内置关键字)
+    project_id: str | None = None  # 项目 ID (None 表示内置关键字)
 
 
 class KeywordUpdate(BaseModel):

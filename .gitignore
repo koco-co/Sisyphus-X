@@ -2,7 +2,6 @@
 # Dependencies
 # =========================
 node_modules/
-frontend/node_modules/
 .pnpm-store/
 
 # =========================
@@ -12,21 +11,21 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.so
+*.egg-info/
+.eggs/
 
 # Virtual environments
 .venv/
 venv/
 env/
-backend/.venv/
 
 # =========================
 # Build outputs
 # =========================
 dist/
 build/
-*.egg-info/
-.eggs/
 frontend/dist/
+engines/*/dist/
 
 # =========================
 # Coverage / test cache
@@ -61,10 +60,11 @@ report.json
 .env.backup
 
 # =========================
-# Logs
+# Logs & PID files
 # =========================
 *.log
 logs/
+*.pid
 
 # =========================
 # Temp / cache
@@ -107,6 +107,24 @@ ehthumbs.db
 .mcp-memory.json
 AGENTS.md
 
+# =========================
 # UV
+# =========================
 .uv/
 uv.lock
+
+# =========================
+# Backup files
+# =========================
+*.bak
+*.bak[0-9]*
+*.orig
+*.backup
+
+# =========================
+# Test reports
+# =========================
+allure-results/
+allure-report/
+test-results/
+playwright-report/

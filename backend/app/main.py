@@ -42,7 +42,12 @@ app = FastAPI(
     redirect_slashes=False,  # 禁用自动重定向，避免307错误
 )
 
-# 配置 CORS 以允许前端访问
+# 添加自定义中间件
+app.add_middleware(SecurityMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(ErrorHandlerMiddleware)
+
+# 配置 CORS 以允许前端访问 (必须最后添加，使其成为最外层中间件，防止错误响应丢失CORS头)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -58,11 +63,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# 添加自定义中间件
-app.add_middleware(SecurityMiddleware)
-app.add_middleware(RequestLoggingMiddleware)
-app.add_middleware(ErrorHandlerMiddleware)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 

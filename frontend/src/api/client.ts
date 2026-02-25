@@ -126,26 +126,27 @@ export const interfacesApi = {
 
 // 场景相关 API
 export const scenariosApi = {
-    list: (params?: { project_id?: number; page?: number; size?: number; search?: string; priority?: string }) =>
+    list: (params?: { project_id?: string; page?: number; size?: number; search?: string; priority?: string }) =>
         api.get('/scenarios/', { params }),
-    get: (id: number) => api.get(`/scenarios/${id}`),
+    get: (id: string | number) => api.get(`/scenarios/${id}`),
     create: (data: {
-        project_id: number
+        project_id: string
         name: string
         description?: string
         priority?: string
         tags?: string[]
         created_by: string
+        variables?: Record<string, any>
     }) => api.post('/scenarios/', data),
-    update: (id: number, data: {
-        project_id?: number
+    update: (id: string | number, data: {
+        project_id?: string
         name?: string
         description?: string
         priority?: string
         tags?: string[]
-        graph_data?: Record<string, any>
+        variables?: Record<string, any>
     }) => api.put(`/scenarios/${id}`, data),
-    delete: (id: number) => api.delete(`/scenarios/${id}`),
+    delete: (id: string | number) => api.delete(`/scenarios/${id}`),
 
     // 步骤管理
     createStep: (scenarioId: number, data: {
@@ -210,46 +211,49 @@ export const reportsApi = {
 
 // 测试计划 API
 export const plansApi = {
-    list: (params?: { page?: number; size?: number }) =>
+    list: (params?: { project_id?: string; page?: number; size?: number; search?: string }) =>
         api.get('/plans/', { params }),
+    get: (id: string | number) => api.get(`/plans/${id}`),
     create: (data: {
+        project_id: string | number
         name: string
-        project_id: number
         description?: string
         created_by: string
+        cron_expression?: string
+        is_active?: boolean
     }) => api.post('/plans/', data),
-    get: (id: number) => api.get(`/plans/${id}`),
-    update: (id: number, data: {
+    update: (id: string | number, data: {
         name?: string
-        project_id?: number
         description?: string
+        cron_expression?: string
+        is_active?: boolean
     }) => api.put(`/plans/${id}`, data),
-    delete: (id: number) => api.delete(`/plans/${id}`),
+    delete: (id: string | number) => api.delete(`/plans/${id}`),
 
     // 场景编排
-    addScenario: (planId: number, data: {
-        scenario_id: number
-        dataset_id?: number
-        environment_id?: number
+    addScenario: (planId: string | number, data: {
+        scenario_id: string | number
+        dataset_id?: string | number
+        environment_id?: string | number
         variables?: Record<string, any>
         sort_order?: number
     }) => api.post(`/plans/${planId}/scenarios`, data),
-    listScenarios: (planId: number) =>
+    listScenarios: (planId: string | number) =>
         api.get(`/plans/${planId}/scenarios`),
-    updateScenario: (planId: number, planScenarioId: number, data: {
-        scenario_id?: number
-        dataset_id?: number
-        environment_id?: number
+    updateScenario: (planId: string | number, planScenarioId: string | number, data: {
+        scenario_id?: string | number
+        dataset_id?: string | number
+        environment_id?: string | number
         variables?: Record<string, any>
         sort_order?: number
     }) => api.put(`/plans/${planId}/scenarios/${planScenarioId}`, data),
-    removeScenario: (planId: number, planScenarioId: number) =>
+    removeScenario: (planId: string | number, planScenarioId: string | number) =>
         api.delete(`/plans/${planId}/scenarios/${planScenarioId}`),
-    batchUpdateScenarios: (planId: number, scenarios: Array<{ id: number; sort_order: number }>) =>
+    batchUpdateScenarios: (planId: string | number, scenarios: Array<{ id: string | number; sort_order: number }>) =>
         api.put(`/plans/${planId}/scenarios/batch`, { scenarios }),
 
     // 执行控制
-    execute: (id: number) => api.post(`/plans/${id}/execute`),
+    execute: (id: string | number) => api.post(`/plans/${id}/execute`),
     terminate: (id: number) => api.post(`/plans/${id}/terminate`),
     pause: (id: number) => api.post(`/plans/${id}/pause`),
     resume: (id: number) => api.post(`/plans/${id}/resume`),

@@ -96,7 +96,7 @@ export default function TestPlan() {
             page: scenarioPage,
             size: 10,
             search: scenarioSearchQuery || undefined,
-            project_id: createForm.project_id ? Number(createForm.project_id) : undefined,
+            project_id: createForm.project_id || undefined,
         }),
         select: (data) => data.data,
         enabled: isDrawerOpen,
@@ -549,11 +549,11 @@ export default function TestPlan() {
                                                     </p>
                                                     <div className="flex items-center gap-2 mt-2">
                                                         <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${{
-                                                                P0: 'bg-red-500/10 text-red-400 border-red-500/20',
-                                                                P1: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-                                                                P2: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-                                                                P3: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-                                                            }[scenario.priority] || 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+                                                            P0: 'bg-red-500/10 text-red-400 border-red-500/20',
+                                                            P1: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+                                                            P2: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+                                                            P3: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+                                                        }[scenario.priority] || 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
                                                             }`}>
                                                             {scenario.priority}
                                                         </span>

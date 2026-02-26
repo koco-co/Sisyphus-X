@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
-from app.models.project import ProjectEnvironment
+from app.models.project import Project, ProjectEnvironment
 from app.schemas.environment import (
     EnvironmentCopyRequest,
     EnvironmentCreate,
@@ -59,14 +59,19 @@ async def create_environment(
         Created environment
 
     Raises:
-        HTTPException: If environment name already exists
+        HTTPException: If project not found or environment name already exists
     """
+    # Ensure project exists
+    project = await session.get(Project, project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
     # Check for duplicate name
     from sqlalchemy import select
 
     statement = select(ProjectEnvironment).where(
         ProjectEnvironment.project_id == project_id,
-        ProjectEnvironment.name == data.name
+        ProjectEnvironment.name == data.name,
     )
     result = await session.execute(statement)
     existing = result.first()
@@ -88,7 +93,7 @@ async def create_environment(
         domain=data.domain or "",
         variables=data.variables or {},
         headers=data.headers or {},
-        is_preupload=data.is_preupload if hasattr(data, 'is_preupload') else False,
+        is_preupload=getattr(data, "is_preupload", False),
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
     )
@@ -212,14 +217,17 @@ async def delete_environment(
     await session.delete(environment)
     await session.commit()
 
-    return {"deleted": environment_id}
+    return {
+        "message": f"Environment {environment_id} deleted successfully",
+        "deleted": environment_id,
+    }
 
 
 @router.post("/{environment_id}/copy", response_model=EnvironmentResponse)
 @router.post("/{environment_id}/copy/", response_model=EnvironmentResponse)
 async def copy_environment(
     environment_id: str,
-    data: EnvironmentCopyRequest,
+    data: EnvironmentCopyRequest | None = None,
     session: AsyncSession = Depends(get_session),
 ) -> ProjectEnvironment:
     """Copy environment.
@@ -245,24 +253,27 @@ async def copy_environment(
     if not source:
         raise HTTPException(status_code=404, detail="Source environment not found")
 
+    # Determine new name: request body or default "Name (Copy)"
+    new_name = (data.name if data and data.name else f"{source.name} (Copy)").strip()
+
     # Check for name conflict
     statement = select(ProjectEnvironment).where(
         ProjectEnvironment.project_id == source.project_id,
-        ProjectEnvironment.name == data.name
+        ProjectEnvironment.name == new_name
     )
     result = await session.execute(statement)
     existing = result.first()
     if existing:
         raise HTTPException(
             status_code=400,
-            detail=f"Environment '{data.name}' already exists"
+            detail=f"Environment '{new_name}' already exists"
         )
 
     # Create copy
     new_env = ProjectEnvironment(
         id=str(uuid.uuid4()),
         project_id=source.project_id,
-        name=data.name,
+        name=new_name,
         domain=source.domain,
         variables=source.variables.copy() if source.variables else {},
         headers=source.headers.copy() if source.headers else {},

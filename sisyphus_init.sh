@@ -119,7 +119,7 @@ error_handler() {
     echo ""
     log_info "💡 常见问题排查:"
     echo "   1. 确保 Docker, Node.js, Python, uv 均已安装"
-    echo "   2. 确保端口 $BACKEND_PORT 和 $FRONTEND_PORT 未被占用"
+    echo "   2. 默认端口 $BACKEND_PORT / $FRONTEND_PORT 若被占用将自动切换"
     echo "   3. 检查 backend/.env 和 frontend/.env 配置"
     echo "   4. 运行 ${BOLD}./sisyphus_init.sh status${NC} 查看服务状态"
     echo ""
@@ -140,6 +140,49 @@ ensure_root_dir() {
 
 is_port_in_use() {
     lsof -Pi :"$1" -sTCP:LISTEN -t >/dev/null 2>&1
+}
+
+# 从 start_port 起找到第一个未被占用的端口
+find_available_port() {
+    local start=$1
+    local p=$start
+    while is_port_in_use "$p"; do
+        p=$((p + 1))
+    done
+    echo "$p"
+}
+
+# 获取当前后端/前端实际使用的端口（用于状态展示）
+get_backend_port() {
+    if [ -f "$LOG_DIR/backend.port" ]; then
+        cat "$LOG_DIR/backend.port" 2>/dev/null || echo "$BACKEND_PORT"
+    else
+        echo "$BACKEND_PORT"
+    fi
+}
+get_frontend_port() {
+    if [ -f "$LOG_DIR/frontend.port" ]; then
+        cat "$LOG_DIR/frontend.port" 2>/dev/null || echo "$FRONTEND_PORT"
+    else
+        echo "$FRONTEND_PORT"
+    fi
+}
+
+# 等待 HTTP 服务返回 200（用于确认服务真正就绪）
+wait_for_http() {
+    local url=$1
+    local max_retries=${2:-15}
+    local retries=0
+    while [ $retries -lt $max_retries ]; do
+        local code
+        code=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 2 "$url" 2>/dev/null || echo "000")
+        if [ "$code" = "200" ]; then
+            return 0
+        fi
+        sleep 2
+        retries=$((retries + 1))
+    done
+    return 1
 }
 
 get_pid_from_file() {
@@ -217,9 +260,26 @@ cmd_check_deps() {
 
     check_command "docker" "Docker" "https://docs.docker.com/get-docker/" || has_error=1
     check_command "node" "Node.js" "https://nodejs.org/ (需要 18+)" || has_error=1
-    check_command "python3" "Python" "https://www.python.org/ (需要 3.12+)" || has_error=1
     check_command "uv" "UV" "curl -LsSf https://astral.sh/uv/install.sh | sh" || has_error=1
     check_command "npm" "npm" "随 Node.js 一起安装" || has_error=1
+
+    # Python：优先用后端 uv 环境，只输出一行
+    if [ -f "$BACKEND_DIR/pyproject.toml" ]; then
+        local pyver
+        pyver=$(cd "$BACKEND_DIR" && uv run python --version 2>/dev/null || true)
+        if [ -n "$pyver" ]; then
+            if echo "$pyver" | grep -qE "3\.(1[2-9]|[2-9][0-9])"; then
+                log_success "Python: $pyver"
+            else
+                log_warning "Python: $pyver（项目需要 3.12+，请执行: cd backend && uv sync）"
+            fi
+        else
+            log_error "Python 未就绪，请执行: cd backend && uv sync"
+            has_error=1
+        fi
+    else
+        check_command "python3" "Python" "https://www.python.org/ (需要 3.12+)" || has_error=1
+    fi
 
     local dc
     dc=$(detect_docker_compose)
@@ -449,16 +509,12 @@ start_infra() {
 start_backend() {
     log_step "🐍 启动后端服务..."
 
+    local actual_port=$BACKEND_PORT
     if is_port_in_use $BACKEND_PORT; then
-        log_warning "端口 $BACKEND_PORT 已被占用，尝试先停止已有后端..."
-        stop_backend
-        sleep 2
-        if is_port_in_use $BACKEND_PORT; then
-            log_error "无法释放端口 $BACKEND_PORT，请手动执行: lsof -ti:$BACKEND_PORT | xargs kill -9"
-            cd "$SCRIPT_DIR"
-            return 1
-        fi
+        actual_port=$(find_available_port $((BACKEND_PORT + 1)))
+        log_warning "默认端口 $BACKEND_PORT 已被占用，改用端口 $actual_port"
     fi
+    echo $actual_port > "$LOG_DIR/backend.port"
 
     cd "$BACKEND_DIR"
 
@@ -466,6 +522,19 @@ start_backend() {
         log_error "backend/app/main.py 不存在"
         cd "$SCRIPT_DIR"
         return 1
+    fi
+
+    # 确保后端使用 Python 3.12+（项目要求）
+    local pyver
+    pyver=$(uv run python --version 2>/dev/null || true)
+    if [ -n "$pyver" ]; then
+        if ! echo "$pyver" | grep -qE "3\.(1[2-9]|[2-9][0-9])"; then
+            log_error "后端需要 Python 3.12+，当前: $pyver"
+            log_info "请安装 Python 3.12+ 后执行: cd backend && uv sync"
+            cd "$SCRIPT_DIR"
+            return 1
+        fi
+        log_debug "后端 Python: $pyver"
     fi
 
     if [ ! -f ".env" ]; then
@@ -477,7 +546,7 @@ start_backend() {
 
     > "$LOG_DIR/backend.log"
 
-    nohup uv run uvicorn app.main:app --reload --host 0.0.0.0 --port $BACKEND_PORT \
+    nohup uv run uvicorn app.main:app --reload --host 0.0.0.0 --port $actual_port \
         > "$LOG_DIR/backend.log" 2>&1 &
     local pid=$!
     echo $pid > "$LOG_DIR/backend.pid"
@@ -485,28 +554,28 @@ start_backend() {
     log_step "⏳ 等待后端启动 (PID: $pid)..."
 
     local retries=0
-    while [ $retries -lt 15 ]; do
-        if is_port_in_use $BACKEND_PORT; then
-            log_success "后端服务启动成功 🐍"
-            log_info "  📍 地址: http://localhost:$BACKEND_PORT"
-            log_info "  📚 API 文档: http://localhost:$BACKEND_PORT/docs"
-            cd "$SCRIPT_DIR"
-            return 0
-        fi
-
+    while [ $retries -lt 20 ]; do
         if ! ps -p $pid >/dev/null 2>&1; then
             log_error "后端进程已退出"
             log_error "最后日志:"
-            tail -10 "$LOG_DIR/backend.log" 2>/dev/null | sed 's/^/  /'
+            tail -15 "$LOG_DIR/backend.log" 2>/dev/null | sed 's/^/  /'
             cd "$SCRIPT_DIR"
             return 1
         fi
-
+        if is_port_in_use $actual_port; then
+            if wait_for_http "http://127.0.0.1:$actual_port/docs" 5; then
+                log_success "后端服务启动成功 🐍"
+                log_info "  📍 地址: http://localhost:$actual_port"
+                log_info "  📚 API 文档: http://localhost:$actual_port/docs"
+                cd "$SCRIPT_DIR"
+                return 0
+            fi
+        fi
         sleep 2
         retries=$((retries + 1))
     done
 
-    log_error "后端启动超时"
+    log_error "后端启动超时（端口已监听但 HTTP 未就绪或进程异常）"
     log_error "查看日志: tail -f $LOG_DIR/backend.log"
     cd "$SCRIPT_DIR"
     return 1
@@ -515,10 +584,12 @@ start_backend() {
 start_frontend() {
     log_step "⚛️  启动前端服务..."
 
+    local actual_port=$FRONTEND_PORT
     if is_port_in_use $FRONTEND_PORT; then
-        log_warning "前端服务已在运行 (端口 $FRONTEND_PORT)"
-        return 0
+        actual_port=$(find_available_port $((FRONTEND_PORT + 1)))
+        log_warning "默认端口 $FRONTEND_PORT 已被占用，改用端口 $actual_port"
     fi
+    echo $actual_port > "$LOG_DIR/frontend.port"
 
     cd "$FRONTEND_DIR"
 
@@ -535,7 +606,7 @@ start_frontend() {
 
     > "$LOG_DIR/frontend.log"
 
-    nohup npm run dev > "$LOG_DIR/frontend.log" 2>&1 &
+    nohup npm run dev -- --host 0.0.0.0 --port $actual_port < /dev/null > "$LOG_DIR/frontend.log" 2>&1 &
     local pid=$!
     echo $pid > "$LOG_DIR/frontend.pid"
 
@@ -543,9 +614,9 @@ start_frontend() {
 
     local retries=0
     while [ $retries -lt 15 ]; do
-        if is_port_in_use $FRONTEND_PORT; then
+        if is_port_in_use $actual_port; then
             log_success "✅ 前端服务启动成功"
-            log_info "  📍 地址: http://localhost:$FRONTEND_PORT"
+            log_info "  📍 地址: http://localhost:$actual_port"
             cd "$SCRIPT_DIR"
             return 0
         fi
@@ -633,16 +704,22 @@ stop_backend() {
 
     if [ -n "$pid" ] && ps -p "$pid" >/dev/null 2>&1; then
         graceful_kill "$pid" "后端服务"
-        rm -f "$LOG_DIR/backend.pid"
+        rm -f "$LOG_DIR/backend.pid" "$LOG_DIR/backend.port"
     else
         local port_pid
-        port_pid=$(lsof -ti:$BACKEND_PORT 2>/dev/null || echo "")
+        local port_to_try
+        port_to_try=$BACKEND_PORT
+        port_pid=$(lsof -ti:$port_to_try 2>/dev/null || echo "")
+        if [ -z "$port_pid" ] && [ -f "$LOG_DIR/backend.port" ]; then
+            port_to_try=$(cat "$LOG_DIR/backend.port" 2>/dev/null)
+            port_pid=$(lsof -ti:$port_to_try 2>/dev/null || echo "")
+        fi
         if [ -n "$port_pid" ]; then
-            graceful_kill "$port_pid" "后端服务 (端口检测)"
+            graceful_kill "$port_pid" "后端服务 (端口 $port_to_try)"
         else
             log_info "后端服务未运行"
         fi
-        rm -f "$LOG_DIR/backend.pid"
+        rm -f "$LOG_DIR/backend.pid" "$LOG_DIR/backend.port"
     fi
 }
 
@@ -653,16 +730,22 @@ stop_frontend() {
 
     if [ -n "$pid" ] && ps -p "$pid" >/dev/null 2>&1; then
         graceful_kill "$pid" "前端服务"
-        rm -f "$LOG_DIR/frontend.pid"
+        rm -f "$LOG_DIR/frontend.pid" "$LOG_DIR/frontend.port"
     else
         local port_pid
-        port_pid=$(lsof -ti:$FRONTEND_PORT 2>/dev/null || echo "")
+        local port_to_try
+        port_to_try=$FRONTEND_PORT
+        port_pid=$(lsof -ti:$port_to_try 2>/dev/null || echo "")
+        if [ -z "$port_pid" ] && [ -f "$LOG_DIR/frontend.port" ]; then
+            port_to_try=$(cat "$LOG_DIR/frontend.port" 2>/dev/null)
+            port_pid=$(lsof -ti:$port_to_try 2>/dev/null || echo "")
+        fi
         if [ -n "$port_pid" ]; then
-            graceful_kill "$port_pid" "前端服务 (端口检测)"
+            graceful_kill "$port_pid" "前端服务 (端口 $port_to_try)"
         else
             log_info "前端服务未运行"
         fi
-        rm -f "$LOG_DIR/frontend.pid"
+        rm -f "$LOG_DIR/frontend.pid" "$LOG_DIR/frontend.port"
     fi
 }
 
@@ -734,20 +817,24 @@ cmd_restart() {
 cmd_status_compact() {
     echo -e "  ${BOLD}服务状态:${NC}"
 
+    local bport fport
+    bport=$(get_backend_port)
+    fport=$(get_frontend_port)
+
     # 后端
-    if is_port_in_use $BACKEND_PORT; then
+    if is_port_in_use $BACKEND_PORT || is_port_in_use "$bport"; then
         local bpid
         bpid=$(get_pid_from_file "$LOG_DIR/backend.pid")
-        echo -e "  🐍 后端:   ${GREEN}运行中${NC} (PID: ${bpid:-unknown})  http://localhost:$BACKEND_PORT"
+        echo -e "  🐍 后端:   ${GREEN}运行中${NC} (PID: ${bpid:-unknown})  http://localhost:$bport"
     else
         echo -e "  🐍 后端:   ${RED}未运行${NC}"
     fi
 
     # 前端
-    if is_port_in_use $FRONTEND_PORT; then
+    if is_port_in_use $FRONTEND_PORT || is_port_in_use "$fport"; then
         local fpid
         fpid=$(get_pid_from_file "$LOG_DIR/frontend.pid")
-        echo -e "  ⚛️  前端:   ${GREEN}运行中${NC} (PID: ${fpid:-unknown})  http://localhost:$FRONTEND_PORT"
+        echo -e "  ⚛️  前端:   ${GREEN}运行中${NC} (PID: ${fpid:-unknown})  http://localhost:$fport"
     else
         echo -e "  ⚛️  前端:   ${RED}未运行${NC}"
     fi
@@ -774,27 +861,31 @@ cmd_status() {
     echo ""
 
     # 后端
+    local bport
+    bport=$(get_backend_port)
     echo -e "${BOLD}🐍 后端服务:${NC}"
-    if is_port_in_use $BACKEND_PORT; then
+    if is_port_in_use $BACKEND_PORT || is_port_in_use "$bport"; then
         local bpid
         bpid=$(get_pid_from_file "$LOG_DIR/backend.pid")
         echo -e "  状态: ${GREEN}✅ 运行中${NC}"
         echo -e "  PID:  ${bpid:-unknown}"
-        echo -e "  地址: http://localhost:$BACKEND_PORT"
-        echo -e "  文档: http://localhost:$BACKEND_PORT/docs"
+        echo -e "  地址: http://localhost:$bport"
+        echo -e "  文档: http://localhost:$bport/docs"
     else
         echo -e "  状态: ${RED}❌ 未运行${NC}"
     fi
     echo ""
 
     # 前端
+    local fport
+    fport=$(get_frontend_port)
     echo -e "${BOLD}⚛️  前端服务:${NC}"
-    if is_port_in_use $FRONTEND_PORT; then
+    if is_port_in_use $FRONTEND_PORT || is_port_in_use "$fport"; then
         local fpid
         fpid=$(get_pid_from_file "$LOG_DIR/frontend.pid")
         echo -e "  状态: ${GREEN}✅ 运行中${NC}"
         echo -e "  PID:  ${fpid:-unknown}"
-        echo -e "  地址: http://localhost:$FRONTEND_PORT"
+        echo -e "  地址: http://localhost:$fport"
     else
         echo -e "  状态: ${RED}❌ 未运行${NC}"
     fi

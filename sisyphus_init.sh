@@ -921,42 +921,72 @@ cmd_test() {
 
     case "$target" in
         --all)
-            log_step "🐍  运行后端测试..."
-            cd "$BACKEND_DIR"
-            uv run --with pytest-asyncio pytest tests/ -v 2>&1 || log_warning "后端测试有失败项"
-            cd "$SCRIPT_DIR"
-            echo ""
-            log_step "⚛️  运行前端测试..."
-            cd "$FRONTEND_DIR"
-            npm run test:run 2>&1 || log_warning "前端测试有失败项"
-            cd "$SCRIPT_DIR"
-            ;;
-        --unit)
             local has_error=0
+            > "$LOG_DIR/test-all.log"
 
-            > "$LOG_DIR/test-unit.log"
-
-            # 后端单元 + 接口测试（Python / FastAPI）
-            log_step "🐍  运行后端单元 + 接口测试 (pytest)..."
+            # 后端 Python 测试：统一使用仓库根目录 tests/ 下的 3 个目录
+            log_step "🐍  运行后端测试 (tests/unit + tests/interface)..."
             cd "$BACKEND_DIR"
-            if uv run --with pytest-asyncio pytest ../tests/unit ../tests/interface -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
-                log_success "后端单元 + 接口测试通过"
+            if uv run --with pytest-asyncio pytest ../tests/unit ../tests/interface -v 2>&1 | tee -a "$LOG_DIR/test-all.log"; then
+                log_success "后端 tests/unit + tests/interface 测试通过"
             else
-                log_error "后端单元/接口测试有失败项"
+                log_error "后端 tests/unit 或 tests/interface 测试有失败项"
                 has_error=1
             fi
             cd "$SCRIPT_DIR"
-
             echo ""
 
-            # 引擎单元测试（sisyphus-api-engine）
-            if [ -d "$ENGINE_DIR/tests" ]; then
-                log_step "🧠  运行引擎单元测试 (sisyphus-api-engine)..."
+            # 引擎: Python 单元测试 + YAML 测试用例
+            if [ -d "$ENGINE_DIR" ]; then
                 cd "$ENGINE_DIR"
-                if uv run python -m pytest tests -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
-                    log_success "引擎单元测试通过"
+
+                # Python 单元测试: tests/unit 下的 pytest
+                if [ -d "tests/unit" ]; then
+                    log_step "🧠  运行 sisyphus-api-engine Python 单元测试 (tests/unit)..."
+                    if uv run python -m pytest tests/unit -v 2>&1 | tee -a "$LOG_DIR/test-all.log"; then
+                        log_success "sisyphus-api-engine Python 单元测试通过"
+                    else
+                        log_error "sisyphus-api-engine Python 单元测试有失败项"
+                        has_error=1
+                    fi
+                    echo ""
+                fi
+
+                # YAML 测试用例: tests/yaml 通过 CLI 批量执行
+                if [ -d "tests/yaml" ]; then
+                    log_step "🧠  运行 sisyphus-api-engine YAML 测试用例 (tests/yaml)..."
+                    if uv run python -m apirun.cli --cases tests/yaml 2>&1 | tee -a "$LOG_DIR/test-all.log"; then
+                        log_success "sisyphus-api-engine tests/yaml 用例通过"
+                    else
+                        log_error "sisyphus-api-engine tests/yaml 用例有失败项"
+                        has_error=1
+                    fi
+                    echo ""
+                fi
+
+                # 示例 YAML 用例: examples/
+                if [ -d "examples" ]; then
+                    log_step "🧠  运行 sisyphus-api-engine 示例用例 (examples/)..."
+                    if uv run python -m apirun.cli --cases examples/ 2>&1 | tee -a "$LOG_DIR/test-all.log"; then
+                        log_success "sisyphus-api-engine examples/ 用例通过"
+                    else
+                        log_error "sisyphus-api-engine examples/ 用例有失败项"
+                        has_error=1
+                    fi
+                    echo ""
+                fi
+
+                cd "$SCRIPT_DIR"
+            fi
+
+            # 自动化测试：tests/auto 下的 Playwright E2E，用 frontend 的 Node 环境运行
+            if [ -d "$FRONTEND_DIR" ] && [ -f "$FRONTEND_DIR/package.json" ]; then
+                log_step "🤖  运行自动化测试 (tests/auto, Playwright E2E)..."
+                cd "$FRONTEND_DIR"
+                if npx playwright test -c ../tests/auto/playwright.config.ts 2>&1 | tee -a "$LOG_DIR/test-all.log"; then
+                    log_success "自动化测试 (tests/auto) 通过"
                 else
-                    log_error "引擎单元测试有失败项"
+                    log_error "自动化测试 (tests/auto) 有失败项"
                     has_error=1
                 fi
                 cd "$SCRIPT_DIR"
@@ -967,7 +997,7 @@ cmd_test() {
             if [ -d "$FRONTEND_DIR" ] && [ -f "$FRONTEND_DIR/package.json" ]; then
                 log_step "⚛️  运行前端单元测试 (Vitest)..."
                 cd "$FRONTEND_DIR"
-                if npm run test:run 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
+                if npm run test:run 2>&1 | tee -a "$LOG_DIR/test-all.log"; then
                     log_success "前端单元测试通过"
                 else
                     log_error "前端单元测试有失败项"
@@ -977,24 +1007,92 @@ cmd_test() {
             fi
 
             echo ""
-            log_info "📄 单元测试日志: $LOG_DIR/test-unit.log"
+            log_info "📄 全量测试日志: $LOG_DIR/test-all.log"
+            if [ $has_error -ne 0 ]; then
+                log_error "❌ 全量测试未全部通过，请根据日志排查问题"
+                return 1
+            fi
+            log_success "🎉 所有测试通过 (后端 + 引擎 + 自动化 + 前端)"
+            ;;
+        --unit)
+            local has_error=0
+            > "$LOG_DIR/test-unit.log"
 
+            # 仅运行仓库根 tests/unit 下的后端单元测试
+            log_step "🐍  运行后端单元测试 (tests/unit)..."
+            cd "$BACKEND_DIR"
+            if uv run --with pytest-asyncio pytest ../tests/unit -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
+                log_success "后端单元测试通过"
+            else
+                log_error "后端单元测试有失败项"
+                has_error=1
+            fi
+            cd "$SCRIPT_DIR"
+            echo ""
+
+            # Sisyphus 引擎 Python 单元测试：tests/unit 下的 pytest
+            if [ -d "$ENGINE_DIR" ]; then
+                log_step "🧠  运行 sisyphus-api-engine Python 单元测试 (tests/unit)..."
+                cd "$ENGINE_DIR"
+                if uv run python -m pytest tests/unit -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
+                    log_success "sisyphus-api-engine Python 单元测试通过"
+                else
+                    log_error "sisyphus-api-engine Python 单元测试有失败项"
+                    has_error=1
+                fi
+                cd "$SCRIPT_DIR"
+                echo ""
+            fi
+
+            echo ""
+            log_info "📄 单元测试日志: $LOG_DIR/test-unit.log"
             if [ $has_error -ne 0 ]; then
                 log_error "❌ 单元测试未全部通过，请修复后重试"
                 return 1
             fi
-
-            log_success "🎉 所有单元测试通过 (后端 + 引擎 + 前端)"
+            log_success "🎉 单元测试通过 (tests/unit + sisyphus-api-engine tests/)"
+            ;;
+        --interface)
+            # 仅运行仓库根 tests/interface 下的接口测试
+            log_step "🐍  运行接口测试 (tests/interface)..."
+            cd "$BACKEND_DIR"
+            if uv run --with pytest-asyncio pytest ../tests/interface -v 2>&1; then
+                log_success "接口测试通过"
+            else
+                log_error "接口测试有失败项"
+                cd "$SCRIPT_DIR"
+                return 1
+            fi
+            cd "$SCRIPT_DIR"
+            ;;
+        --auto)
+            # 仅运行 tests/auto 下的 Playwright 自动化测试
+            if [ -d "$FRONTEND_DIR" ] && [ -f "$FRONTEND_DIR/package.json" ]; then
+                log_step "🤖  运行自动化测试 (tests/auto, Playwright E2E)..."
+                cd "$FRONTEND_DIR"
+                if npx playwright test -c ../tests/auto/playwright.config.ts 2>&1; then
+                    log_success "自动化测试 (tests/auto) 通过"
+                else
+                    log_error "自动化测试 (tests/auto) 有失败项"
+                    cd "$SCRIPT_DIR"
+                    return 1
+                fi
+                cd "$SCRIPT_DIR"
+            else
+                log_warning "前端目录或 package.json 不存在，无法运行自动化测试 (tests/auto)"
+                return 1
+            fi
             ;;
         --e2e)
-            log_step "⚛️  运行 E2E 测试 (Playwright)..."
+            # 保留前端自身的 E2E 测试入口 (frontend/tests 下的配置)
+            log_step "⚛️  运行前端 E2E 测试 (Playwright, frontend)..."
             cd "$FRONTEND_DIR"
-            npm run test:e2e 2>&1 || log_warning "E2E 测试有失败项"
+            npm run test:e2e 2>&1 || log_warning "前端 E2E 测试有失败项"
             cd "$SCRIPT_DIR"
             ;;
         *)
             log_error "未知测试类型: $target"
-            log_info "可选: --all, --unit, --e2e"
+            log_info "可选: --all, --unit, --interface, --auto, --e2e"
             return 1
             ;;
     esac
@@ -1091,8 +1189,15 @@ cmd_help() {
     echo ""
     echo -e "  ${GREEN}lint${NC}    运行代码规范检查 (Ruff + ESLint)"
     echo ""
-    echo -e "  ${GREEN}test${NC}    [--all|--unit|--e2e]"
+    echo -e "  ${GREEN}test${NC}    [--all|--unit|--interface|--auto|--e2e]"
     echo "          运行测试 (默认: --all)"
+    echo "            --all       后端 tests/unit + tests/interface,"
+    echo "                        引擎 tests/unit (pytest) + tests/yaml (CLI) + examples/,"
+    echo "                        自动化 tests/auto (Playwright) + 前端单测"
+    echo "            --unit      仅运行后端 tests/unit + 引擎 tests/unit (pytest)"
+    echo "            --interface 仅运行后端 tests/interface"
+    echo "            --auto      仅运行 tests/auto (Playwright E2E 自动化)"
+    echo "            --e2e       仅运行前端自身 E2E 测试 (frontend)"
     echo ""
     echo -e "  ${GREEN}migrate${NC} 执行数据库迁移 (Alembic)"
     echo ""

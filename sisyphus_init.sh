@@ -921,9 +921,9 @@ cmd_test() {
 
     case "$target" in
         --all)
-            log_step "🐍 运行后端测试..."
+            log_step "🐍  运行后端测试..."
             cd "$BACKEND_DIR"
-            uv run pytest tests/ -v 2>&1 || log_warning "后端测试有失败项"
+            uv run --with pytest-asyncio pytest tests/ -v 2>&1 || log_warning "后端测试有失败项"
             cd "$SCRIPT_DIR"
             echo ""
             log_step "⚛️  运行前端测试..."
@@ -937,9 +937,9 @@ cmd_test() {
             > "$LOG_DIR/test-unit.log"
 
             # 后端单元 + 接口测试（Python / FastAPI）
-            log_step "🐍 运行后端单元 + 接口测试 (pytest)..."
+            log_step "🐍  运行后端单元 + 接口测试 (pytest)..."
             cd "$BACKEND_DIR"
-            if uv run pytest ../tests/unit ../tests/interface -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
+            if uv run --with pytest-asyncio pytest ../tests/unit ../tests/interface -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
                 log_success "后端单元 + 接口测试通过"
             else
                 log_error "后端单元/接口测试有失败项"
@@ -951,9 +951,9 @@ cmd_test() {
 
             # 引擎单元测试（sisyphus-api-engine）
             if [ -d "$ENGINE_DIR/tests" ]; then
-                log_step "🧠 运行引擎单元测试 (sisyphus-api-engine)..."
+                log_step "🧠  运行引擎单元测试 (sisyphus-api-engine)..."
                 cd "$ENGINE_DIR"
-                if uv run pytest tests -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
+                if uv run python -m pytest tests -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
                     log_success "引擎单元测试通过"
                 else
                     log_error "引擎单元测试有失败项"

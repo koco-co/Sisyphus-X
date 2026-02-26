@@ -5,12 +5,13 @@
 """
 
 import json
-from datetime import datetime
+
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.keyword import Keyword
+from app.utils.datetime import utcnow
 
 # 内置关键字定义
 BUILTIN_KEYWORDS = [
@@ -461,7 +462,7 @@ async def seed_builtin_keywords(session: AsyncSession) -> None:
             existing.code = kw_data["code"]
             existing.parameters = kw_data["parameters"]
             existing.description = kw_data["description"]
-            existing.updated_at = datetime.utcnow()
+            existing.updated_at = utcnow()
             session.add(existing)
         else:
             # 创建新的内置关键字

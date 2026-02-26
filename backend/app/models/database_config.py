@@ -8,6 +8,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
+from app.utils.datetime import utcnow
 
 
 class DatabaseConfig(Base):
@@ -60,10 +61,10 @@ class DatabaseConfig(Base):
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.utcnow(), nullable=False
+        default=lambda: utcnow(), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
+        DateTime(timezone=False), default=lambda: utcnow(), onupdate=lambda: utcnow(), nullable=False
     )
 
     __table_args__ = (

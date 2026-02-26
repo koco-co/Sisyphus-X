@@ -15,6 +15,7 @@ from app.core.db import get_session
 from app.models import FunctionalTestCase, Requirement
 from app.schemas.pagination import PageResponse
 from app.schemas.requirement import FunctionalTestCaseResponse, RequirementResponse
+from app.utils.datetime import utcnow
 
 router = APIRouter()
 
@@ -173,7 +174,7 @@ async def update_case(
         if hasattr(case, key):
             setattr(case, key, value)
 
-    case.updated_at = datetime.utcnow()
+    case.updated_at = utcnow()
     await session.commit()
     await session.refresh(case)
     return case
@@ -373,7 +374,7 @@ async def generate_cases_with_ai(
         # TODO: Update AIGenerationTask when model is created
         # task.status = "completed"
         # task.result = result
-        # task.completed_at = datetime.utcnow()
+        # task.completed_at = utcnow()
         pass
 
     except Exception:

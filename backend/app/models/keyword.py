@@ -29,6 +29,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
+from app.utils.datetime import utcnow
 
 
 class Keyword(Base):
@@ -66,11 +67,11 @@ class Keyword(Base):
     is_enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.utcnow(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(default=lambda: utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False),
-        default=lambda: datetime.utcnow(),
-        onupdate=lambda: datetime.utcnow(),
+        default=lambda: utcnow(),
+        onupdate=lambda: utcnow(),
         nullable=False,
     )
 

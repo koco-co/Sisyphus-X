@@ -9,6 +9,7 @@ from sqlalchemy import ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
+from app.utils.datetime import utcnow
 
 
 class TestReport(Base):
@@ -67,7 +68,7 @@ class TestReport(Base):
 
     # 时间戳
     created_at: Mapped[datetime] = mapped_column(
-        default=lambda: datetime.utcnow(), nullable=False
+        default=lambda: utcnow(), nullable=False
     )
 
     def __repr__(self) -> str:

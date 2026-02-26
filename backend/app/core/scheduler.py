@@ -1,13 +1,11 @@
 import asyncio
 import logging
-from datetime import datetime
-
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker
-
 from app.core.db import engine
 from app.core.network import test_tcp_connection
 from app.models.project import ProjectDataSource
+from app.utils.datetime import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +29,7 @@ async def check_datasources():
                 logger.info(f"Checking datasource {ds.name} ({ds.host}:{ds.port})...")
                 success, message = test_tcp_connection(ds.host, ds.port)
 
-                ds.last_test_at = datetime.utcnow()
+                ds.last_test_at = utcnow()
                 if success:
                     ds.status = "connected"
                     ds.error_msg = None

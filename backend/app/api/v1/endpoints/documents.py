@@ -2,7 +2,7 @@
 文档中心 API 端点
 """
 
-from datetime import datetime
+
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy import func, select
@@ -12,6 +12,7 @@ from app.core.db import get_session
 from app.models.document import Document, DocumentVersion
 from app.schemas.document import DocumentRead, DocumentVersionRead
 from app.schemas.pagination import PageResponse
+from app.utils.datetime import utcnow
 
 router = APIRouter()
 
@@ -130,7 +131,7 @@ async def update_document(
         if hasattr(document, key) and key != "change_note":
             setattr(document, key, value)
 
-    document.updated_at = datetime.utcnow()
+    document.updated_at = utcnow()
     await session.commit()
     await session.refresh(document)
     return DocumentRead.model_validate(document)
@@ -193,7 +194,7 @@ async def restore_document_version(
 
     # 恢复内容
     document.content = doc_version.content
-    document.updated_at = datetime.utcnow()
+    document.updated_at = utcnow()
 
     await session.commit()
     return {"restored_to_version": version}

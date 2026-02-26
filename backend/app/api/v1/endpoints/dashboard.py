@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
@@ -14,6 +14,7 @@ from app.schemas.dashboard import (
     TrendData,
     TrendDataPoint,
 )
+from app.utils.datetime import utcnow
 
 router = APIRouter()
 
@@ -28,7 +29,7 @@ async def get_dashboard(session: AsyncSession = Depends(get_session)):
     # 场景数
     total_scenarios = (await session.execute(select(func.count()).select_from(Scenario))).scalar_one() or 0
     # 执行趋势：最近 7 天按日期的通过/失败统计
-    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    seven_days_ago = utcnow() - timedelta(days=7)
     trend_stmt = (
         select(
             func.date(TestReport.start_time).label("day"),
@@ -51,7 +52,7 @@ async def get_dashboard(session: AsyncSession = Depends(get_session)):
     }
     execution_trend = []
     for i in range(7):
-        d = (datetime.utcnow() - timedelta(days=6 - i)).date()
+        d = (utcnow() - timedelta(days=6 - i)).date()
         key = d.isoformat()
         pass_c, fail_c = trend_map.get(key, (0, 0))
         execution_trend.append(
@@ -73,7 +74,7 @@ async def get_dashboard_stats(session: AsyncSession = Depends(get_session)):
     total_projects = (await session.execute(total_projects_stmt)).scalar() or 0
 
     # 获取活跃任务数 (假设最近7天内运行过的报告)
-    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    seven_days_ago = utcnow() - timedelta(days=7)
     active_tasks_stmt = (
         select(func.count()).select_from(TestReport).where(TestReport.created_at >= seven_days_ago)
     )
@@ -130,7 +131,7 @@ async def get_recent_activities(session: AsyncSession = Depends(get_session)):
     activities = []
     for report in reports:
         # 计算相对时间
-        time_diff = datetime.utcnow() - report.created_at
+        time_diff = utcnow() - report.created_at
         if time_diff.seconds < 60:
             time_str = f"{time_diff.seconds} 秒前"
         elif time_diff.seconds < 3600:

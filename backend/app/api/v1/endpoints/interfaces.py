@@ -27,6 +27,7 @@ from app.schemas.interface_test_case import (
 from app.schemas.pagination import PageResponse
 from app.services.curl_parser import parse_curl_command
 from app.services.test_case_generator import TestCaseGenerator
+from app.utils.datetime import utcnow
 
 router = APIRouter()
 
@@ -211,7 +212,7 @@ async def update_interface(
         if key in allowed_fields:
             setattr(interface, key, value)
 
-    interface.updated_at = datetime.utcnow()
+    interface.updated_at = utcnow()
     await session.commit()
     await session.refresh(interface)
     return interface

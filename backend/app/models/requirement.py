@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
+from app.utils.datetime import utcnow
 
 
 class Requirement(Base):
@@ -42,6 +43,6 @@ class Requirement(Base):
 
     # 元数据
     created_by: Mapped[int] = mapped_column(Integer, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(default=lambda: datetime.utcnow(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: utcnow(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(default=lambda: utcnow(), nullable=False)
     version: Mapped[int] = mapped_column(Integer, default=1)

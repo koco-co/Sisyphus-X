@@ -1,6 +1,6 @@
 """项目管理 API 端点"""
 import uuid
-from datetime import datetime
+
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
@@ -26,6 +26,7 @@ from app.schemas.environment import (
 )
 from app.schemas.pagination import PageResponse
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
+from app.utils.datetime import utcnow
 
 router = APIRouter()
 
@@ -204,7 +205,7 @@ async def update_project(
     for field, value in update_data.items():
         setattr(project, field, value)
 
-    project.updated_at = datetime.utcnow()
+    project.updated_at = utcnow()
     session.add(project)
     await session.commit()
     await session.refresh(project)
@@ -290,7 +291,7 @@ async def create_datasource(
     # 尝试测试连接以确定初始状态
     status = "unchecked"
     error_msg = None
-    last_test_at = datetime.utcnow()
+    last_test_at = utcnow()
 
     if ds.username and ds.password:
         success, message = await test_mysql_connection(
@@ -357,7 +358,7 @@ async def update_datasource(
 
     for key, value in update_data.items():
         setattr(ds, key, value)
-    ds.updated_at = datetime.utcnow()
+    ds.updated_at = utcnow()
 
     # 如果连接配置发生变化，重新测试连接
     if should_retest and ds.username and ds.password_hash:
@@ -370,7 +371,7 @@ async def update_datasource(
             # 这里简化处理：只在提供了新密码或相关配置变更时标记为unchecked
             ds.status = "unchecked"
             ds.error_msg = None
-            ds.last_test_at = datetime.utcnow()
+            ds.last_test_at = utcnow()
 
     session.add(ds)
     await session.commit()
@@ -394,7 +395,7 @@ async def patch_datasource(
     update_data = ds_patch.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(ds, key, value)
-    ds.updated_at = datetime.utcnow()
+    ds.updated_at = utcnow()
 
     session.add(ds)
     await session.commit()
@@ -559,7 +560,7 @@ async def update_env_variable(
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(var, key, value)
-    var.updated_at = datetime.utcnow()
+    var.updated_at = utcnow()
 
     session.add(var)
     await session.commit()

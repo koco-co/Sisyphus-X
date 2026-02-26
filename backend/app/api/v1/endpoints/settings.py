@@ -2,7 +2,7 @@
 系统设置 API 端点
 """
 
-from datetime import datetime
+
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session
 from app.models.settings import GlobalConfig, NotificationChannel, Role
 from app.schemas.settings import GlobalConfigRead, NotificationChannelRead, RoleRead
+from app.utils.datetime import utcnow
 
 router = APIRouter()
 
@@ -63,7 +64,7 @@ async def update_config(
         session.add(config)
     else:
         config.value = value
-        config.updated_at = datetime.utcnow()
+        config.updated_at = utcnow()
 
     await session.commit()
     await session.refresh(config)
@@ -93,7 +94,7 @@ async def batch_update_configs(
             config.category = category
             config.description = description
             config.is_secret = is_secret
-            config.updated_at = datetime.utcnow()
+            config.updated_at = utcnow()
         else:
             config = GlobalConfig(
                 key=key,
@@ -145,7 +146,7 @@ async def update_notification_channel(
         if hasattr(channel, key):
             setattr(channel, key, value)
 
-    channel.updated_at = datetime.utcnow()
+    channel.updated_at = utcnow()
     await session.commit()
     await session.refresh(channel)
     return NotificationChannelRead.model_validate(channel)

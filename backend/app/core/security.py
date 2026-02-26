@@ -1,10 +1,9 @@
 # 安全工具函数 - JWT和密码处理
-from datetime import datetime, timedelta
-
+from datetime import timedelta
 import bcrypt
 from jose import jwt
-
 from app.core.config import settings
+from app.utils.datetime import utcnow
 
 # JWT 配置
 ALGORITHM = "HS256"
@@ -24,9 +23,9 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     """创建 JWT 访问令牌"""
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt

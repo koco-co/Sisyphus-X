@@ -15,6 +15,7 @@ from app.schemas.environment import (
     VariableReplaceResponse,
 )
 from app.services.environment_service import EnvironmentService
+from app.utils.datetime import utcnow
 
 router = APIRouter()
 
@@ -94,8 +95,8 @@ async def create_environment(
         variables=data.variables or {},
         headers=data.headers or {},
         is_preupload=getattr(data, "is_preupload", False),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=utcnow(),
+        updated_at=utcnow(),
     )
 
     session.add(environment)
@@ -184,7 +185,7 @@ async def update_environment(
     if hasattr(data, 'is_preupload') and data.is_preupload is not None:
         environment.is_preupload = data.is_preupload
 
-    environment.updated_at = datetime.utcnow()
+    environment.updated_at = utcnow()
 
     await session.commit()
     await session.refresh(environment)
@@ -278,8 +279,8 @@ async def copy_environment(
         variables=source.variables.copy() if source.variables else {},
         headers=source.headers.copy() if source.headers else {},
         is_preupload=source.is_preupload,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=utcnow(),
+        updated_at=utcnow(),
     )
 
     session.add(new_env)
@@ -344,8 +345,8 @@ async def clone_environment(
         variables=source.variables.copy() if source.variables else {},
         headers=source.headers.copy() if source.headers else {},
         is_preupload=source.is_preupload,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
+        created_at=utcnow(),
+        updated_at=utcnow(),
     )
 
     session.add(new_env)

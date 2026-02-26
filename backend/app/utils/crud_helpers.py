@@ -5,7 +5,7 @@ CRUD 工具函数 - 消除重复的数据库操作代码
 """
 
 from collections.abc import Sequence
-from datetime import datetime
+
 from typing import Any, TypeVar, cast
 
 from fastapi import HTTPException, status
@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.base import Base
 from app.schemas.pagination import PageResponse
+from app.utils.datetime import utcnow
 
 # 泛型类型变量
 ModelType = TypeVar("ModelType", bound=Base)
@@ -105,7 +106,7 @@ async def update_item[ModelType: Base](
 
     # 如果有 updated_at 字段，自动更新
     if hasattr(item, "updated_at"):
-        item.updated_at = datetime.utcnow()
+        item.updated_at = utcnow()
 
     if auto_commit:
         session.add(item)

@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime
+
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -14,6 +14,7 @@ from app.schemas.test_plan import (
     PlanExecutionStepResponse,
     TestPlanExecutionResponse,
 )
+from app.utils.datetime import utcnow
 
 router = APIRouter()
 
@@ -49,7 +50,7 @@ class ExecutionManager:
 
             # 更新执行记录
             execution.status = "running"
-            execution.started_at = datetime.utcnow()
+            execution.started_at = utcnow()
             await session.commit()
 
             # 获取测试计划及其关联的场景
@@ -70,7 +71,7 @@ class ExecutionManager:
                 current_status = self.status.get(execution_id, "running")
                 if current_status == "cancelled":
                     execution.status = "cancelled"
-                    execution.completed_at = datetime.utcnow()
+                    execution.completed_at = utcnow()
                     await session.commit()
                     return
                 elif current_status == "paused":
@@ -80,7 +81,7 @@ class ExecutionManager:
                         # 再次检查是否被取消
                         if self.status.get(execution_id) == "cancelled":
                             execution.status = "cancelled"
-                            execution.completed_at = datetime.utcnow()
+                            execution.completed_at = utcnow()
                             await session.commit()
                             return
 
@@ -90,7 +91,7 @@ class ExecutionManager:
                     test_plan_execution_id=execution_id,
                     scenario_id=plan_scenario.scenario_id,
                     status="running",
-                    started_at=datetime.utcnow(),
+                    started_at=utcnow(),
                 )
                 session.add(step)
                 await session.commit()
@@ -101,13 +102,13 @@ class ExecutionManager:
 
                 # 更新步骤状态
                 step.status = "passed"
-                step.completed_at = datetime.utcnow()
+                step.completed_at = utcnow()
                 execution.passed_scenarios += 1
                 await session.commit()
 
             # 执行完成
             execution.status = "completed"
-            execution.completed_at = datetime.utcnow()
+            execution.completed_at = utcnow()
             self.status[execution_id] = "completed"
             await session.commit()
 
@@ -116,7 +117,7 @@ class ExecutionManager:
             self.status[execution_id] = "failed"
             if execution:
                 execution.status = "failed"
-                execution.completed_at = datetime.utcnow()
+                execution.completed_at = utcnow()
                 await session.commit()
         finally:
             # 清理任务
@@ -243,7 +244,7 @@ async def update_plan(plan_id: str, data: PlanUpdate, session: AsyncSession = De
     for key, value in update_data.items():
         setattr(plan, key, value)
 
-    plan.updated_at = datetime.utcnow()
+    plan.updated_at = utcnow()
     await session.commit()
     await session.refresh(plan)
 
@@ -270,7 +271,7 @@ async def pause_plan(plan_id: str, session: AsyncSession = Depends(get_session))
         raise HTTPException(status_code=404, detail="Plan not found")
 
     plan.status = "paused"
-    plan.updated_at = datetime.utcnow()
+    plan.updated_at = utcnow()
     await session.commit()
     await session.refresh(plan)
     return await enrich_plan_response(plan, session)
@@ -284,7 +285,7 @@ async def resume_plan(plan_id: str, session: AsyncSession = Depends(get_session)
         raise HTTPException(status_code=404, detail="Plan not found")
 
     plan.status = "active"
-    plan.updated_at = datetime.utcnow()
+    plan.updated_at = utcnow()
     await session.commit()
     await session.refresh(plan)
     return await enrich_plan_response(plan, session)
@@ -334,7 +335,7 @@ async def execute_plan(
     session.add(execution)
 
     # 更新计划的最后运行时间
-    plan.last_run = datetime.utcnow()
+    plan.last_run = utcnow()
     await session.commit()
     await session.refresh(execution)
 
@@ -376,7 +377,7 @@ async def terminate_plan(plan_id: str, session: AsyncSession = Depends(get_sessi
 
                 # 更新执行记录
                 execution.status = "cancelled"
-                execution.completed_at = datetime.utcnow()
+                execution.completed_at = utcnow()
                 await session.commit()
 
                 terminated_count += 1

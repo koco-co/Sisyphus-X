@@ -53,6 +53,7 @@ from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import Base
+from app.utils.datetime import utcnow
 
 if TYPE_CHECKING:
     from app.models.user import User
@@ -102,9 +103,9 @@ class Scenario(Base):
     post_sql: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
+        DateTime(timezone=False), default=lambda: utcnow(), onupdate=lambda: utcnow(), nullable=False
     )
 
     # 关系
@@ -156,9 +157,9 @@ class ScenarioStep(Base):
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
+        DateTime(timezone=False), default=lambda: utcnow(), onupdate=lambda: utcnow(), nullable=False
     )
 
     # 索引
@@ -211,9 +212,9 @@ class Dataset(Base):
     csv_data: Mapped[str] = mapped_column(Text, nullable=False)  # CSV 格式数据
 
     # 时间戳
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: utcnow(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=False), default=lambda: datetime.utcnow(), onupdate=lambda: datetime.utcnow(), nullable=False
+        DateTime(timezone=False), default=lambda: utcnow(), onupdate=lambda: utcnow(), nullable=False
     )
 
     # 关系

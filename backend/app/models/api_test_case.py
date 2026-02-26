@@ -10,6 +10,7 @@ from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
+from app.utils.datetime import utcnow
 
 
 class ApiTestCase(Base):
@@ -48,7 +49,7 @@ class ApiTestCase(Base):
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # 元数据
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: utcnow(), nullable=False)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # 软删除
@@ -79,7 +80,7 @@ class ApiTestStep(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: utcnow(), nullable=False)
 
 
 class ApiTestExecution(Base):
@@ -128,7 +129,7 @@ class ApiTestExecution(Base):
     # 执行选项
     execution_options: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: utcnow(), nullable=False)
 
 
 class ApiTestStepResult(Base):
@@ -173,4 +174,4 @@ class ApiTestStepResult(Base):
     # 错误信息
     error_info: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: datetime.utcnow(), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), default=lambda: utcnow(), nullable=False)

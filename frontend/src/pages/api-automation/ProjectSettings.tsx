@@ -114,8 +114,9 @@ const objectToKeyValueArray = (obj: Record<string, string>): KeyValuePair[] => {
 // 工具函数：Key-Value 数组转对象
 const keyValueArrayToObject = (pairs: KeyValuePair[]): Record<string, string> => {
     return pairs.reduce((acc, { key, value }) => {
-        if (key.trim()) {
-            acc[key] = value
+        const trimmedKey = key.trim()
+        if (trimmedKey) {
+            acc[trimmedKey] = value
         }
         return acc
     }, {} as Record<string, string>)

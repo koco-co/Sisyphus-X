@@ -196,7 +196,10 @@ const keyValueArrayToObject = (pairs: KeyValuePair[]): Record<string, string> =>
     return pairs
         .filter(p => p.enabled && p.key.trim())
         .reduce((acc, { key, value }) => {
-            acc[key] = value
+            const trimmedKey = key.trim()
+            if (trimmedKey) {
+                acc[trimmedKey] = value
+            }
             return acc
         }, {} as Record<string, string>)
 }

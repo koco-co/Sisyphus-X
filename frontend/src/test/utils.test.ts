@@ -170,7 +170,10 @@ describe('Object manipulation utilities', () => {
       const result = pairs
         .filter((p) => p.enabled && p.key.trim())
         .reduce((acc, { key, value }) => {
-          acc[key] = value
+          const trimmedKey = key.trim()
+          if (trimmedKey) {
+            acc[trimmedKey] = value
+          }
           return acc
         }, {} as Record<string, string>)
 
@@ -188,7 +191,10 @@ describe('Object manipulation utilities', () => {
       const result = pairs
         .filter((p) => p.enabled && p.key.trim())
         .reduce((acc, { key, value }) => {
-          acc[key] = value
+          const trimmedKey = key.trim()
+          if (trimmedKey) {
+            acc[trimmedKey] = value
+          }
           return acc
         }, {} as Record<string, string>)
 

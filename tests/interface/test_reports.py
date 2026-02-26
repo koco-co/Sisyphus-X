@@ -4,6 +4,7 @@ from datetime import datetime
 import uuid
 
 import pytest
+import pytest_asyncio
 from httpx import AsyncClient
 from sqlalchemy import select
 
@@ -11,7 +12,7 @@ from app.models import Scenario
 from app.models.report import TestReport
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def scenario_with_reports(db_session, sample_project, sample_user):
     """创建带两条报告的场景（使用 report.TestReport，表 testreport）"""
     scenario = Scenario(

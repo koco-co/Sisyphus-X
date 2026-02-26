@@ -3,6 +3,7 @@
 测试接口目录、接口 CRUD、环境管理等功能
 """
 import pytest
+import pytest_asyncio
 import uuid
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -12,7 +13,7 @@ from app.models.user import User
 from app.core.security import get_password_hash
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_user(db_session):
     """创建测试用户"""
     user = User(
@@ -184,6 +185,8 @@ class TestInterfaceFolderAPI:
         # 删除成功应该返回204 No Content
         assert response.status_code == 204
 
-        # 验证删除
-        result = await db_session.get(InterfaceFolder, folder.id)
-        assert result is None
+        # 验证删除（重新从数据库查询）
+        result = await db_session.execute(
+            select(InterfaceFolder).where(InterfaceFolder.id == folder.id)
+        )
+        assert result.scalar_one_or_none() is None

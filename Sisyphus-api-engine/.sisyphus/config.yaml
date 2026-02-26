@@ -1,0 +1,22 @@
+# sisyphus-api-engine 统一环境配置
+#
+# 此文件用于引擎运行时的默认配置项
+# 可通过 CLI 参数或环境变量覆盖
+
+engine:
+  name: "sisyphus-api-engine"
+  version: "0.1.0"
+
+defaults:
+  timeout: 30
+  allow_redirects: true
+  verify_ssl: true
+  output_format: "text"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s [%(levelname)s] %(message)s"
+
+report:
+  allure_dir: "./allure-results"
+  html_dir: "./html-report"

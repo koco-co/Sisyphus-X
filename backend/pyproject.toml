@@ -34,7 +34,7 @@ dependencies = [
     "greenlet>=3.3.1",
     "redis>=7.1.1",
     "aiomysql>=0.3.2",
-    # sisyphus-api-engine: 本地开发时使用 `uv pip install -e ../engines/sisyphus-api-engine`
+    # sisyphus-api-engine: 本地开发时使用 `uv pip install -e ../Sisyphus-api-engine`
 ]
 
 [project.optional-dependencies]
@@ -91,7 +91,7 @@ reportMissingTypeStubs = false
 # Pytest配置
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["../tests/unit", "../tests/interface"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]

@@ -16,7 +16,7 @@ class TestCaseGenerator:
     def __init__(
         self,
         session: Session,
-        engines_base_path: str = "engines/sisyphus_api_engine",
+        engines_base_path: str = "Sisyphus-api-engine/apirun",
     ) -> None:
         """Initialize the generator.
 
@@ -207,7 +207,7 @@ class TestCaseGenerator:
 
         content = f'''"""{interface.name or 'API'} keyword."""
 
-from sisyphus_api_engine import Keyword
+from apirun import Keyword
 
 
 class {func_name.title().replace("_", "")}(Keyword):

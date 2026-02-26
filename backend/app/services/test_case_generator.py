@@ -10,28 +10,37 @@ from app.models.interface_test_case import InterfaceTestCase
 from app.models.project import Interface, ProjectEnvironment
 
 
+def _default_engines_base_path() -> Path:
+    """项目根目录下的引擎路径（backend 启动时 cwd 可能为 backend/）"""
+    # backend/app/services/test_case_generator.py -> 项目根目录
+    backend_app = Path(__file__).resolve().parent.parent.parent
+    project_root = backend_app.parent
+    return project_root / "Sisyphus-api-engine" / "apirun"
+
+
 class TestCaseGenerator:
     """Generate test cases from interfaces."""
 
     def __init__(
         self,
         session: Session,
-        engines_base_path: str = "Sisyphus-api-engine/apirun",
+        engines_base_path: str | Path | None = None,
     ) -> None:
         """Initialize the generator.
 
         Args:
             session: Database session
-            engines_base_path: Base path to engine files
+            engines_base_path: Base path to engine files (default: project root / Sisyphus-api-engine / apirun)
         """
         self.session = session
-        self.engines_base_path = Path(engines_base_path)
+        self.engines_base_path = Path(engines_base_path) if engines_base_path else _default_engines_base_path()
         self.cases_dir = self.engines_base_path / "cases"
         self.keywords_dir = self.engines_base_path / "keywords"
 
-        # Ensure directories exist
-        self.cases_dir.mkdir(parents=True, exist_ok=True)
-        self.keywords_dir.mkdir(parents=True, exist_ok=True)
+        # Ensure directories exist (skip if path not present, e.g. engine not cloned)
+        if self.engines_base_path.exists():
+            self.cases_dir.mkdir(parents=True, exist_ok=True)
+            self.keywords_dir.mkdir(parents=True, exist_ok=True)
 
     def generate(
         self,

@@ -1,35 +1,22 @@
 from fastapi import APIRouter, Depends
 
-# TODO: user_management - 需要修复导入问题后重新启用
-# from app.api.v1.endpoints import user_management
+# 仅保留需求文档与开发任务清单中的模块（4 登录注册、5 Dashboard、6 接口自动化、7 全局参数、系统设置）
 from app.api import deps
 from app.api.v1.endpoints import (
-    ai_clarification,
-    ai_config,
-    api_test_cases,
     auth,
-    case_generation,
-    # curl_parser,  # TEMP: 暂时禁用
     dashboard,
     database_configs,
-    documents,
     engine,
     environments,
-    execution,
-    functional,
     global_params,
     interface_folders,
-    # history,  # TEMP: 暂时禁用
     interfaces,
     keywords,
     plans,
-    point_generation,
     projects,
     reports,
     scenarios,
     settings,
-    # swagger,  # TEMP: 暂时禁用
-    testcases,
     upload,
     websocket,
 )
@@ -77,12 +64,6 @@ api_router.include_router(
     upload.router, prefix="/files", tags=["files"], dependencies=[Depends(deps.get_current_user)]
 )
 api_router.include_router(
-    testcases.router,
-    prefix="/testcases",
-    tags=["testcases"],
-    dependencies=[Depends(deps.get_current_user)],
-)
-api_router.include_router(
     scenarios.router,
     prefix="/scenarios",
     tags=["scenarios"],
@@ -116,51 +97,6 @@ api_router.include_router(
     settings.router,
     prefix="/settings",
     tags=["settings"],
-    dependencies=[Depends(deps.get_current_user)],
-)
-api_router.include_router(
-    functional.router,
-    prefix="/functional",
-    tags=["functional"],
-    dependencies=[Depends(deps.get_current_user)],
-)
-api_router.include_router(
-    documents.router,
-    prefix="/documents",
-    tags=["documents"],
-    dependencies=[Depends(deps.get_current_user)],
-)
-api_router.include_router(
-    execution.router,
-    prefix="/execution",
-    tags=["execution"],
-    dependencies=[Depends(deps.get_current_user)],
-)
-api_router.include_router(
-    api_test_cases.router, tags=["api-test-cases"], dependencies=[Depends(deps.get_current_user)]
-)
-api_router.include_router(
-    ai_config.router,
-    prefix="/ai/configs",
-    tags=["AI配置管理"],
-    dependencies=[Depends(deps.get_current_user)],
-)
-api_router.include_router(
-    ai_clarification.router,
-    prefix="/ai",
-    tags=["AI需求澄清"],
-    dependencies=[Depends(deps.get_current_user)],
-)
-api_router.include_router(
-    point_generation.router,
-    prefix="/test-points",
-    tags=["测试点生成"],
-    dependencies=[Depends(deps.get_current_user)],
-)
-api_router.include_router(
-    case_generation.router,
-    prefix="/test-cases/generate",
-    tags=["测试用例生成"],
     dependencies=[Depends(deps.get_current_user)],
 )
 # Environment management

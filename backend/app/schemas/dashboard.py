@@ -3,8 +3,17 @@ from pydantic import BaseModel
 # === Dashboard 统计相关 Schema ===
 
 
+class DashboardAggregate(BaseModel):
+    """Dashboard 聚合数据（BE-007：项目数/接口数/场景数/执行趋势）"""
+
+    project_count: int
+    interface_count: int
+    scenario_count: int
+    execution_trend: list["TrendDataPoint"]
+
+
 class DashboardStats(BaseModel):
-    """Dashboard 统计数据"""
+    """Dashboard 统计数据（兼容旧版）"""
 
     active_tasks: int  # 活跃任务数
     test_coverage: int  # 测试覆盖率(百分比)
@@ -40,3 +49,7 @@ class RecentActivities(BaseModel):
     """最近活动列表"""
 
     activities: list[ActivityItem]
+
+
+# 前向引用
+DashboardAggregate.model_rebuild()

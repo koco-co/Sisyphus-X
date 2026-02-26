@@ -13,7 +13,7 @@ class TestReport(Base):
 
     __tablename__ = "testreport"
 
-    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     scenario_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("scenarios.id"), nullable=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -31,7 +31,7 @@ class TestReportDetail(Base):
 
     __tablename__ = "testreportdetail"
 
-    id: Mapped[int | None] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     report_id: Mapped[int] = mapped_column(Integer, ForeignKey("testreport.id"), nullable=False)
     node_id: Mapped[str] = mapped_column(String(100), nullable=False)
     node_name: Mapped[str] = mapped_column(String(255), nullable=False)

@@ -5,9 +5,10 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
-from app.models import Project, TestReport
+from app.models import Interface, Project, Scenario, TestReport
 from app.schemas.dashboard import (
     ActivityItem,
+    DashboardAggregate,
     DashboardStats,
     RecentActivities,
     TrendData,
@@ -15,6 +16,53 @@ from app.schemas.dashboard import (
 )
 
 router = APIRouter()
+
+
+@router.get("/", response_model=DashboardAggregate)
+async def get_dashboard(session: AsyncSession = Depends(get_session)):
+    """BE-007: 获取 Dashboard 统计聚合（项目数/接口数/场景数/执行趋势）"""
+    # 项目数
+    total_projects = (await session.execute(select(func.count()).select_from(Project))).scalar_one() or 0
+    # 接口数
+    total_interfaces = (await session.execute(select(func.count()).select_from(Interface))).scalar_one() or 0
+    # 场景数
+    total_scenarios = (await session.execute(select(func.count()).select_from(Scenario))).scalar_one() or 0
+    # 执行趋势：最近 7 天按日期的通过/失败统计
+    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    trend_stmt = (
+        select(
+            func.date(TestReport.start_time).label("day"),
+            func.sum(TestReport.success).label("pass_count"),
+            func.sum(TestReport.failed).label("fail_count"),
+        )
+        .where(TestReport.start_time >= seven_days_ago)
+        .group_by(func.date(TestReport.start_time))
+        .order_by(func.date(TestReport.start_time))
+    )
+    rows = (await session.execute(trend_stmt)).all()
+    weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    # 键统一为日期字符串（SQLite 返回 str，PostgreSQL 可能返回 date）
+    trend_map = {
+        (str(r.day) if hasattr(r.day, "isoformat") else r.day): (
+            int(r.pass_count or 0),
+            int(r.fail_count or 0),
+        )
+        for r in rows
+    }
+    execution_trend = []
+    for i in range(7):
+        d = (datetime.utcnow() - timedelta(days=6 - i)).date()
+        key = d.isoformat()
+        pass_c, fail_c = trend_map.get(key, (0, 0))
+        execution_trend.append(
+            TrendDataPoint(name=weekdays[i], pass_count=pass_c, fail_count=fail_c)
+        )
+    return DashboardAggregate(
+        project_count=int(total_projects),
+        interface_count=int(total_interfaces),
+        scenario_count=int(total_scenarios),
+        execution_trend=execution_trend,
+    )
 
 
 @router.get("/stats", response_model=DashboardStats)

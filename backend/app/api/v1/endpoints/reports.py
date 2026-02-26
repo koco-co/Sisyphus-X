@@ -8,7 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
-from app.models import TestReport, TestReportDetail
+from app.models import Scenario, TestReport, TestReportDetail
 from app.schemas.pagination import PageResponse
 from app.schemas.report import ReportResponse, ReportWithDetails
 from app.utils.rich_logger import get_logger
@@ -16,6 +16,56 @@ from app.utils.rich_logger import get_logger
 logger = get_logger(__name__)
 
 router = APIRouter()
+
+
+@router.get("/history/{scenario_name}", response_model=PageResponse[ReportResponse])
+async def list_reports_by_scenario_name(
+    scenario_name: str,
+    page: int = Query(1, ge=1, description="页码"),
+    size: int = Query(10, ge=1, le=100, description="每页数量"),
+    session: AsyncSession = Depends(get_session),
+):
+    """BE-058: 按场景名称查询历史报告（分页）"""
+    # 先查该名称对应的 scenario_id 列表（同名场景可能多个项目下存在）
+    scenario_ids_stmt = select(Scenario.id).where(Scenario.name == scenario_name)
+    scenario_ids_result = await session.execute(scenario_ids_stmt)
+    scenario_ids = [row[0] for row in scenario_ids_result.all()]
+    if not scenario_ids:
+        return PageResponse(items=[], total=0, page=page, size=size, pages=0)
+
+    count_stmt = select(func.count()).select_from(TestReport).where(
+        TestReport.scenario_id.in_(scenario_ids)
+    )
+    total = int((await session.execute(count_stmt)).scalar_one() or 0)
+    skip = (page - 1) * size
+    stmt = (
+        select(TestReport)
+        .where(TestReport.scenario_id.in_(scenario_ids))
+        .order_by(TestReport.created_at.desc())
+        .offset(skip)
+        .limit(size)
+    )
+    result = await session.execute(stmt)
+    reports = list(result.scalars().all())
+    pages = (total + size - 1) // size if total else 0
+    # 转为 ReportResponse（id 等字段类型兼容）
+    items = [
+        ReportResponse(
+            id=str(r.id),
+            scenario_id=r.scenario_id,
+            name=r.name,
+            status=r.status,
+            total=r.total or 0,
+            success=r.success or 0,
+            failed=r.failed or 0,
+            duration=r.duration or "0s",
+            start_time=r.start_time,
+            end_time=r.end_time,
+            created_at=r.created_at,
+        )
+        for r in reports
+    ]
+    return PageResponse(items=items, total=total, page=page, size=size, pages=pages)
 
 
 @router.get("/", response_model=PageResponse[ReportResponse])

@@ -128,3 +128,8 @@ allure-results/
 allure-report/
 test-results/
 playwright-report/
+
+# =========================
+# Cursor IDE
+# =========================
+.cursor/

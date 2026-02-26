@@ -10,7 +10,7 @@ import { defineConfig, devices } from '@playwright/test';
  * - 失败时自动截图和录制视频
  */
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: '../../tests/auto/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,

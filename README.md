@@ -22,15 +22,15 @@ Sisyphus-X 是一款面向测试团队的自动化测试管理平台，提供从
 
 ### 核心能力
 
-| 能力域 | 说明 |
-|--------|------|
-| 项目管理 | 项目信息维护、数据库配置管理 |
-| 关键字配置 | 内置关键字 + 自定义关键字扩展 |
-| 接口定义 | 接口目录管理、调试、cURL/Swagger 导入、环境管理 |
-| 场景编排 | 测试步骤拖拽排序、关键字级联配置、数据驱动 |
-| 测试计划 | 多场景编排执行、实时进度报告、终止/暂停 |
-| 测试报告 | 平台报告 + Allure 报告、历史记录、导出 |
-| 全局参数 | 工具函数注册与 `{{参数方法名}}` 引用 |
+| 能力域     | 说明                                                 |
+| ---------- | ---------------------------------------------------- |
+| 项目管理   | 项目信息维护、数据库配置管理                         |
+| 关键字配置 | 内置关键字 + 自定义关键字扩展                        |
+| 接口定义   | 接口目录管理、调试、cURL/Swagger 导入、环境管理      |
+| 场景编排   | 测试步骤拖拽排序、关键字级联配置、数据驱动           |
+| 测试计划   | 多场景编排执行、实时进度报告、终止/暂停              |
+| 测试报告   | 平台报告 + Allure 报告、历史记录、导出               |
+| 全局参数   | 工具函数注册与 `{{参数方法名}}` 引用                 |
 | 核心执行器 | sisyphus-api-engine: YAML 驱动、CLI 调用、多格式输出 |
 
 ### 后续规划
@@ -48,6 +48,7 @@ Sisyphus-X 是一款面向测试团队的自动化测试管理平台，提供从
 <td width="33%" valign="top">
 
 ### 前端
+
 - Vite 7.2 + React 18.2 + TypeScript 5.9
 - Tailwind CSS + shadcn/ui
 - React Query v5 + Zustand
@@ -58,6 +59,7 @@ Sisyphus-X 是一款面向测试团队的自动化测试管理平台，提供从
 <td width="33%" valign="top">
 
 ### 后端
+
 - Python 3.12 + UV
 - FastAPI 0.115+
 - SQLAlchemy 2.0 (async)
@@ -69,6 +71,7 @@ Sisyphus-X 是一款面向测试团队的自动化测试管理平台，提供从
 <td width="33%" valign="top">
 
 ### 中间件 & 引擎
+
 - PostgreSQL 15
 - Redis 7
 - MinIO (对象存储)
@@ -141,7 +144,7 @@ Sisyphus-X/
 ### 一键启动
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/koco-co/Sisyphus-X
 cd Sisyphus-X
 
 # 使用项目管理脚本
@@ -169,12 +172,12 @@ npm run dev
 
 ### 访问服务
 
-| 服务 | 地址 |
-|------|------|
-| 前端界面 | http://localhost:5173 |
-| API 文档 (Swagger) | http://localhost:8000/docs |
-| API 文档 (ReDoc) | http://localhost:8000/redoc |
-| MinIO 控制台 | http://localhost:9001 |
+| 服务               | 地址                        |
+| ------------------ | --------------------------- |
+| 前端界面           | http://localhost:5173       |
+| API 文档 (Swagger) | http://localhost:8000/docs  |
+| API 文档 (ReDoc)   | http://localhost:8000/redoc |
+| MinIO 控制台       | http://localhost:9001       |
 
 ---
 
@@ -182,21 +185,21 @@ npm run dev
 
 ### 后端 (`backend/.env`)
 
-| 变量名 | 说明 | 默认值 |
-|--------|------|--------|
-| `DATABASE_URL` | 数据库连接 URL | `sqlite+aiosqlite:///./sisyphus.db` |
-| `SECRET_KEY` | JWT 密钥 | `change-me-in-production` |
-| `AUTH_DISABLED` | 禁用认证 (仅开发) | `true` |
-| `REDIS_URL` | Redis 连接 URL | `redis://localhost:6379/0` |
-| `MINIO_ENDPOINT` | MinIO 地址 | `localhost:9000` |
+| 变量名           | 说明              | 默认值                              |
+| ---------------- | ----------------- | ----------------------------------- |
+| `DATABASE_URL`   | 数据库连接 URL    | `sqlite+aiosqlite:///./sisyphus.db` |
+| `SECRET_KEY`     | JWT 密钥          | `change-me-in-production`           |
+| `AUTH_DISABLED`  | 禁用认证 (仅开发) | `true`                              |
+| `REDIS_URL`      | Redis 连接 URL    | `redis://localhost:6379/0`          |
+| `MINIO_ENDPOINT` | MinIO 地址        | `localhost:9000`                    |
 
 ### 前端 (`frontend/.env`)
 
-| 变量名 | 说明 | 默认值 |
-|--------|------|--------|
-| `VITE_API_BASE_URL` | API 基础 URL | `http://localhost:8000/api/v1` |
-| `VITE_AUTH_DISABLED` | 禁用认证 | `true` |
-| `VITE_DEV_MODE_SKIP_LOGIN` | 跳过登录 | `true` |
+| 变量名                     | 说明         | 默认值                         |
+| -------------------------- | ------------ | ------------------------------ |
+| `VITE_API_BASE_URL`        | API 基础 URL | `http://localhost:8000/api/v1` |
+| `VITE_AUTH_DISABLED`       | 禁用认证     | `true`                         |
+| `VITE_DEV_MODE_SKIP_LOGIN` | 跳过登录     | `true`                         |
 
 完整配置参考 [`.env.example`](./.env.example)。
 
@@ -222,59 +225,59 @@ npm run dev
 
 ### 前端
 
-| 命令 | 说明 |
-|------|------|
-| `npm run dev` | 启动开发服务器 |
-| `npm run build` | 构建生产版本 |
-| `npm run lint` | ESLint 代码检查 |
-| `npm run test` | Vitest 单元测试 |
+| 命令               | 说明                |
+| ------------------ | ------------------- |
+| `npm run dev`      | 启动开发服务器      |
+| `npm run build`    | 构建生产版本        |
+| `npm run lint`     | ESLint 代码检查     |
+| `npm run test`     | Vitest 单元测试     |
 | `npm run test:e2e` | Playwright E2E 测试 |
 
 ### 后端
 
-| 命令 | 说明 |
-|------|------|
-| `uv run uvicorn app.main:app --reload` | 启动开发服务器 |
-| `uv run ruff check app/` | Ruff 代码检查 |
-| `uv run ruff format app/` | Ruff 代码格式化 |
-| `uv run pyright app/` | Pyright 类型检查 |
-| `uv run pytest tests/ -v` | 运行测试 |
-| `uv run alembic revision --autogenerate -m "msg"` | 创建迁移 |
-| `uv run alembic upgrade head` | 应用迁移 |
+| 命令                                              | 说明             |
+| ------------------------------------------------- | ---------------- |
+| `uv run uvicorn app.main:app --reload`            | 启动开发服务器   |
+| `uv run ruff check app/`                          | Ruff 代码检查    |
+| `uv run ruff format app/`                         | Ruff 代码格式化  |
+| `uv run pyright app/`                             | Pyright 类型检查 |
+| `uv run pytest tests/ -v`                         | 运行测试         |
+| `uv run alembic revision --autogenerate -m "msg"` | 创建迁移         |
+| `uv run alembic upgrade head`                     | 应用迁移         |
 
 ### 引擎
 
-| 命令 | 说明 |
-|------|------|
-| `sisyphus --case <yaml>` | 执行测试用例 (文本报告) |
-| `sisyphus --case <yaml> -O json` | JSON 输出 (平台集成模式) |
-| `sisyphus --case <yaml> -O allure --allure-dir <dir>` | Allure 报告 |
-| `sisyphus --case <yaml> -O html --html-dir <dir>` | HTML 报告 |
+| 命令                                                  | 说明                     |
+| ----------------------------------------------------- | ------------------------ |
+| `sisyphus --case <yaml>`                              | 执行测试用例 (文本报告)  |
+| `sisyphus --case <yaml> -O json`                      | JSON 输出 (平台集成模式) |
+| `sisyphus --case <yaml> -O allure --allure-dir <dir>` | Allure 报告              |
+| `sisyphus --case <yaml> -O html --html-dir <dir>`     | HTML 报告                |
 
 ---
 
 ## 代码规范
 
-| 项目 | 工具 | 说明 |
-|------|------|------|
-| 后端代码检查 | Ruff | 替代 Flake8 + Black + isort |
-| 后端类型检查 | Pyright | basic 模式 |
-| 前端代码检查 | ESLint | flat config |
-| 提交检查 | pre-commit | Ruff + trailing-whitespace + YAML/JSON/TOML 检查 |
-| 提交规范 | Conventional Commits | `feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:` |
-| 编码风格 | Google 开发范式 | 注释使用中文 |
+| 项目         | 工具                 | 说明                                                          |
+| ------------ | -------------------- | ------------------------------------------------------------- |
+| 后端代码检查 | Ruff                 | 替代 Flake8 + Black + isort                                   |
+| 后端类型检查 | Pyright              | basic 模式                                                    |
+| 前端代码检查 | ESLint               | flat config                                                   |
+| 提交检查     | pre-commit           | Ruff + trailing-whitespace + YAML/JSON/TOML 检查              |
+| 提交规范     | Conventional Commits | `feat:` / `fix:` / `refactor:` / `docs:` / `test:` / `chore:` |
+| 编码风格     | Google 开发范式      | 注释使用中文                                                  |
 
 ---
 
 ## 文档
 
-| 文档 | 说明 |
-|------|------|
-| [需求文档](./docs/Sisyphus-X需求文档.md) | 完整需求规格说明书 |
-| [开发任务清单](./docs/开发任务清单.md) | 前端/后端/引擎开发任务拆分 |
-| [YAML 输入规范](./docs/Sisyphus-api-engine%20YAML%20输入规范.md) | sisyphus-api-engine YAML 格式定义 |
+| 文档                                                             | 说明                                  |
+| ---------------------------------------------------------------- | ------------------------------------- |
+| [需求文档](./docs/Sisyphus-X需求文档.md)                         | 完整需求规格说明书                    |
+| [开发任务清单](./docs/开发任务清单.md)                           | 前端/后端/引擎开发任务拆分            |
+| [YAML 输入规范](./docs/Sisyphus-api-engine%20YAML%20输入规范.md) | sisyphus-api-engine YAML 格式定义     |
 | [JSON 输出规范](./docs/Sisyphus-api-engine%20JSON%20输出规范.md) | sisyphus-api-engine JSON 响应格式定义 |
-| [变更日志](./CHANGELOG.md) | 版本变更记录 |
+| [变更日志](./CHANGELOG.md)                                       | 版本变更记录                          |
 
 ---
 

@@ -1,6 +1,11 @@
-"""CLI 入口点 - sisyphus 命令"""
+"""CLI 入口点 - sisyphus 命令（EG-002）"""
+
+import json
+import sys
 
 import click
+
+from sisyphus_api_engine.runner import load_case, run_case
 
 
 @click.command()
@@ -24,9 +29,26 @@ def main(
     verbose: bool,
 ) -> None:
     """sisyphus-api-engine: YAML 驱动的接口自动化测试引擎"""
-    # TODO: 实现引擎核心逻辑
-    click.echo(f"执行测试用例: {case}")
-    click.echo(f"输出格式: {output_format}")
+    try:
+        case_model = load_case(case)
+    except FileNotFoundError as e:
+        click.echo(str(e), err=True)
+        sys.exit(1)
+    except ValueError as e:
+        click.echo(str(e), err=True)
+        sys.exit(1)
+
+    try:
+        result = run_case(case_model)
+    except Exception as e:
+        click.echo(f"执行失败: {e}", err=True)
+        sys.exit(1)
+
+    if output_format == "json":
+        click.echo(json.dumps(result, ensure_ascii=False, indent=2))
+    else:
+        click.echo(f"执行测试用例: {case}")
+        click.echo(f"场景: {result.get('scenario_name', '')} 状态: {result.get('status', '')}")
 
 
 if __name__ == "__main__":

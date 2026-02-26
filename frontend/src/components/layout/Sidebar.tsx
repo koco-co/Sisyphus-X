@@ -22,8 +22,6 @@ import {
     Workflow,
     Clock,
     TestTube,
-    FileCheck,
-    Sparkles,
     BookOpen,
     File,
     Bell,
@@ -49,14 +47,7 @@ interface NavItem {
 // 完整导航结构
 const navItems: NavItem[] = [
     { icon: LayoutDashboard, labelKey: 'nav.dashboard', href: '/' },
-    {
-        icon: TestTube,
-        labelKey: 'nav.functionalTesting',
-        children: [
-            { icon: FileCheck, labelKey: 'functionalTest.requirements.title', href: '/functional-test/requirements' },
-            { icon: Sparkles, labelKey: 'functionalTest.aiConfig.title', href: '/functional-test/ai-config' },
-        ]
-    },
+    { icon: TestTube, labelKey: 'nav.functionalTesting', href: '/functional-test/requirements' },
     {
         icon: Zap,
         labelKey: 'nav.apiAutomation',

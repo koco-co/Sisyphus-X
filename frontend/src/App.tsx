@@ -10,17 +10,10 @@ import Dashboard from '@/pages/Dashboard'
 import InterfaceManagementPage from '@/pages/interface-management'
 import ScenarioListPage from '@/pages/scenario'
 import ScenarioEditor from '@/pages/scenario/editor'
-import TestCasesPage from '@/pages/cases'
 import LoginPage from '@/pages/auth/LoginPage'
 import TestReport from '@/pages/reports/TestReport'
 import TestPlan from '@/pages/plans/TestPlan'
-// 功能测试模块导入
-import RequirementList from '@/pages/functional-test/RequirementList'
-import AIConfigManagement from '@/pages/functional-test/AIConfigManagement'
-import RequirementClarification from '@/pages/functional-test/RequirementClarification'
-import TestPointManagement from '@/pages/functional-test/TestPointManagement'
-import TestCaseManagement from '@/pages/functional-test/TestCaseManagement'
-import GenerateTestCases from '@/pages/functional-test/GenerateTestCases'
+import PlaceholderPage from '@/pages/PlaceholderPage'
 import GlobalParamsPage from '@/pages/global-params'
 import EnvironmentManagement from '@/pages/environments/index'
 import EnvironmentList from '@/pages/environments/EnvironmentList'
@@ -95,17 +88,15 @@ function AppRoutes() {
         {/* 定时任务 (原测试计划) */}
         <Route path="/plans" element={<TestPlan />} />
 
-        {/* 旧模块保留 */}
-        <Route path="/cases" element={<TestCasesPage />} />
-        <Route path="/data" element={<div className="p-8 text-white">数据中心 - 开发中</div>} />
-
-        {/* 功能测试模块 */}
-        <Route path="/functional-test/requirements" element={<RequirementList />} />
-        <Route path="/functional-test/ai-config" element={<AIConfigManagement />} />
-        <Route path="/functional-test/clarification/:requirementId" element={<RequirementClarification />} />
-        <Route path="/functional-test/test-points/:requirementId" element={<TestPointManagement />} />
-        <Route path="/functional-test/test-cases/:requirementId" element={<TestCaseManagement />} />
-        <Route path="/functional-test/test-cases/generate" element={<GenerateTestCases />} />
+        {/* 后续规划占位（需求 §9：WEB/APP/功能测试等仅占位） */}
+        <Route path="/cases" element={<PlaceholderPage />} />
+        <Route path="/data" element={<PlaceholderPage />} />
+        <Route path="/functional-test/requirements" element={<PlaceholderPage />} />
+        <Route path="/functional-test/ai-config" element={<PlaceholderPage />} />
+        <Route path="/functional-test/clarification/:requirementId" element={<PlaceholderPage />} />
+        <Route path="/functional-test/test-points/:requirementId" element={<PlaceholderPage />} />
+        <Route path="/functional-test/test-cases/:requirementId" element={<PlaceholderPage />} />
+        <Route path="/functional-test/test-cases/generate" element={<PlaceholderPage />} />
 
         {/* 全局参数管理 */}
         <Route path="/global-params" element={<GlobalParamsPage />} />

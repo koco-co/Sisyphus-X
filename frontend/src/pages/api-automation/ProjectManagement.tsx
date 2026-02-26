@@ -12,7 +12,6 @@ import {
     Edit2,
     Database,
     FolderKanban,
-    FileText,
     Globe
 } from 'lucide-react';
 import { Pagination } from '@/components/common/Pagination';
@@ -336,14 +335,6 @@ export default function ProjectManagement() {
                                                         className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
                                                     >
                                                         <Globe className="w-4 h-4" />
-                                                    </Link>
-                                                </Tooltip>
-                                                <Tooltip content="测试用例" position="top">
-                                                    <Link
-                                                        to={`/api/projects/${project.id}/test-cases`}
-                                                        className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
-                                                    >
-                                                        <FileText className="w-4 h-4" />
                                                     </Link>
                                                 </Tooltip>
                                                 <Tooltip content="删除" position="top">

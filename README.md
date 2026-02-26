@@ -96,7 +96,6 @@ Sisyphus-X/
 │   │   ├── contexts/           # React Context
 │   │   ├── i18n/               # 国际化
 │   │   └── lib/                # 工具函数
-│   ├── tests/                  # E2E 测试 (Playwright)
 │   └── package.json
 │
 ├── backend/                    # FastAPI 后端应用
@@ -108,14 +107,27 @@ Sisyphus-X/
 │   │   ├── core/               # 核心配置 (DB/Security/Config)
 │   │   └── middleware/         # 中间件
 │   ├── alembic/                # 数据库迁移
-│   ├── tests/                  # 后端测试
 │   └── pyproject.toml          # 依赖 + Ruff/Pyright/Pytest 配置
 │
-├── engines/                    # 测试执行引擎
-│   └── sisyphus-api-engine/    # API 测试引擎
-│       ├── src/sisyphus_api_engine/
-│       ├── tests/
-│       └── pyproject.toml
+├── Sisyphus-api-engine/        # 核心执行引擎 (独立子项目)
+│   ├── apirun/                 # 主 Python 包
+│   │   ├── core/               # 核心数据模型
+│   │   ├── parser/             # YAML 解析器
+│   │   ├── executor/           # 测试执行器
+│   │   ├── validation/         # 断言验证引擎
+│   │   ├── extractor/          # 变量提取器
+│   │   ├── data_driven/        # 数据驱动测试
+│   │   ├── result/             # 结果收集器
+│   │   ├── websocket/          # WebSocket 实时推送
+│   │   └── utils/              # 工具函数
+│   ├── docs/                   # 引擎文档
+│   ├── tests/                  # 引擎单元测试
+│   └── pyproject.toml
+│
+├── tests/                      # 统一测试目录
+│   ├── unit/                   # 单元测试
+│   ├── interface/              # 接口测试
+│   └── auto/                   # 自动化测试 (Playwright E2E)
 │
 ├── docs/                       # 项目文档
 │   ├── Sisyphus-X需求文档.md
@@ -241,7 +253,7 @@ npm run dev
 | `uv run ruff check app/`                          | Ruff 代码检查    |
 | `uv run ruff format app/`                         | Ruff 代码格式化  |
 | `uv run pyright app/`                             | Pyright 类型检查 |
-| `uv run pytest tests/ -v`                         | 运行测试         |
+| `uv run pytest ../tests/unit ../tests/interface -v` | 运行测试         |
 | `uv run alembic revision --autogenerate -m "msg"` | 创建迁移         |
 | `uv run alembic upgrade head`                     | 应用迁移         |
 

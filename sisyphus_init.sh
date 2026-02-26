@@ -19,7 +19,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly LOG_DIR="$SCRIPT_DIR/logs"
 readonly BACKEND_DIR="$SCRIPT_DIR/backend"
 readonly FRONTEND_DIR="$SCRIPT_DIR/frontend"
-readonly ENGINE_DIR="$SCRIPT_DIR/engines/sisyphus-api-engine"
+readonly ENGINE_DIR="$SCRIPT_DIR/Sisyphus-api-engine"
 
 readonly BACKEND_PORT=8000
 readonly FRONTEND_PORT=5173

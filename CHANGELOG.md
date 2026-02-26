@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **开发任务清单**: 基于需求文档完成前端(80项)/后端(63项)/引擎(37项)三部分细粒度任务拆分
-- **引擎包骨架**: 初始化 `engines/sisyphus-api-engine/` 标准 Python 包结构 (pyproject.toml + CLI 入口)
+- **引擎包骨架**: 初始化 `Sisyphus-api-engine/` 独立子项目，包结构重组为 `apirun/` (pyproject.toml + CLI 入口)
 **项目管理脚本**: 新增 `sisyphus_init.sh` 统一脚本，支持 start/stop/restart/status/install/lint/test/migrate/logs/clean/help
 - **前端环境模板**: 新增 `frontend/.env.example`
 

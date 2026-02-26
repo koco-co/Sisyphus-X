@@ -121,7 +121,9 @@ Sisyphus-X/
 │   │   ├── websocket/          # WebSocket 实时推送
 │   │   └── utils/              # 工具函数
 │   ├── docs/                   # 引擎文档
-│   ├── tests/                  # 引擎单元测试
+│   ├── tests/
+│   │   ├── unit/               # Python 单元测试 (pytest)
+│   │   └── yaml/               # YAML 测试用例 (sisyphus --cases)
 │   └── pyproject.toml
 │
 ├── tests/                      # 统一测试目录
@@ -228,7 +230,11 @@ npm run dev
 ./sisyphus_init.sh status    # 查看服务状态
 ./sisyphus_init.sh install   # 安装所有依赖
 ./sisyphus_init.sh lint      # 运行代码检查
-./sisyphus_init.sh test      # 运行测试
+./sisyphus_init.sh test --all        # 运行所有测试 (后端 + 引擎 Python 单测 + 引擎 YAML 用例 + 自动化 + 前端)
+./sisyphus_init.sh test --unit       # 仅运行单元测试 (tests/unit + 引擎 tests/unit)
+./sisyphus_init.sh test --interface  # 仅运行接口测试 (tests/interface)
+./sisyphus_init.sh test --auto       # 仅运行自动化测试 (tests/auto, Playwright)
+./sisyphus_init.sh test --e2e        # 仅运行前端自身 E2E 测试
 ./sisyphus_init.sh migrate   # 数据库迁移
 ./sisyphus_init.sh logs      # 查看日志
 ./sisyphus_init.sh clean     # 清理临时文件

@@ -21,7 +21,9 @@ Sisyphus-api-engine/
 │   └── cli.py          # CLI 入口
 ├── examples/           # 示例 YAML 用例
 ├── docs/               # 项目文档
-├── tests/              # 单元测试
+├── tests/
+│   ├── unit/           # Python 单元测试 (pytest)
+│   └── yaml/           # YAML 测试用例 (sisyphus --cases)
 ├── CHANGELOG.md
 ├── pyproject.toml
 └── pypi_publish.sh     # PyPI 发布脚本
@@ -47,7 +49,14 @@ sisyphus --case case.yaml -O html --html-dir ./html-report
 
 ```bash
 uv sync
-uv run pytest tests/ -v
+# Python 单元测试
+uv run python -m pytest tests/unit -v
+
+# 批量执行 tests/yaml/ 下所有 YAML 用例
+sisyphus --cases tests/yaml/
+
+# 批量执行 examples/ 下所有示例 YAML 用例
+sisyphus --cases examples/
 ```
 
 ## 发布

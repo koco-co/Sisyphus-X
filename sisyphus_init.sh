@@ -914,6 +914,7 @@ cmd_status() {
 # ============================================================
 cmd_test() {
     local target="${1:---all}"
+    ensure_log_dir
     print_separator
     log_info "🧪 运行测试 ($target)..."
     echo ""
@@ -931,10 +932,59 @@ cmd_test() {
             cd "$SCRIPT_DIR"
             ;;
         --unit)
-            log_step "🐍 运行后端单元测试..."
+            local has_error=0
+
+            > "$LOG_DIR/test-unit.log"
+
+            # 后端单元 + 接口测试（Python / FastAPI）
+            log_step "🐍 运行后端单元 + 接口测试 (pytest)..."
             cd "$BACKEND_DIR"
-            uv run pytest tests/ -m unit -v 2>&1 || log_warning "单元测试有失败项"
+            if uv run pytest ../tests/unit ../tests/interface -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
+                log_success "后端单元 + 接口测试通过"
+            else
+                log_error "后端单元/接口测试有失败项"
+                has_error=1
+            fi
             cd "$SCRIPT_DIR"
+
+            echo ""
+
+            # 引擎单元测试（sisyphus-api-engine）
+            if [ -d "$ENGINE_DIR/tests" ]; then
+                log_step "🧠 运行引擎单元测试 (sisyphus-api-engine)..."
+                cd "$ENGINE_DIR"
+                if uv run pytest tests -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
+                    log_success "引擎单元测试通过"
+                else
+                    log_error "引擎单元测试有失败项"
+                    has_error=1
+                fi
+                cd "$SCRIPT_DIR"
+                echo ""
+            fi
+
+            # 前端单元测试（Vitest）
+            if [ -d "$FRONTEND_DIR" ] && [ -f "$FRONTEND_DIR/package.json" ]; then
+                log_step "⚛️  运行前端单元测试 (Vitest)..."
+                cd "$FRONTEND_DIR"
+                if npm run test:run 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
+                    log_success "前端单元测试通过"
+                else
+                    log_error "前端单元测试有失败项"
+                    has_error=1
+                fi
+                cd "$SCRIPT_DIR"
+            fi
+
+            echo ""
+            log_info "📄 单元测试日志: $LOG_DIR/test-unit.log"
+
+            if [ $has_error -ne 0 ]; then
+                log_error "❌ 单元测试未全部通过，请修复后重试"
+                return 1
+            fi
+
+            log_success "🎉 所有单元测试通过 (后端 + 引擎 + 前端)"
             ;;
         --e2e)
             log_step "⚛️  运行 E2E 测试 (Playwright)..."

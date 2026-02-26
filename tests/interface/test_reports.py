@@ -25,6 +25,7 @@ async def scenario_with_reports(db_session, sample_project, sample_user):
     await db_session.commit()
     await db_session.refresh(scenario)
 
+    now = datetime.now()
     r1 = TestReport(
         scenario_id=scenario.id,
         name="登录流程-执行1",
@@ -33,8 +34,8 @@ async def scenario_with_reports(db_session, sample_project, sample_user):
         success=5,
         failed=0,
         duration="2s",
-        start_time=datetime.utcnow(),
-        created_at=datetime.utcnow(),
+        start_time=now,
+        created_at=now,
     )
     r2 = TestReport(
         scenario_id=scenario.id,
@@ -44,8 +45,8 @@ async def scenario_with_reports(db_session, sample_project, sample_user):
         success=3,
         failed=2,
         duration="3s",
-        start_time=datetime.utcnow(),
-        created_at=datetime.utcnow(),
+        start_time=now,
+        created_at=now,
     )
     db_session.add(r1)
     db_session.add(r2)

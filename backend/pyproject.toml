@@ -108,11 +108,6 @@ markers = [
     "asyncio: Async tests",
 ]
 filterwarnings = [
-    # 模型类名以 Test 开头但并非测试类，避免 PytestCollectionWarning 噪音
-    "ignore:cannot collect test class 'TestReport' because it has a __init__ constructor:PytestCollectionWarning",
-    "ignore:cannot collect test class 'TestPlan' because it has a __init__ constructor:PytestCollectionWarning",
-    "ignore:cannot collect test class 'TestPlanExecution' because it has a __init__ constructor:PytestCollectionWarning",
-
-    # datetime.utcnow 弃用提示：目前行为是预期的，在整体迁移到时区感知时间前先静音测试日志
-    "ignore:datetime.datetime.utcnow\\(\\) is deprecated and scheduled for removal.*:DeprecationWarning",
+    # 模型类名以 Test 开头但并非测试类，避免 PytestCollectionWarning 
+    "ignore::pytest.PytestCollectionWarning",
 ]

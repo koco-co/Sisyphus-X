@@ -6,7 +6,18 @@ from pathlib import Path
 import pytest
 import yaml
 
-from apirun.core.models import CaseModel, Config, RequestStepParams, StepDefinition
+from apirun.core.models import (
+    AssertionParams,
+    CaseModel,
+    Config,
+    CustomParams,
+    DbParams,
+    Ddts,
+    ExtractRule,
+    RequestStepParams,
+    StepDefinition,
+    ValidateRule,
+)
 
 
 def test_request_step_params_default():
@@ -49,6 +60,124 @@ def test_case_model_parse_minimal():
     assert case.teststeps[0].request is not None
     assert case.teststeps[0].request.method == "GET"
     assert case.ddts is None
+
+
+def test_step_definition_supports_all_keyword_types():
+    """StepDefinition 支持五种 keyword_type 及其参数结构."""
+    step_request = StepDefinition(
+        name="请求",
+        keyword_type="request",
+        keyword_name="http_request",
+        request=RequestStepParams(method="GET", url="/users"),
+        extract=[ExtractRule(name="user_id", type="json", expression="$.data.id")],
+        validate=[
+            ValidateRule(
+                target="status_code",
+                comparator="eq",
+                expected=200,
+            )
+        ],
+    )
+    assert step_request.request is not None
+    assert step_request.extract is not None
+    assert step_request.validate is not None
+
+    step_assertion = StepDefinition(
+        name="断言",
+        keyword_type="assertion",
+        keyword_name="json_assertion",
+        assertion=AssertionParams(
+            target="json",
+            comparator="eq",
+            expected=0,
+            expression="$.code",
+        ),
+    )
+    assert step_assertion.assertion is not None
+
+    step_db = StepDefinition(
+        name="数据库校验",
+        keyword_type="db",
+        keyword_name="db_operation",
+        db=DbParams(
+            datasource="db_main",
+            sql="SELECT 1",
+        ),
+    )
+    assert step_db.db is not None
+
+    step_custom = StepDefinition(
+        name="自定义关键字",
+        keyword_type="custom",
+        keyword_name="generate_business_code",
+        custom=CustomParams(parameters={"prefix": "BIZ"}),
+    )
+    assert step_custom.custom is not None
+
+
+def test_case_model_parse_full_types_from_dict():
+    """CaseModel 解析包含 request/assertion/extract/db/custom 的结构."""
+    data = {
+        "config": {
+            "name": "复合场景",
+            "project_id": "proj-001",
+            "scenario_id": "scen-001",
+        },
+        "teststeps": [
+            {
+                "name": "获取用户列表",
+                "keyword_type": "request",
+                "keyword_name": "http_request",
+                "request": {"method": "GET", "url": "/api/v1/users"},
+                "validate": [
+                    {
+                        "target": "status_code",
+                        "comparator": "eq",
+                        "expected": 200,
+                    }
+                ],
+            },
+            {
+                "name": "独立断言",
+                "keyword_type": "assertion",
+                "keyword_name": "json_assertion",
+                "assertion": {
+                    "target": "json",
+                    "expression": "$.code",
+                    "comparator": "eq",
+                    "expected": 0,
+                },
+            },
+            {
+                "name": "数据库验证",
+                "keyword_type": "db",
+                "keyword_name": "db_operation",
+                "db": {
+                    "datasource": "db_main",
+                    "sql": "SELECT 1",
+                },
+            },
+            {
+                "name": "自定义关键字",
+                "keyword_type": "custom",
+                "keyword_name": "generate_business_code",
+                "custom": {
+                    "parameters": {"prefix": "BIZ"},
+                },
+            },
+        ],
+        "ddts": {
+            "name": "数据集",
+            "parameters": [
+                {"user_email": "a@example.com"},
+                {"user_email": "b@example.com"},
+            ],
+        },
+    }
+    case = CaseModel.model_validate(data)
+    assert isinstance(case.config, Config)
+    assert len(case.teststeps) == 4
+    assert isinstance(case.ddts, Ddts)
 
 
 def test_load_case_file_not_found():

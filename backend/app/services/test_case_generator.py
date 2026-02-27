@@ -11,11 +11,9 @@ from app.models.project import Interface, ProjectEnvironment
 
 
 def _default_engines_base_path() -> Path:
-    """项目根目录下的引擎路径（backend 启动时 cwd 可能为 backend/）"""
-    # backend/app/services/test_case_generator.py -> 项目根目录
-    backend_app = Path(__file__).resolve().parent.parent.parent
-    project_root = backend_app.parent
-    return project_root / "Sisyphus-api-engine" / "apirun"
+    """后端 temp 目录下的引擎工作区 (YAML 用例 / 关键字文件存放位置)"""
+    backend_dir = Path(__file__).resolve().parent.parent.parent
+    return backend_dir / "temp" / "engine_workspace"
 
 
 class TestCaseGenerator:
@@ -30,7 +28,7 @@ class TestCaseGenerator:
 
         Args:
             session: Database session
-            engines_base_path: Base path to engine files (default: project root / Sisyphus-api-engine / apirun)
+            engines_base_path: Base path to engine workspace (default: backend/temp/engine_workspace)
         """
         self.session = session
         self.engines_base_path = Path(engines_base_path) if engines_base_path else _default_engines_base_path()

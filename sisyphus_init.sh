@@ -19,7 +19,8 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly LOG_DIR="$SCRIPT_DIR/logs"
 readonly BACKEND_DIR="$SCRIPT_DIR/backend"
 readonly FRONTEND_DIR="$SCRIPT_DIR/frontend"
-readonly ENGINE_DIR="$SCRIPT_DIR/Sisyphus-api-engine"
+# 引擎已作为独立 PyPI 包发布,不再需要本地目录
+# readonly ENGINE_DIR="$SCRIPT_DIR/Sisyphus-api-engine"
 
 readonly BACKEND_PORT=8000
 readonly FRONTEND_PORT=5173
@@ -114,8 +115,14 @@ error_handler() {
     local line_number=$1
     local error_code=$2
     echo ""
-    log_error "脚本在第 ${BOLD}$line_number${NC} 行出错 (退出码: $error_code)"
-    log_error "请查看日志: ${BOLD}$LOG_DIR/${NC}"
+    if [ "${SISYPHUS_EXIT_PORT_CONFLICT:-0}" = "1" ]; then
+        log_warning "启动因端口冲突未完成 (退出码: $error_code)"
+        log_warning "请查看上方建议操作或日志: ${BOLD}$LOG_DIR/${NC}"
+        unset SISYPHUS_EXIT_PORT_CONFLICT
+    else
+        log_error "脚本在第 ${BOLD}$line_number${NC} 行出错 (退出码: $error_code)"
+        log_error "请查看日志: ${BOLD}$LOG_DIR/${NC}"
+    fi
     echo ""
     log_info "💡 常见问题排查:"
     echo "   1. 确保 Docker, Node.js, Python, uv 均已安装"
@@ -321,7 +328,7 @@ run_frontend_lint() {
     cd "$FRONTEND_DIR"
 
     if [ ! -d "node_modules" ]; then
-        log_warning "前端依赖未安装，跳过 lint 检查"
+        log_info "前端依赖未安装，跳过 lint 检查（首次启动会在启动前端阶段自动执行 npm install，或可手动运行 ./sisyphus_init.sh install）"
         cd "$SCRIPT_DIR"
         return
     fi
@@ -384,20 +391,7 @@ cmd_install() {
     cd "$SCRIPT_DIR"
     echo ""
 
-    # 引擎依赖 (可选)
-    if [ -f "$ENGINE_DIR/pyproject.toml" ]; then
-        log_step "🔧 安装引擎依赖..."
-        cd "$ENGINE_DIR"
-        if uv sync 2>&1 | tee -a "$LOG_DIR/install.log"; then
-            log_success "引擎依赖安装完成"
-        else
-            log_warning "引擎依赖安装失败 (非关键，继续)"
-        fi
-        cd "$SCRIPT_DIR"
-        echo ""
-    fi
-
-    log_success "🎉 所有依赖安装完成"
+    log_success "🎉 所有依赖安装完成 (sisyphus-api-engine 已通过 pyproject.toml 依赖自动安装)"
 }
 
 # ============================================================
@@ -556,9 +550,22 @@ start_backend() {
     local retries=0
     while [ $retries -lt 20 ]; do
         if ! ps -p $pid >/dev/null 2>&1; then
-            log_error "后端进程已退出"
-            log_error "最后日志:"
-            tail -15 "$LOG_DIR/backend.log" 2>/dev/null | sed 's/^/  /'
+            if grep -q "Address already in use" "$LOG_DIR/backend.log" 2>/dev/null; then
+                log_warning "后端进程因端口冲突退出"
+                log_warning "最后日志:"
+                tail -15 "$LOG_DIR/backend.log" 2>/dev/null | sed 's/^/  /'
+                log_warning "检测到端口冲突 (Address already in use)"
+                log_info "当前尝试端口: $actual_port"
+                log_info "建议操作:"
+                echo "  1. 检查占用该端口的进程: lsof -Pi :$actual_port"
+                echo "  2. 如为旧的后端进程，可执行: ./sisyphus_init.sh stop --backend"
+                echo "  3. 如为其他应用，请停止该应用或在脚本中调整 BACKEND_PORT"
+                SISYPHUS_EXIT_PORT_CONFLICT=1
+            else
+                log_error "后端进程已退出"
+                log_error "最后日志:"
+                tail -15 "$LOG_DIR/backend.log" 2>/dev/null | sed 's/^/  /'
+            fi
             cd "$SCRIPT_DIR"
             return 1
         fi
@@ -936,49 +943,6 @@ cmd_test() {
             cd "$SCRIPT_DIR"
             echo ""
 
-            # 引擎: Python 单元测试 + YAML 测试用例
-            if [ -d "$ENGINE_DIR" ]; then
-                cd "$ENGINE_DIR"
-
-                # Python 单元测试: tests/unit 下的 pytest
-                if [ -d "tests/unit" ]; then
-                    log_step "🧠  运行 sisyphus-api-engine Python 单元测试 (tests/unit)..."
-                    if uv run python -m pytest tests/unit -v 2>&1 | tee -a "$LOG_DIR/test-all.log"; then
-                        log_success "sisyphus-api-engine Python 单元测试通过"
-                    else
-                        log_error "sisyphus-api-engine Python 单元测试有失败项"
-                        has_error=1
-                    fi
-                    echo ""
-                fi
-
-                # YAML 测试用例: tests/yaml 通过 CLI 批量执行
-                if [ -d "tests/yaml" ]; then
-                    log_step "🧠  运行 sisyphus-api-engine YAML 测试用例 (tests/yaml)..."
-                    if uv run python -m apirun.cli --cases tests/yaml 2>&1 | tee -a "$LOG_DIR/test-all.log"; then
-                        log_success "sisyphus-api-engine tests/yaml 用例通过"
-                    else
-                        log_error "sisyphus-api-engine tests/yaml 用例有失败项"
-                        has_error=1
-                    fi
-                    echo ""
-                fi
-
-                # 示例 YAML 用例: examples/
-                if [ -d "examples" ]; then
-                    log_step "🧠  运行 sisyphus-api-engine 示例用例 (examples/)..."
-                    if uv run python -m apirun.cli --cases examples/ 2>&1 | tee -a "$LOG_DIR/test-all.log"; then
-                        log_success "sisyphus-api-engine examples/ 用例通过"
-                    else
-                        log_error "sisyphus-api-engine examples/ 用例有失败项"
-                        has_error=1
-                    fi
-                    echo ""
-                fi
-
-                cd "$SCRIPT_DIR"
-            fi
-
             # 自动化测试：tests/auto 下的 Playwright E2E，用 frontend 的 Node 环境运行
             if [ -d "$FRONTEND_DIR" ] && [ -f "$FRONTEND_DIR/package.json" ]; then
                 log_step "🤖  运行自动化测试 (tests/auto, Playwright E2E)..."
@@ -1012,7 +976,7 @@ cmd_test() {
                 log_error "❌ 全量测试未全部通过，请根据日志排查问题"
                 return 1
             fi
-            log_success "🎉 所有测试通过 (后端 + 引擎 + 自动化 + 前端)"
+            log_success "🎉 所有测试通过 (后端 + 自动化 + 前端)"
             ;;
         --unit)
             local has_error=0
@@ -1030,27 +994,13 @@ cmd_test() {
             cd "$SCRIPT_DIR"
             echo ""
 
-            # Sisyphus 引擎 Python 单元测试：tests/unit 下的 pytest
-            if [ -d "$ENGINE_DIR" ]; then
-                log_step "🧠  运行 sisyphus-api-engine Python 单元测试 (tests/unit)..."
-                cd "$ENGINE_DIR"
-                if uv run python -m pytest tests/unit -v 2>&1 | tee -a "$LOG_DIR/test-unit.log"; then
-                    log_success "sisyphus-api-engine Python 单元测试通过"
-                else
-                    log_error "sisyphus-api-engine Python 单元测试有失败项"
-                    has_error=1
-                fi
-                cd "$SCRIPT_DIR"
-                echo ""
-            fi
-
             echo ""
             log_info "📄 单元测试日志: $LOG_DIR/test-unit.log"
             if [ $has_error -ne 0 ]; then
                 log_error "❌ 单元测试未全部通过，请修复后重试"
                 return 1
             fi
-            log_success "🎉 单元测试通过 (tests/unit + sisyphus-api-engine tests/)"
+            log_success "🎉 单元测试通过 (tests/unit)"
             ;;
         --interface)
             # 仅运行仓库根 tests/interface 下的接口测试
@@ -1221,7 +1171,7 @@ cmd_help() {
 #  主入口
 # ============================================================
 main() {
-    local command="${1:-help}"
+    local command="${1:-start}"
     shift 2>/dev/null || true
 
     print_header

@@ -34,7 +34,7 @@ dependencies = [
     "greenlet>=3.3.1",
     "redis>=7.1.1",
     "aiomysql>=0.3.2",
-    # sisyphus-api-engine: 本地开发时使用 `uv pip install -e ../Sisyphus-api-engine`
+    "sisyphus-api-engine",
 ]
 
 [project.optional-dependencies]

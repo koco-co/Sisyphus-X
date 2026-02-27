@@ -109,23 +109,6 @@ Sisyphus-X/
 │   ├── alembic/                # 数据库迁移
 │   └── pyproject.toml          # 依赖 + Ruff/Pyright/Pytest 配置
 │
-├── Sisyphus-api-engine/        # 核心执行引擎 (独立子项目)
-│   ├── apirun/                 # 主 Python 包
-│   │   ├── core/               # 核心数据模型
-│   │   ├── parser/             # YAML 解析器
-│   │   ├── executor/           # 测试执行器
-│   │   ├── validation/         # 断言验证引擎
-│   │   ├── extractor/          # 变量提取器
-│   │   ├── data_driven/        # 数据驱动测试
-│   │   ├── result/             # 结果收集器
-│   │   ├── websocket/          # WebSocket 实时推送
-│   │   └── utils/              # 工具函数
-│   ├── docs/                   # 引擎文档
-│   ├── tests/
-│   │   ├── unit/               # Python 单元测试 (pytest)
-│   │   └── yaml/               # YAML 测试用例 (sisyphus --cases)
-│   └── pyproject.toml
-│
 ├── tests/                      # 统一测试目录
 │   ├── unit/                   # 单元测试
 │   ├── interface/              # 接口测试
@@ -133,9 +116,8 @@ Sisyphus-X/
 │
 ├── docs/                       # 项目文档
 │   ├── Sisyphus-X需求文档.md
-│   ├── Sisyphus-api-engine YAML 输入规范.md
-│   ├── Sisyphus-api-engine JSON 输出规范.md
-│   └── 开发任务清单.md
+│   ├── 开发任务清单.md
+│   └── api-engine/             # 引擎文档 (YAML/JSON 规范、需求、任务清单)
 │
 ├── docker-compose.yml          # 中间件编排 (PostgreSQL/Redis/MinIO)
 ├── sisyphus_init.sh            # 项目管理脚本
@@ -230,8 +212,8 @@ npm run dev
 ./sisyphus_init.sh status    # 查看服务状态
 ./sisyphus_init.sh install   # 安装所有依赖
 ./sisyphus_init.sh lint      # 运行代码检查
-./sisyphus_init.sh test --all        # 运行所有测试 (后端 + 引擎 Python 单测 + 引擎 YAML 用例 + 自动化 + 前端)
-./sisyphus_init.sh test --unit       # 仅运行单元测试 (tests/unit + 引擎 tests/unit)
+./sisyphus_init.sh test --all        # 运行所有测试 (后端 + 自动化 + 前端)
+./sisyphus_init.sh test --unit       # 仅运行单元测试 (tests/unit)
 ./sisyphus_init.sh test --interface  # 仅运行接口测试 (tests/interface)
 ./sisyphus_init.sh test --auto       # 仅运行自动化测试 (tests/auto, Playwright)
 ./sisyphus_init.sh test --e2e        # 仅运行前端自身 E2E 测试
@@ -263,14 +245,16 @@ npm run dev
 | `uv run alembic revision --autogenerate -m "msg"` | 创建迁移         |
 | `uv run alembic upgrade head`                     | 应用迁移         |
 
-### 引擎
+### 引擎 (独立 PyPI 包)
 
-| 命令                                                  | 说明                     |
-| ----------------------------------------------------- | ------------------------ |
-| `sisyphus --case <yaml>`                              | 执行测试用例 (文本报告)  |
-| `sisyphus --case <yaml> -O json`                      | JSON 输出 (平台集成模式) |
-| `sisyphus --case <yaml> -O allure --allure-dir <dir>` | Allure 报告              |
-| `sisyphus --case <yaml> -O html --html-dir <dir>`     | HTML 报告                |
+> 安装: `uv pip install sisyphus-api-engine` (已在 `backend/pyproject.toml` 中声明依赖)
+
+| 命令                                                              | 说明                     |
+| ----------------------------------------------------------------- | ------------------------ |
+| `sisyphus-api-engine --case <yaml>`                               | 执行测试用例 (文本报告)  |
+| `sisyphus-api-engine --case <yaml> -O json`                       | JSON 输出 (平台集成模式) |
+| `sisyphus-api-engine --case <yaml> -O allure --allure-dir <dir>`  | Allure 报告              |
+| `sisyphus-api-engine --case <yaml> -O html --html-dir <dir>`      | HTML 报告                |
 
 ---
 
@@ -293,8 +277,9 @@ npm run dev
 | ---------------------------------------------------------------- | ------------------------------------- |
 | [需求文档](./docs/Sisyphus-X需求文档.md)                         | 完整需求规格说明书                    |
 | [开发任务清单](./docs/开发任务清单.md)                           | 前端/后端/引擎开发任务拆分            |
-| [YAML 输入规范](./docs/Sisyphus-api-engine%20YAML%20输入规范.md) | sisyphus-api-engine YAML 格式定义     |
-| [JSON 输出规范](./docs/Sisyphus-api-engine%20JSON%20输出规范.md) | sisyphus-api-engine JSON 响应格式定义 |
+| [YAML 输入规范](./docs/api-engine/Sisyphus-api-engine%20YAML%20输入规范.md) | sisyphus-api-engine YAML 格式定义     |
+| [JSON 输出规范](./docs/api-engine/Sisyphus-api-engine%20JSON%20输出规范.md) | sisyphus-api-engine JSON 响应格式定义 |
+| [引擎文档](./docs/api-engine/)                                              | 引擎 README、需求文档、开发任务清单   |
 | [变更日志](./CHANGELOG.md)                                       | 版本变更记录                          |
 
 ---

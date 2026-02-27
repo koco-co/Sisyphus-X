@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **引擎抽离**: `sisyphus-api-engine` 从本地子项目 (`Sisyphus-api-engine/`) 抽离为独立 PyPI 包，通过 `uv pip install sisyphus-api-engine` 安装
+- **后端依赖**: `backend/pyproject.toml` 新增 `sisyphus-api-engine` 正式依赖
+- **引擎文档**: 迁移至 `docs/api-engine/` 目录
+- **项目脚本**: `sisyphus_init.sh` 移除本地引擎目录相关逻辑
+
+### Removed
+
+- **本地子项目**: 移除 `Sisyphus-api-engine/` 子目录（已发布为独立 PyPI 包）
+
 ## [0.2.0] - 2026-02-25
 
 ### Added

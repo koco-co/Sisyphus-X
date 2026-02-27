@@ -25,7 +25,6 @@ env/
 dist/
 build/
 frontend/dist/
-Sisyphus-api-engine/dist/
 
 # =========================
 # Coverage / test cache

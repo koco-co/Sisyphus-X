@@ -1,4 +1,4 @@
-import { Plus, FileText, Clock, ArrowRight } from 'lucide-react'
+import { Plus, FileText, FileJson, Clock, ArrowRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -10,6 +10,7 @@ interface WelcomeCardsProps {
     method: string
   }>
   projectId: number
+  onImportSwagger?: () => void
 }
 
 const METHOD_COLORS: Record<string, string> = {
@@ -20,7 +21,7 @@ const METHOD_COLORS: Record<string, string> = {
   PATCH: 'bg-violet-500/20 text-violet-400',
 }
 
-export function WelcomeCards({ recentInterfaces = [], projectId }: WelcomeCardsProps) {
+export function WelcomeCards({ recentInterfaces = [], projectId, onImportSwagger }: WelcomeCardsProps) {
   const navigate = useNavigate()
 
   const handleNewRequest = () => {
@@ -50,7 +51,7 @@ export function WelcomeCards({ recentInterfaces = [], projectId }: WelcomeCardsP
         </div>
 
         {/* 操作卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* 新建请求 */}
           <motion.button
             whileHover={{ scale: 1.02, y: -4 }}
@@ -96,6 +97,32 @@ export function WelcomeCards({ recentInterfaces = [], projectId }: WelcomeCardsP
                   从 cURL 命令快速导入接口
                 </p>
                 <div className="flex items-center text-amber-400 text-sm font-medium">
+                  立即导入
+                  <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </div>
+          </motion.button>
+
+          {/* 导入 Swagger */}
+          <motion.button
+            whileHover={{ scale: 1.02, y: -4 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onImportSwagger}
+            className="group relative bg-gradient-to-br from-violet-500/10 to-violet-600/5 border border-violet-500/20 rounded-2xl p-8 text-left hover:border-violet-500/40 transition-all"
+          >
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-violet-500/20 rounded-xl">
+                <FileJson className="w-6 h-6 text-violet-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  导入 Swagger
+                </h3>
+                <p className="text-slate-400 mb-4">
+                  从 Swagger/OpenAPI 文档批量导入接口
+                </p>
+                <div className="flex items-center text-violet-400 text-sm font-medium">
                   立即导入
                   <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                 </div>

@@ -1,16 +1,22 @@
 """Environment management API endpoints."""
 
+import uuid
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
+from app.models.env_variable import EnvVariable
 from app.models.project import Project, ProjectEnvironment
 from app.schemas.environment import (
     EnvironmentCopyRequest,
     EnvironmentCreate,
     EnvironmentResponse,
     EnvironmentUpdate,
+    GlobalVariableItem,
+    GlobalVariablesPut,
+    GlobalVariablesResponse,
     VariableReplaceRequest,
     VariableReplaceResponse,
 )
@@ -104,6 +110,84 @@ async def create_environment(
     await session.refresh(environment)
 
     return environment
+
+
+# ========== BE-030: 全局变量 (所有环境共享) ==========
+
+
+@router.get("/global-variables", response_model=GlobalVariablesResponse)
+async def get_global_variables(
+    project_id: str,
+    session: AsyncSession = Depends(get_session),
+) -> GlobalVariablesResponse:
+    """GET 项目下所有环境共享的全局变量 (BE-030)."""
+    envs_stmt = (
+        select(ProjectEnvironment.id)
+        .where(ProjectEnvironment.project_id == project_id)
+        .order_by(ProjectEnvironment.created_at.asc())
+    )
+    envs_result = await session.execute(envs_stmt)
+    env_ids = [r[0] for r in envs_result.all()]
+    if not env_ids:
+        return GlobalVariablesResponse(items=[])
+
+    vars_stmt = (
+        select(EnvVariable)
+        .where(
+            EnvVariable.environment_id.in_(env_ids),
+            EnvVariable.is_global.is_(True),
+        )
+        .order_by(EnvVariable.environment_id, EnvVariable.name)
+    )
+    result = await session.execute(vars_stmt)
+    all_vars = result.scalars().all()
+    seen: set[str] = set()
+    items: list[GlobalVariableItem] = []
+    for v in all_vars:
+        if v.name not in seen:
+            seen.add(v.name)
+            items.append(GlobalVariableItem(name=v.name, value=v.value, description=v.description))
+    return GlobalVariablesResponse(items=items)
+
+
+@router.put("/global-variables", response_model=GlobalVariablesResponse)
+async def put_global_variables(
+    project_id: str,
+    data: GlobalVariablesPut,
+    session: AsyncSession = Depends(get_session),
+) -> GlobalVariablesResponse:
+    """PUT 项目下所有环境共享的全局变量 (BE-030). 使用第一个环境存储."""
+    env_stmt = (
+        select(ProjectEnvironment)
+        .where(ProjectEnvironment.project_id == project_id)
+        .order_by(ProjectEnvironment.created_at.asc())
+        .limit(1)
+    )
+    env_result = await session.execute(env_stmt)
+    first_env = env_result.scalar_one_or_none()
+    if not first_env:
+        raise HTTPException(status_code=404, detail="Project has no environment, create one first")
+
+    existing = await session.execute(
+        select(EnvVariable).where(
+            EnvVariable.environment_id == first_env.id,
+            EnvVariable.is_global.is_(True),
+        )
+    )
+    for v in existing.scalars().all():
+        await session.delete(v)
+    for item in data.items:
+        var = EnvVariable(
+            id=str(uuid.uuid4()),
+            environment_id=first_env.id,
+            name=item.name,
+            value=item.value,
+            description=item.description,
+            is_global=True,
+        )
+        session.add(var)
+    await session.commit()
+    return await get_global_variables(project_id, session)
 
 
 @router.get("/{environment_id}", response_model=EnvironmentResponse)

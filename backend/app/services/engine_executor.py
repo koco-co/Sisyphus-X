@@ -73,7 +73,8 @@ class EngineExecutor:
             if result.stdout:
                 try:
                     output = json.loads(result.stdout)
-                    success = output.get("summary", {}).get("status") == "success"
+                    # 规范: 顶层 status 为 passed/failed
+                    success = output.get("status") == "passed"
                     return {
                         "success": success,
                         "result": output,

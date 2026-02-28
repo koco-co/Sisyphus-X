@@ -70,10 +70,13 @@ async def init_db():
         # await conn.run_sync(Base.metadata.drop_all)  # 调试用：删除所有表
         await conn.run_sync(Base.metadata.create_all)
 
-    # 初始化内置关键字种子数据
+    # 初始化内置关键字种子数据 (BE-017)
     from app.core.seed_keywords import seed_builtin_keywords
+    # 初始化内置全局参数种子数据 (BE-062)
+    from app.core.seed_global_params import seed_builtin_global_params
     async with async_session_maker() as session:
         await seed_builtin_keywords(session)
+        await seed_builtin_global_params(session)
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

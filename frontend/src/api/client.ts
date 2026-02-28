@@ -50,11 +50,12 @@ export const authApi = {
     google: () => api.get('/auth/google'),
 }
 
-// 文件 API
+// 文件 API (MinIO 上传，支持按 project 分桶)
 export const filesApi = {
-    upload: (file: File) => {
+    upload: (file: File, projectId?: string) => {
         const formData = new FormData()
         formData.append('file', file)
+        if (projectId) formData.append('project_id', projectId)
         return api.post('/files/upload', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         })
@@ -70,8 +71,8 @@ export const projectsApi = {
     update: (id: number, data: unknown) => api.put(`/projects/${id}`, data),
     delete: (id: number) => api.delete(`/projects/${id}`),
 
-    // 环境配置 API
-    listEnvironments: (projectId: number) => api.get(`/projects/${projectId}/environments`),
+    // 环境配置 API (projectId 支持 UUID 字符串)
+    listEnvironments: (projectId: string | number) => api.get(`/projects/${projectId}/environments`),
     createEnvironment: (projectId: number, data: { name: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> }) =>
         api.post(`/projects/${projectId}/environments`, data),
     getEnvironment: (projectId: number, envId: number) => api.get(`/projects/${projectId}/environments/${envId}`),
@@ -137,6 +138,8 @@ export const scenariosApi = {
         tags?: string[]
         created_by: string
         variables?: Record<string, unknown>
+        pre_sql?: string
+        post_sql?: string
     }) => api.post('/scenarios/', data),
     update: (id: string | number, data: {
         project_id?: string
@@ -145,31 +148,33 @@ export const scenariosApi = {
         priority?: string
         tags?: string[]
         variables?: Record<string, unknown>
+        pre_sql?: string
+        post_sql?: string
     }) => api.put(`/scenarios/${id}`, data),
     delete: (id: string | number) => api.delete(`/scenarios/${id}`),
 
-    // 步骤管理
-    createStep: (scenarioId: number, data: {
+    // 步骤管理 (scenarioId/stepId 支持 UUID 字符串)
+    createStep: (scenarioId: string | number, data: {
         description?: string
         keyword_type: string
         keyword_name: string
         parameters?: Record<string, unknown>
         sort_order?: number
     }) => api.post(`/scenarios/${scenarioId}/steps`, data),
-    updateStep: (scenarioId: number, stepId: number, data: {
+    updateStep: (scenarioId: string | number, stepId: string | number, data: {
         description?: string
         keyword_type?: string
         keyword_name?: string
         parameters?: Record<string, unknown>
         sort_order?: number
     }) => api.put(`/scenarios/${scenarioId}/steps/${stepId}`, data),
-    deleteStep: (scenarioId: number, stepId: number) =>
+    deleteStep: (scenarioId: string | number, stepId: string | number) =>
         api.delete(`/scenarios/${scenarioId}/steps/${stepId}`),
     batchUpdateSteps: (scenarioId: number, steps: Array<{ id: number; sort_order: number }>) =>
         api.put(`/scenarios/${scenarioId}/steps/batch`, { steps }),
 
-    // 数据集管理
-    listDatasets: (scenarioId: number) =>
+    // 数据集管理 (scenarioId 支持 UUID 字符串)
+    listDatasets: (scenarioId: string | number) =>
         api.get(`/scenarios/${scenarioId}/datasets`),
     createDataset: (scenarioId: number, data: { name: string; csv_data?: string }) =>
         api.post(`/scenarios/${scenarioId}/datasets`, data),
@@ -186,11 +191,11 @@ export const scenariosApi = {
     exportDataset: (scenarioId: number, datasetId: number) =>
         api.get(`/scenarios/${scenarioId}/datasets/${datasetId}/export`, { responseType: 'blob' }),
 
-    // 场景调试
-    debug: (scenarioId: number, data: {
-        environment_id?: number
-        dataset_id?: number
-    }) => api.post(`/scenarios/${scenarioId}/debug`, data),
+    // 场景调试 (scenarioId 支持 UUID 字符串)
+    debug: (scenarioId: string | number, data?: {
+        environment_id?: string | number
+        dataset_id?: string | number
+    }) => api.post(`/scenarios/${scenarioId}/debug`, data ?? {}),
 }
 
 // Dashboard 统计 API
@@ -206,6 +211,7 @@ export const reportsApi = {
         api.get('/reports/', { params }),
     get: (id: number) => api.get(`/reports/${id}`),
     getDetails: (id: number) => api.get(`/reports/${id}/details`),
+    getAllureUrl: (id: number) => api.get<{ allure_url?: string }>(`/reports/${id}/allure`),
     delete: (id: number) => api.delete(`/reports/${id}`),
 }
 
@@ -260,8 +266,8 @@ export const plansApi = {
 
     // 执行记录
     listExecutions: (planId: number) => api.get(`/plans/${planId}/executions`),
-    getExecution: (planId: number, executionId: number) =>
-        api.get(`/plans/${planId}/executions/${executionId}`),
+    getExecution: (_planId: number, executionId: string) =>
+        api.get(`/plans/executions/${executionId}`),
 }
 
 // 关键字 API

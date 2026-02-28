@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends
 
 # 仅保留需求文档与开发任务清单中的模块（4 登录注册、5 Dashboard、6 接口自动化、7 全局参数、系统设置）
+# 断舍离：以下模块未在需求 4/5/6/7 中要求，故不挂载：user_management, functional, documents,
+# point_generation, case_generation, ai_clarification, ai_config, history, curl_parser, api_test_cases, execution, testcases
 from app.api import deps
 from app.api.v1.endpoints import (
     auth,
@@ -17,6 +19,7 @@ from app.api.v1.endpoints import (
     reports,
     scenarios,
     settings,
+    swagger,
     upload,
     websocket,
 )
@@ -48,12 +51,12 @@ api_router.include_router(
     tags=["interface-folders"],
     dependencies=[Depends(deps.get_current_user)],
 )
-# api_router.include_router(
-#     swagger.router,  # TEMP: 暂时禁用
-#     prefix="/interfaces",
-#     tags=["swagger"],
-#     dependencies=[Depends(deps.get_current_user)],
-# )
+api_router.include_router(
+    swagger.router,
+    prefix="/interfaces",
+    tags=["swagger"],
+    dependencies=[Depends(deps.get_current_user)],
+)
 # api_router.include_router(
 #     curl_parser.router,  # TEMP: 暂时禁用
 #     prefix="/interfaces",

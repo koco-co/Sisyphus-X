@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import ReactFlow, {
     Background,
     Controls,
@@ -19,6 +19,8 @@ import { LoopNode } from './components/nodes/LoopNode';
 import { ScriptNode } from './components/nodes/ScriptNode';
 import { Workflow, Database } from 'lucide-react';
 import { useParams } from 'react-router-dom';
+import { scenariosApi } from '@/api/client';
+import { stepsToFlowNodes } from './utils/stepsToFlow';
 
 const nodeTypes = {
     api: ApiNode,
@@ -42,8 +44,29 @@ export default function ScenarioEditor() {
         onEdgesChange,
         onConnect,
         setSelectedNode,
-        setNodes
+        setNodes,
+        setEdges
     } = useScenarioEditor();
+
+    // 加载已有场景的步骤并还原为 Flow
+    useEffect(() => {
+        if (!id || id === 'new') return;
+        const load = async () => {
+            try {
+                const res = await scenariosApi.get(id);
+                const scenario = res?.data?.data ?? res?.data;
+                const steps = (scenario?.steps ?? []) as Array<{ id: string; scenario_id?: string; description?: string; keyword_type: string; keyword_name: string; parameters?: Record<string, unknown>; sort_order: number }>;
+                if (steps.length > 0) {
+                    const { nodes: loadedNodes, edges: loadedEdges } = stepsToFlowNodes(steps);
+                    setNodes(loadedNodes);
+                    setEdges(loadedEdges);
+                }
+            } catch {
+                // 忽略加载失败，保持空画布
+            }
+        };
+        load();
+    }, [id, setNodes, setEdges]);
 
     const onDragOver = useCallback((event: React.DragEvent) => {
         event.preventDefault();

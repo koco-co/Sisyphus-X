@@ -2,13 +2,16 @@
 
 测试测试计划 CRUD、添加场景、批量更新排序、执行计划、终止/暂停/恢复
 """
-import pytest
+import time
 import uuid
+from unittest.mock import patch
+
+import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
 
-from app.models.test_plan import TestPlan, PlanScenario
-from app.models.scenario import Scenario
+from app.models.scenario import Scenario, ScenarioStep
+from app.models.test_plan import PlanScenario, TestPlan
 
 
 @pytest.mark.asyncio
@@ -414,7 +417,9 @@ class TestExecutePlan:
 
     async def test_execute_plan_already_running(self, async_client: AsyncClient, db_session, sample_project, sample_user):
         """测试重复执行正在运行的测试计划"""
-        # 创建场景
+        import asyncio
+
+        # 创建场景（带一步骤，以便执行时调用引擎而非直接跳过）
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
@@ -422,6 +427,16 @@ class TestExecutePlan:
             name="测试场景"
         )
         db_session.add(scenario)
+        await db_session.commit()
+        step = ScenarioStep(
+            id=str(uuid.uuid4()),
+            scenario_id=scenario.id,
+            keyword_type="request",
+            keyword_name="GET",
+            parameters={"method": "GET", "url": "/"},
+            sort_order=0,
+        )
+        db_session.add(step)
         await db_session.commit()
 
         # 创建测试计划
@@ -443,19 +458,32 @@ class TestExecutePlan:
         db_session.add(plan_scenario)
         await db_session.commit()
 
-        # 第一次执行
-        response = await async_client.post(f"/api/v1/plans/{plan.id}/execute")
-        assert response.status_code == 200
-        execution_id = response.json()["execution_id"]
+        def block_then_success(*args, **kwargs):
+            time.sleep(2)
+            return {
+                "success": True,
+                "result": {
+                    "status": "passed",
+                    "summary": {"total_steps": 1, "passed_steps": 1, "failed_steps": 0},
+                    "duration": 1000,
+                },
+                "error": None,
+            }
 
-        # 等待执行开始
-        import asyncio
-        await asyncio.sleep(0.5)
+        with patch("app.api.v1.endpoints.plans.EngineExecutor") as mock_engine:
+            mock_engine.return_value.execute = block_then_success
+            # 第一次执行
+            response = await async_client.post(f"/api/v1/plans/{plan.id}/execute")
+            assert response.status_code == 200
+            execution_id = response.json()["execution_id"]
 
-        # 第二次执行（应该失败）
-        response = await async_client.post(f"/api/v1/plans/{plan.id}/execute")
-        assert response.status_code == 400
-        assert "正在执行" in response.json()["detail"]
+            # 等待执行开始（引擎 mock 会 block 2s）
+            await asyncio.sleep(0.5)
+
+            # 第二次执行（应该失败：已有任务在运行）
+            response = await async_client.post(f"/api/v1/plans/{plan.id}/execute")
+            assert response.status_code == 400
+            assert "正在执行" in response.json()["detail"]
 
 
 @pytest.mark.asyncio
@@ -464,7 +492,9 @@ class TestTerminatePlan:
 
     async def test_terminate_plan_success(self, async_client: AsyncClient, db_session, sample_project, sample_user):
         """测试成功终止正在执行的测试计划"""
-        # 创建场景
+        import asyncio
+
+        # 创建场景（带一步骤，以便执行时调用引擎 mock 阻塞）
         scenario = Scenario(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
@@ -472,6 +502,16 @@ class TestTerminatePlan:
             name="测试场景"
         )
         db_session.add(scenario)
+        await db_session.commit()
+        step = ScenarioStep(
+            id=str(uuid.uuid4()),
+            scenario_id=scenario.id,
+            keyword_type="request",
+            keyword_name="GET",
+            parameters={"method": "GET", "url": "/"},
+            sort_order=0,
+        )
+        db_session.add(step)
         await db_session.commit()
 
         # 创建测试计划
@@ -493,22 +533,35 @@ class TestTerminatePlan:
         db_session.add(plan_scenario)
         await db_session.commit()
 
-        # 执行测试计划
-        response = await async_client.post(f"/api/v1/plans/{plan.id}/execute")
-        assert response.status_code == 200
-        execution_id = response.json()["execution_id"]
+        def block_then_success(*args, **kwargs):
+            time.sleep(2)
+            return {
+                "success": True,
+                "result": {
+                    "status": "passed",
+                    "summary": {"total_steps": 1, "passed_steps": 1, "failed_steps": 0},
+                    "duration": 1000,
+                },
+                "error": None,
+            }
 
-        # 等待执行开始
-        import asyncio
-        await asyncio.sleep(0.5)
+        with patch("app.api.v1.endpoints.plans.EngineExecutor") as mock_engine:
+            mock_engine.return_value.execute = block_then_success
+            # 执行测试计划
+            response = await async_client.post(f"/api/v1/plans/{plan.id}/execute")
+            assert response.status_code == 200
+            execution_id = response.json()["execution_id"]
 
-        # 终止执行
-        response = await async_client.post(f"/api/v1/plans/{plan.id}/terminate")
-        assert response.status_code == 200
-        data = response.json()
-        assert data["plan_id"] == plan.id
-        assert data["terminated_count"] >= 1
-        assert "message" in data
+            # 等待执行开始
+            await asyncio.sleep(0.5)
+
+            # 终止执行
+            response = await async_client.post(f"/api/v1/plans/{plan.id}/terminate")
+            assert response.status_code == 200
+            data = response.json()
+            assert data["plan_id"] == plan.id
+            assert data["terminated_count"] >= 1
+            assert "message" in data
 
     async def test_terminate_plan_not_found(self, async_client: AsyncClient):
         """测试终止不存在的测试计划"""

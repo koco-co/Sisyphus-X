@@ -65,6 +65,26 @@ class VariableReplaceResponse(BaseModel):
     variables_used: list[str]
 
 
+class GlobalVariableItem(BaseModel):
+    """单条全局变量 (BE-030)."""
+
+    name: str
+    value: str = ""
+    description: str | None = None
+
+
+class GlobalVariablesResponse(BaseModel):
+    """GET 全局变量响应 (BE-030)."""
+
+    items: list[GlobalVariableItem]
+
+
+class GlobalVariablesPut(BaseModel):
+    """PUT 全局变量请求 (BE-030)."""
+
+    items: list[GlobalVariableItem]
+
+
 # ============================================
 # DataSource Schemas
 # ============================================

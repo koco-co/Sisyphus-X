@@ -30,7 +30,7 @@ class TestEngineExecutor:
         )
 
         assert result["success"] is True
-        assert result["result"].get("summary", {}).get("status") == "success"
+        assert result["result"].get("status") == "passed"
         assert result["error"] is None
 
     def test_execute_engine_not_found(self, tmp_path):
@@ -108,9 +108,10 @@ def tmp_path(tmp_path):
 
 @pytest.fixture
 def mock_engine_success():
-    """Mock successful engine execution."""
+    """Mock successful engine execution (JSON 规范: 顶层 status 为 passed)."""
     mock_result = {
-        "summary": {"status": "success"},
+        "status": "passed",
+        "summary": {"total_steps": 0, "passed_steps": 0, "failed_steps": 0},
         "steps": [],
     }
 

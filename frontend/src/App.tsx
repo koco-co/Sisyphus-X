@@ -12,7 +12,9 @@ import ScenarioListPage from '@/pages/scenario'
 import ScenarioEditor from '@/pages/scenario/editor'
 import LoginPage from '@/pages/auth/LoginPage'
 import TestReport from '@/pages/reports/TestReport'
+import ReportDetailPage from '@/pages/reports/ReportDetailPage'
 import TestPlan from '@/pages/plans/TestPlan'
+import PlanExecutionPage from '@/pages/plans/PlanExecutionPage'
 import PlaceholderPage from '@/pages/PlaceholderPage'
 import GlobalParamsPage from '@/pages/global-params'
 import EnvironmentManagement from '@/pages/environments/index'
@@ -83,9 +85,11 @@ function AppRoutes() {
         <Route path="/scenarios/editor/new" element={<ScenarioEditor />} />
 
         {/* 测试报告 */}
+        <Route path="/reports/:reportId" element={<ReportDetailPage />} />
         <Route path="/reports" element={<TestReport />} />
 
         {/* 定时任务 (原测试计划) */}
+        <Route path="/plans/:planId/executions/:executionId" element={<PlanExecutionPage />} />
         <Route path="/plans" element={<TestPlan />} />
 
         {/* 后续规划占位（需求 §9：WEB/APP/功能测试等仅占位） */}

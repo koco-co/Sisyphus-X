@@ -47,7 +47,7 @@ class DatabaseConfigUpdate(BaseModel):
 
 
 class DatabaseConfigResponse(DatabaseConfigBase):
-    """数据库配置响应模型"""
+    """数据库配置响应模型 (BE-014: config_info 保存后自动组装 host:port/db)"""
 
     id: str
     project_id: str
@@ -55,6 +55,7 @@ class DatabaseConfigResponse(DatabaseConfigBase):
     last_tested_at: str | None = None
     created_at: str
     updated_at: str
+    config_info: str | None = Field(None, description="配置信息展示，如 host:port/db")
 
     model_config = {"from_attributes": True}
 

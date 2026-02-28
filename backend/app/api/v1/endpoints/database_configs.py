@@ -29,6 +29,12 @@ from app.utils.datetime import utcnow
 router = APIRouter()
 
 
+def _config_info(host: str, port: int, initial_database: str | None) -> str:
+    """BE-014: 组装配置信息展示字段 host:port/db"""
+    db_part = f"/{initial_database}" if initial_database else ""
+    return f"{host}:{port}{db_part}"
+
+
 async def test_database_connection(
     db_type: str, host: str, port: int, username: str, password: str, database: str | None = None
 ) -> tuple[bool, str, int | None]:
@@ -152,6 +158,7 @@ async def list_database_configs(
             "last_tested_at": config.last_tested_at.isoformat() if config.last_tested_at else None,
             "created_at": config.created_at.isoformat(),
             "updated_at": config.updated_at.isoformat(),
+            "config_info": _config_info(config.host, config.port, config.initial_database),
         }
         items.append(DatabaseConfigResponse(**config_dict))
 
@@ -221,7 +228,7 @@ async def create_database_config(
     await session.commit()
     await session.refresh(config)
 
-    # 返回响应（密码脱敏）
+    # 返回响应（密码脱敏，BE-014 config_info）
     config_dict = {
         "id": config.id,
         "project_id": config.project_id,
@@ -238,6 +245,7 @@ async def create_database_config(
         "last_tested_at": None,
         "created_at": config.created_at.isoformat(),
         "updated_at": config.updated_at.isoformat(),
+        "config_info": _config_info(config.host, config.port, config.initial_database),
     }
     return DatabaseConfigResponse(**config_dict)
 
@@ -265,7 +273,7 @@ async def get_database_config(
     if not config or config.project_id != project_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="数据库配置不存在")
 
-    # 返回响应（密码脱敏）
+    # 返回响应（密码脱敏，BE-014 config_info）
     config_dict = {
         "id": config.id,
         "project_id": config.project_id,
@@ -282,6 +290,7 @@ async def get_database_config(
         "last_tested_at": config.last_tested_at.isoformat() if config.last_tested_at else None,
         "created_at": config.created_at.isoformat(),
         "updated_at": config.updated_at.isoformat(),
+        "config_info": _config_info(config.host, config.port, config.initial_database),
     }
     return DatabaseConfigResponse(**config_dict)
 
@@ -340,7 +349,7 @@ async def update_database_config(
     await session.commit()
     await session.refresh(config)
 
-    # 返回响应（密码脱敏）
+    # 返回响应（密码脱敏，BE-014 config_info）
     config_dict = {
         "id": config.id,
         "project_id": config.project_id,
@@ -357,6 +366,7 @@ async def update_database_config(
         "last_tested_at": config.last_tested_at.isoformat() if config.last_tested_at else None,
         "created_at": config.created_at.isoformat(),
         "updated_at": config.updated_at.isoformat(),
+        "config_info": _config_info(config.host, config.port, config.initial_database),
     }
     return DatabaseConfigResponse(**config_dict)
 

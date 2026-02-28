@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -8,8 +9,8 @@ import {
     Edit2,
     Trash2,
     Loader2,
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     ChevronRight,
+    ChevronDown,
     X,
     Workflow,
     Play,
@@ -47,6 +48,7 @@ interface Scenario {
 }
 
 export default function TestPlan() {
+    const navigate = useNavigate();
     /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { t } = useTranslation();
     const queryClient = useQueryClient();
@@ -71,6 +73,10 @@ export default function TestPlan() {
     const [drawerPlanId, setDrawerPlanId] = useState<string | null>(null);
     const [scenarioSearchQuery, setScenarioSearchQuery] = useState('');
     const [scenarioPage, setScenarioPage] = useState(1);
+
+    // 预留配置折叠（FE-064, FE-065）
+    const [jenkinsExpanded, setJenkinsExpanded] = useState(false);
+    const [webhookExpanded, setWebhookExpanded] = useState(false);
 
     // 获取项目列表
     const { data: projectData } = useQuery({
@@ -326,7 +332,20 @@ export default function TestPlan() {
                                                 </Tooltip>
                                                 <Tooltip content="执行" position="top">
                                                     <button
-                                                        onClick={() => {/* TODO: 执行计划 */ success('功能开发中'); }}
+                                                        onClick={async () => {
+                                                            try {
+                                                                const res = await plansApi.execute(plan.id);
+                                                                const executionId = (res.data as { execution_id?: string })?.execution_id;
+                                                                if (executionId) {
+                                                                    success('已开始执行');
+                                                                    navigate(`/plans/${plan.id}/executions/${executionId}`);
+                                                                } else {
+                                                                    showError('执行失败：未返回执行 ID');
+                                                                }
+                                                            } catch {
+                                                                showError('执行失败');
+                                                            }
+                                                        }}
                                                         className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
                                                     >
                                                         <Play className="w-4 h-4" />
@@ -444,6 +463,36 @@ export default function TestPlan() {
                                         rows={3}
                                         className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white resize-none focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
                                     />
+                                </div>
+
+                                {/* Jenkins 环境（预留 FE-064） */}
+                                <div className="border border-white/5 rounded-xl overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => setJenkinsExpanded((v) => !v)}
+                                        className="w-full px-4 py-3 flex items-center justify-between text-left text-slate-400 hover:bg-white/5 transition-colors"
+                                    >
+                                        <span className="text-sm font-medium">Jenkins 环境（预留）</span>
+                                        {jenkinsExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                    </button>
+                                    {jenkinsExpanded && (
+                                        <div className="px-4 pb-3 text-slate-500 text-sm">敬请期待：后续版本将支持 Jenkins 环境配置。</div>
+                                    )}
+                                </div>
+
+                                {/* Webhook 配置（预留 FE-065） */}
+                                <div className="border border-white/5 rounded-xl overflow-hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => setWebhookExpanded((v) => !v)}
+                                        className="w-full px-4 py-3 flex items-center justify-between text-left text-slate-400 hover:bg-white/5 transition-colors"
+                                    >
+                                        <span className="text-sm font-medium">Webhook 配置（预留）</span>
+                                        {webhookExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                    </button>
+                                    {webhookExpanded && (
+                                        <div className="px-4 pb-3 text-slate-500 text-sm">敬请期待：后续版本将支持 Webhook 通知配置。</div>
+                                    )}
                                 </div>
                             </div>
 

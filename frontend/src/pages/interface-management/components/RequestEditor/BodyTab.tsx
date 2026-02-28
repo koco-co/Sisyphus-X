@@ -16,6 +16,7 @@ interface BodyTabProps {
   onBodyChange: (body: string) => void
   formData?: KeyValueTypePair[]
   onFormDataChange?: (data: KeyValueTypePair[]) => void
+  projectId?: string
 }
 
 const BODY_TYPES: { id: BodyType; label: string }[] = [
@@ -33,6 +34,7 @@ export function BodyTab({
   onBodyChange,
   formData = [],
   onFormDataChange,
+  projectId,
 }: BodyTabProps) {
   const [jsonError, setJsonError] = useState<string | null>(null)
 
@@ -125,6 +127,7 @@ export function BodyTab({
             <FormDataEditor
               pairs={formData}
               onChange={onFormDataChange}
+              projectId={projectId}
             />
           )}
         </div>

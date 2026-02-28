@@ -12,9 +12,10 @@ export interface KeyValueTypePair {
 interface FormDataEditorProps {
     pairs: KeyValueTypePair[]
     onChange: (pairs: KeyValueTypePair[]) => void
+    projectId?: string
 }
 
-export function FormDataEditor({ pairs, onChange }: FormDataEditorProps) {
+export function FormDataEditor({ pairs, onChange, projectId }: FormDataEditorProps) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
 
@@ -45,10 +46,10 @@ export function FormDataEditor({ pairs, onChange }: FormDataEditorProps) {
         setUploadingIndex(index)
 
         try {
-            const response = await filesApi.upload(file)
+            const response = await filesApi.upload(file, projectId)
 
-            // Store the object_name in value
-            updatePair(index, 'value', response.data.object_name)
+            const data = response?.data?.data ?? response?.data ?? response
+            updatePair(index, 'value', data?.object_name ?? data?.url ?? '')
 
         } catch (error) {
             console.error('Upload error:', error)

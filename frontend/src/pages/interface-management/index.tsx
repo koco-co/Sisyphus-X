@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { motion, AnimatePresence } from 'framer-motion'
@@ -21,6 +21,7 @@ import { ResponseViewer } from './components/ResponseViewer/ResponseViewer'
 import type { ResponseData } from './components/ResponseViewer/ResponseViewer'
 import { EnvironmentDialog } from './dialogs/EnvironmentDialog'
 import { CurlImportDialog } from './dialogs/CurlImportDialog'
+import { SwaggerImportDialog } from './dialogs/SwaggerImportDialog'
 import type { CurlImportData } from './dialogs/CurlImportDialog'
 import type { KeyValuePair } from './components/RequestEditor/KeyValueEditor'
 import type { AuthConfig } from './components/RequestEditor/AuthTab'
@@ -46,7 +47,9 @@ const keyValueArrayToObject = (pairs: KeyValuePair[]): Record<string, string> =>
 }
 
 export default function InterfaceManagementPage() {
-  const { id, projectId } = useParams<{ id?: string; projectId?: string }>()
+  const { id } = useParams<{ id?: string }>()
+  const [searchParams] = useSearchParams()
+  const projectIdFromQuery = searchParams.get('projectId')
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
@@ -64,7 +67,8 @@ export default function InterfaceManagementPage() {
   const effectiveId = pathId !== undefined ? pathId : id
 
   const interfaceId = effectiveId && effectiveId !== 'new' ? parseInt(effectiveId) : null
-  const currentProjectId = projectId ? parseInt(projectId) : 1
+  const currentProjectId = projectIdFromQuery ? parseInt(projectIdFromQuery) : 1
+  const currentProjectIdStr = projectIdFromQuery || String(currentProjectId)
   const isNew = effectiveId === 'new'
 
   // 状态机模式: 明确管理页面状态
@@ -86,6 +90,7 @@ export default function InterfaceManagementPage() {
   // UI 状态
   const [showEnvironmentDialog, setShowEnvironmentDialog] = useState(false)
   const [showCurlDialog, setShowCurlDialog] = useState(false)
+  const [showSwaggerDialog, setShowSwaggerDialog] = useState(false)
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const [envDialogMode, setEnvDialogMode] = useState<'create' | 'edit'>('create')
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
@@ -395,6 +400,13 @@ export default function InterfaceManagementPage() {
         <WelcomeCards
           projectId={currentProjectId}
           recentInterfaces={recentInterfaces}
+          onImportSwagger={() => setShowSwaggerDialog(true)}
+        />
+        <SwaggerImportDialog
+          open={showSwaggerDialog}
+          onClose={() => setShowSwaggerDialog(false)}
+          projectId={currentProjectIdStr}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ['interfaces'] })}
         />
       </div>
     )

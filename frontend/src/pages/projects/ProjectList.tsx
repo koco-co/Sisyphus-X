@@ -8,7 +8,8 @@ import {
   Trash2,
   Loader2,
   Calendar,
-  FolderKanban
+  FolderKanban,
+  Edit2
 } from 'lucide-react'
 import { Pagination } from '@/components/common/Pagination'
 import { projectsApi } from '@/api/client'
@@ -46,6 +47,11 @@ export default function ProjectList() {
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [createForm, setCreateForm] = useState({ name: '', description: '' })
   const [formErrors, setFormErrors] = useState<{ name?: string; description?: string }>({})
+
+  // Edit state
+  const [editingProject, setEditingProject] = useState<Project | null>(null)
+  const [editForm, setEditForm] = useState({ name: '', description: '' })
+  const [editFormErrors, setEditFormErrors] = useState<{ name?: string; description?: string }>({})
 
   // Validate form
   const validateForm = (): boolean => {
@@ -154,6 +160,52 @@ export default function ProjectList() {
     setFormErrors({})
   }
 
+  const validateEditForm = (): boolean => {
+    const errors: { name?: string; description?: string } = {}
+    const name = editForm.name.trim()
+    if (!name) {
+      errors.name = '项目名称不能为空'
+    } else if (name.length > 50) {
+      errors.name = `项目名称不能超过50个字符（当前${name.length}个字符）`
+    }
+    const description = editForm.description.trim()
+    if (description && description.length > 200) {
+      errors.description = `项目描述不能超过200个字符（当前${description.length}个字符）`
+    }
+    setEditFormErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
+  const openEditModal = (project: Project) => {
+    setEditingProject(project)
+    setEditForm({ name: project.name, description: project.description || '' })
+    setEditFormErrors({})
+  }
+
+  const closeEditModal = () => {
+    setEditingProject(null)
+    setEditForm({ name: '', description: '' })
+    setEditFormErrors({})
+  }
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name: string; description?: string } }) =>
+      projectsApi.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      closeEditModal()
+      success('编辑成功')
+    },
+    onError: (err: { response?: { data?: { detail?: string | Array<{ msg?: string }> } } }) => {
+      const detail = err.response?.data?.detail
+      if (typeof detail === 'string') showError(detail)
+      else if (Array.isArray(detail)) {
+        const msg = (detail as Array<{ msg?: string }>).map(e => e.msg ?? '').filter(Boolean).join('; ') || '编辑失败'
+        showError(msg)
+      } else showError('编辑失败')
+    }
+  })
+
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-'
     return new Date(dateStr).toLocaleDateString('zh-CN', {
@@ -249,6 +301,18 @@ export default function ProjectList() {
                           <button
                             onClick={(e) => {
                               e.preventDefault()
+                              e.stopPropagation()
+                              openEditModal(project)
+                            }}
+                            data-testid={`project-edit-button-${project.id}`}
+                            className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
                               setProjectToDelete(project)
                               setIsDeleteOpen(true)
                             }}
@@ -456,6 +520,116 @@ export default function ProjectList() {
                 >
                   {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   创建
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Edit Project Dialog */}
+      <AnimatePresence>
+        {editingProject && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+            onClick={closeEditModal}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl p-8"
+            >
+              <h3 className="text-xl font-bold text-white mb-6">编辑项目</h3>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-project-name">
+                    项目名称 <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="edit-project-name"
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setEditForm((f) => ({ ...f, name: v }))
+                      if (v.trim().length > 50) {
+                        setEditFormErrors((prev) => ({ ...prev, name: `项目名称不能超过50个字符（当前${v.trim().length}个字符）` }))
+                      } else {
+                        setEditFormErrors((prev) => ({ ...prev, name: undefined }))
+                      }
+                    }}
+                    data-testid="edit-project-name-input"
+                    placeholder="e.g. Sisyphus接口自动化测试"
+                    className={`mt-2 ${
+                      editFormErrors.name ? 'border-red-500/50 focus:border-red-500/50' : 'border-white/10 focus:border-cyan-500/50'
+                    }`}
+                  />
+                  {editFormErrors.name && (
+                    <p className="text-red-400 text-xs mt-1.5">{editFormErrors.name}</p>
+                  )}
+                  {!editFormErrors.name && editForm.name && (
+                    <p className="text-slate-500 text-xs mt-1.5">{editForm.name.trim().length} / 50</p>
+                  )}
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-project-description">项目描述</Label>
+                  <Textarea
+                    id="edit-project-description"
+                    value={editForm.description}
+                    onChange={(e) => {
+                      const v = e.target.value
+                      setEditForm((f) => ({ ...f, description: v }))
+                      if (v.trim().length > 200) {
+                        setEditFormErrors((prev) => ({ ...prev, description: `项目描述不能超过200个字符（当前${v.trim().length}个字符）` }))
+                      } else {
+                        setEditFormErrors((prev) => ({ ...prev, description: undefined }))
+                      }
+                    }}
+                    data-testid="edit-project-description-input"
+                    placeholder="e.g. 包含电商核心链路的自动化测试用例集合..."
+                    rows={3}
+                    className={`mt-2 resize-none ${
+                      editFormErrors.description ? 'border-red-500/50 focus:border-red-500/50' : 'border-white/10 focus:border-cyan-500/50'
+                    }`}
+                  />
+                  {editFormErrors.description && (
+                    <p className="text-red-400 text-xs mt-1.5">{editFormErrors.description}</p>
+                  )}
+                  {!editFormErrors.description && editForm.description && (
+                    <p className="text-slate-500 text-xs mt-1.5">{editForm.description.trim().length} / 200</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-4 mt-8">
+                <Button variant="ghost" onClick={closeEditModal} className="text-slate-400 hover:text-white">
+                  取消
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (!validateEditForm()) return
+                    updateMutation.mutate({
+                      id: editingProject.id,
+                      data: {
+                        name: editForm.name.trim(),
+                        description: editForm.description.trim() || undefined
+                      }
+                    })
+                  }}
+                  disabled={
+                    editForm.name.trim() === '' ||
+                    Object.keys(editFormErrors).length > 0 ||
+                    updateMutation.isPending
+                  }
+                  data-testid="submit-edit-project-button"
+                  className="bg-cyan-500 hover:bg-cyan-600 text-white"
+                >
+                  {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  保存
                 </Button>
               </div>
             </motion.div>

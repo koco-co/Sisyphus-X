@@ -18,13 +18,13 @@ from app.models import Keyword
 from app.schemas.keyword import KeywordCreate, KeywordResponse, KeywordUpdate
 from app.schemas.pagination import PageResponse
 from app.utils.crud_helpers import (
-from app.utils.datetime import utcnow
     create_item,
     delete_by_id,
     get_or_404,
     list_items,
     update_item,
 )
+from app.utils.datetime import utcnow
 
 router = APIRouter()
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -184,9 +185,12 @@ export default function TestReport() {
                                         >
                                             <td className="px-6 py-4 w-[200px]">
                                                 <Tooltip content={report.name || report.scenario_name || '-'} position="top">
-                                                    <span className="font-medium text-white group-hover:text-cyan-400 transition-colors truncate block w-full">
+                                                    <Link
+                                                        to={`/reports/${report.id}`}
+                                                        className="font-medium text-white group-hover:text-cyan-400 transition-colors truncate block w-full"
+                                                    >
                                                         {report.name || report.scenario_name || '-'}
-                                                    </span>
+                                                    </Link>
                                                 </Tooltip>
                                             </td>
                                             <td className="px-6 py-4">
@@ -198,12 +202,29 @@ export default function TestReport() {
                                             <td className="px-6 py-4">
                                                 {report.total_cases ? (
                                                     <div className="flex items-center gap-3">
-                                                        {/* 通过率条 */}
-                                                        <div className="flex-1 h-2 bg-slate-800 rounded-full overflow-hidden max-w-[120px]">
-                                                            <div
-                                                                className={`h-full rounded-full ${passRate >= 80 ? 'bg-emerald-500' : passRate >= 50 ? 'bg-yellow-500' : 'bg-red-500'}`}
-                                                                style={{ width: `${passRate}%` }}
-                                                            />
+                                                        {/* 进度环 */}
+                                                        <div className="relative w-10 h-10 flex-shrink-0">
+                                                            <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
+                                                                <path
+                                                                    d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="3"
+                                                                    className="text-slate-700"
+                                                                />
+                                                                <path
+                                                                    d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="3"
+                                                                    strokeDasharray={`${passRate} 100`}
+                                                                    strokeLinecap="round"
+                                                                    className={passRate >= 80 ? 'text-emerald-500' : passRate >= 50 ? 'text-yellow-500' : 'text-red-500'}
+                                                                />
+                                                            </svg>
+                                                            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-medium text-slate-300">
+                                                                {passRate}%
+                                                            </span>
                                                         </div>
                                                         <span className="text-xs text-slate-400">
                                                             {report.passed_cases}/{report.total_cases}

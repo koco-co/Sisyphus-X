@@ -7,14 +7,19 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
-from app.models.scenario import Scenario
+from app.models.report import TestReport
+from app.models.scenario import Scenario, ScenarioStep
 from app.models.test_plan import PlanExecutionStep, PlanScenario, TestPlan, TestPlanExecution
 from app.schemas.plan import PlanCreate, PlanUpdate
 from app.schemas.test_plan import (
     PlanExecutionStepResponse,
     TestPlanExecutionResponse,
 )
+from app.services.engine_executor import EngineExecutor
 from app.utils.datetime import utcnow
+
+# WebSocket 进度推送 (BE-050)
+from app.api.v1.endpoints.websocket import manager as ws_manager
 
 router = APIRouter()
 
@@ -65,14 +70,20 @@ class ExecutionManager:
             execution.total_scenarios = len(plan_scenarios)
             await session.commit()
 
+            await ws_manager.broadcast_to_execution(
+                execution_id,
+                {"type": "progress", "data": {"status": "running", "total": len(plan_scenarios), "current": 0}},
+            )
+
             # 逐个执行场景
-            for plan_scenario in plan_scenarios:
+            for idx, plan_scenario in enumerate(plan_scenarios):
                 # 检查是否被取消或暂停
                 current_status = self.status.get(execution_id, "running")
                 if current_status == "cancelled":
                     execution.status = "cancelled"
                     execution.completed_at = utcnow()
                     await session.commit()
+                    await ws_manager.broadcast_to_execution(execution_id, {"type": "completed", "data": {"status": "cancelled"}})
                     return
                 elif current_status == "paused":
                     # 等待恢复
@@ -96,29 +107,127 @@ class ExecutionManager:
                 session.add(step)
                 await session.commit()
 
-                # TODO: 实际执行场景 (调用 sisyphus-api-engine)
-                # 这里暂时模拟执行成功
-                await asyncio.sleep(1)  # 模拟执行时间
+                await ws_manager.broadcast_to_execution(
+                    execution_id,
+                    {"type": "step_started", "data": {"scenario_id": plan_scenario.scenario_id, "index": idx}},
+                )
 
-                # 更新步骤状态
-                step.status = "passed"
+                # 实际执行场景：生成 YAML -> 调用 sisyphus-api-engine -> 更新步骤与报告 (BE-047, BE-052)
+                scenario = await session.get(Scenario, plan_scenario.scenario_id)
+                if not scenario:
+                    step.status = "failed"
+                    step.error_message = "场景不存在"
+                    step.completed_at = utcnow()
+                    execution.failed_scenarios += 1
+                    await session.commit()
+                    continue
+
+                steps_result = await session.execute(
+                    select(ScenarioStep)
+                    .where(ScenarioStep.scenario_id == plan_scenario.scenario_id)
+                    .order_by(ScenarioStep.sort_order)
+                )
+                steps_list = list(steps_result.scalars().all())
+                if not steps_list:
+                    step.status = "skipped"
+                    step.completed_at = utcnow()
+                    execution.skipped_scenarios += 1
+                    await session.commit()
+                    continue
+
+                from app.api.v1.endpoints.scenarios import _generate_scenario_yaml
+
+                yaml_content = _generate_scenario_yaml(
+                    scenario=scenario,
+                    steps=steps_list,
+                    env_vars=None,
+                    dataset_vars=None,
+                    override_vars=None,
+                )
+                executor = EngineExecutor()
+                try:
+                    run_result = await asyncio.to_thread(
+                        executor.execute, yaml_content, None, 300
+                    )
+                except Exception as e:
+                    run_result = {"success": False, "result": {}, "error": str(e)}
+
                 step.completed_at = utcnow()
-                execution.passed_scenarios += 1
+                if run_result.get("success"):
+                    step.status = "passed"
+                    execution.passed_scenarios += 1
+                else:
+                    step.status = "failed"
+                    step.error_message = run_result.get("error", "执行失败")[:500]
+                    execution.failed_scenarios += 1
+
+                # 报告自动持久化 (BE-052)
+                engine_out = run_result.get("result") or {}
+                summary = engine_out.get("summary") or {}
+                total_steps = summary.get("total_steps", 1)
+                passed_steps = summary.get("passed_steps", 1 if run_result.get("success") else 0)
+                failed_steps = summary.get("failed_steps", 0 if run_result.get("success") else 1)
+                duration_ms = engine_out.get("duration") or 0
+                if isinstance(duration_ms, (int, float)):
+                    duration_str = f"{duration_ms / 1000}s" if duration_ms >= 1000 else f"{duration_ms}ms"
+                else:
+                    duration_str = str(duration_ms)
+                test_report = TestReport(
+                    scenario_id=scenario.id,
+                    name=scenario.name,
+                    status="success" if run_result.get("success") else "failed",
+                    total=total_steps,
+                    success=passed_steps,
+                    failed=failed_steps,
+                    duration=duration_str,
+                    start_time=step.started_at or utcnow(),
+                    end_time=step.completed_at,
+                )
+                session.add(test_report)
                 await session.commit()
+
+                await ws_manager.broadcast_to_execution(
+                    execution_id,
+                    {
+                        "type": "step_completed",
+                        "data": {
+                            "scenario_id": plan_scenario.scenario_id,
+                            "index": idx,
+                            "status": step.status,
+                            "passed": execution.passed_scenarios,
+                            "failed": execution.failed_scenarios,
+                        },
+                    },
+                )
 
             # 执行完成
             execution.status = "completed"
             execution.completed_at = utcnow()
             self.status[execution_id] = "completed"
             await session.commit()
+            await ws_manager.broadcast_to_execution(
+                execution_id,
+                {
+                    "type": "completed",
+                    "data": {
+                        "status": "completed",
+                        "passed": execution.passed_scenarios,
+                        "failed": execution.failed_scenarios,
+                        "total": execution.total_scenarios,
+                    },
+                },
+            )
 
-        except Exception:
+        except Exception as e:
             # 执行失败
             self.status[execution_id] = "failed"
             if execution:
                 execution.status = "failed"
                 execution.completed_at = utcnow()
                 await session.commit()
+                await ws_manager.broadcast_to_execution(
+                    execution_id, {"type": "error", "data": {"message": str(e), "status": "failed"}}
+                )
         finally:
             # 清理任务
             if execution_id in self.tasks:

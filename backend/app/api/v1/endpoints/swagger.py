@@ -15,7 +15,7 @@ from app.models.project import Interface
 router = APIRouter()
 
 
-def parse_openapi_spec(spec: dict[str, Any], project_id: int) -> list[dict]:
+def parse_openapi_spec(spec: dict[str, Any], project_id: str) -> list[dict]:
     """解析 OpenAPI/Swagger 规范，提取接口信息"""
     interfaces = []
 
@@ -88,7 +88,7 @@ def parse_openapi_spec(spec: dict[str, Any], project_id: int) -> list[dict]:
 
 @router.post("/import/swagger")
 async def import_swagger(
-    project_id: int = Form(...),
+    project_id: str = Form(..., description="项目 ID (UUID)"),
     file: UploadFile = File(None),
     url: str = Form(None),
     session: AsyncSession = Depends(get_session),

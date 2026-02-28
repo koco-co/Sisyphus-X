@@ -6,7 +6,7 @@ import os
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from app.core.storage import (
     MINIO_BUCKET,
@@ -20,18 +20,23 @@ router = APIRouter()
 
 
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...), folder: str | None = "uploads"):
+async def upload_file(
+    file: UploadFile = File(...),
+    folder: str | None = Form("uploads"),
+    project_id: str | None = Form(None),
+):
     """
-    上传文件到 MinIO
+    上传文件到 MinIO (BE-025).
+    若传 project_id 则按项目分目录: project-{id}/...
     返回文件访问 URL
     """
     try:
         client = get_minio_client()
         ensure_bucket_exists(client)
 
-        # 生成唯一文件名
+        base = f"project-{project_id}" if project_id else folder
         ext = os.path.splitext(file.filename)[1] if file.filename else ""
-        unique_name = f"{folder}/{datetime.now().strftime('%Y%m%d')}/{uuid.uuid4().hex}{ext}"
+        unique_name = f"{base}/{datetime.now().strftime('%Y%m%d')}/{uuid.uuid4().hex}{ext}"
 
         # 读取文件内容
         content = await file.read()
@@ -65,6 +70,35 @@ async def upload_file(file: UploadFile = File(...), folder: str | None = "upload
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"上传失败: {e}")
+
+
+@router.get("/{bucket}/{object_name:path}")
+async def download_file(bucket: str, object_name: str):
+    """
+    从 MinIO 下载文件 (BE-026).
+    GET /api/v1/files/{bucket}/{object_name}
+    """
+    from fastapi.responses import Response
+
+    try:
+        client = get_minio_client()
+        obj = client.get_object(bucket, object_name)
+        try:
+            content = obj.read()
+            media_type = (obj.headers.get("Content-Type") if hasattr(obj.headers, "get") else None) or "application/octet-stream"
+        finally:
+            obj.close()
+            if hasattr(obj, "release_conn"):
+                obj.release_conn()
+        return Response(
+            content=content,
+            media_type=media_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{object_name.split("/")[-1]}"',
+            },
+        )
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=f"文件不存在或读取失败: {e}")
 
 
 @router.delete("/upload/{object_name:path}")

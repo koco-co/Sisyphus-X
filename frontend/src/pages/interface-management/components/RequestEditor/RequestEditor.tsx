@@ -185,6 +185,7 @@ export function RequestEditor({
               value: p.value,
               enabled: p.enabled
             })))}
+            projectId={String(projectId)}
           />
         )}
       </div>

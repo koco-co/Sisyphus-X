@@ -126,7 +126,7 @@ error_handler() {
     echo ""
     log_info "💡 常见问题排查:"
     echo "   1. 确保 Docker, Node.js, Python, uv 均已安装"
-    echo "   2. 默认端口 $BACKEND_PORT / $FRONTEND_PORT 若被占用将自动切换"
+    echo "   2. 默认端口 $BACKEND_PORT / $FRONTEND_PORT 为固定端口, 启动前会尝试强制释放端口"
     echo "   3. 检查 backend/.env 和 frontend/.env 配置"
     echo "   4. 运行 ${BOLD}./sisyphus_init.sh status${NC} 查看服务状态"
     echo ""
@@ -149,14 +149,19 @@ is_port_in_use() {
     lsof -Pi :"$1" -sTCP:LISTEN -t >/dev/null 2>&1
 }
 
-# 从 start_port 起找到第一个未被占用的端口
-find_available_port() {
-    local start=$1
-    local p=$start
-    while is_port_in_use "$p"; do
-        p=$((p + 1))
-    done
-    echo "$p"
+# 强制释放指定端口（若有进程占用则直接 kill -9）
+force_kill_port() {
+    local port=$1
+    # 获取监听该端口的所有进程
+    local pids
+    pids=$(lsof -ti tcp:"$port" 2>/dev/null || true)
+    if [ -n "$pids" ]; then
+        log_step "强制释放端口 $port (PID: $pids)..."
+        kill -9 $pids 2>/dev/null || true
+        sleep 1
+    else
+        log_debug "端口 $port 当前未被占用"
+    fi
 }
 
 # 获取当前后端/前端实际使用的端口（用于状态展示）
@@ -503,11 +508,10 @@ start_infra() {
 start_backend() {
     log_step "🐍 启动后端服务..."
 
+    # 启动前强制释放默认后端端口, 确保始终使用固定端口
+    force_kill_port "$BACKEND_PORT"
+
     local actual_port=$BACKEND_PORT
-    if is_port_in_use $BACKEND_PORT; then
-        actual_port=$(find_available_port $((BACKEND_PORT + 1)))
-        log_warning "默认端口 $BACKEND_PORT 已被占用，改用端口 $actual_port"
-    fi
     echo $actual_port > "$LOG_DIR/backend.port"
 
     cd "$BACKEND_DIR"
@@ -591,11 +595,10 @@ start_backend() {
 start_frontend() {
     log_step "⚛️  启动前端服务..."
 
+    # 启动前强制释放默认前端端口, 确保始终使用固定端口
+    force_kill_port "$FRONTEND_PORT"
+
     local actual_port=$FRONTEND_PORT
-    if is_port_in_use $FRONTEND_PORT; then
-        actual_port=$(find_available_port $((FRONTEND_PORT + 1)))
-        log_warning "默认端口 $FRONTEND_PORT 已被占用，改用端口 $actual_port"
-    fi
     echo $actual_port > "$LOG_DIR/frontend.port"
 
     cd "$FRONTEND_DIR"
@@ -667,6 +670,12 @@ cmd_start() {
     run_backend_lint 2>/dev/null || true
     echo ""
     run_frontend_lint 2>/dev/null || true
+    echo ""
+
+    # 启动应用前统一强制释放默认前后端端口, 避免端口被其他进程占用
+    log_info "🧹 启动前释放固定端口 $BACKEND_PORT / $FRONTEND_PORT..."
+    force_kill_port "$BACKEND_PORT"
+    force_kill_port "$FRONTEND_PORT"
     echo ""
 
     case "$target" in

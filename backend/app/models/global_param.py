@@ -4,12 +4,13 @@
 """
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base
+from app.utils.datetime import utcnow
 
 
 class GlobalParam(Base):
@@ -54,12 +55,16 @@ class GlobalParam(Base):
         nullable=False,
     )
 
-    # 时间戳
-    created_at: Mapped[datetime] = mapped_column(default=lambda: datetime.now(UTC), nullable=False)
+    # 时间戳（使用 naive UTC 时间, 兼容 PostgreSQL TIMESTAMP WITHOUT TIME ZONE）
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=False),
+        default=utcnow,
+        nullable=False,
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=False),
-        default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC),
+        default=utcnow,
+        onupdate=utcnow,
         nullable=False,
     )
 

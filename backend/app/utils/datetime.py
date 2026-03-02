@@ -6,17 +6,17 @@ from datetime import datetime, timezone
 
 
 def utcnow() -> datetime:
-    """获取当前 UTC 时间（时区感知）
+    """获取当前 UTC 时间（不带时区，兼容 PostgreSQL TIMESTAMP WITHOUT TIME ZONE）
 
-    替代已弃用的 utcnow()，返回 timezone-aware 的 datetime 对象。
+    替代已弃用的 utcnow()，返回 naive datetime 对象以兼容 PostgreSQL。
 
     Returns:
-        datetime: 带有 UTC 时区信息的当前时间
+        datetime: 不带时区信息的 UTC 时间
 
     Example:
         >>> from app.utils.datetime import utcnow
         >>> now = utcnow()
-        >>> now.tzinfo
-        datetime.timezone.utc
+        >>> now.tzinfo is None
+        True
     """
-    return datetime.now(timezone.utc)
+    return datetime.now(timezone.utc).replace(tzinfo=None)

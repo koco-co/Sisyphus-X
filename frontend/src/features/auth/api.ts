@@ -1,6 +1,5 @@
 // Auth API client
 import { post, get } from '@/lib/api-client'
-import type { User } from '@/stores/authStore'
 
 export interface LoginRequest {
   email: string

@@ -16,6 +16,7 @@ from app.modules.auth.routes import router as auth_router
 
 # 模块化路由导入
 from app.modules.project.routes import router as project_router_v2
+from app.modules.project.database_routes import router as database_router
 
 
 @asynccontextmanager
@@ -75,6 +76,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 # 模块化路由 (v2) - 使用 /v2 前缀以区分旧路由
 app.include_router(project_router_v2, prefix=f"{settings.API_V1_STR}/v2")
+app.include_router(database_router, prefix=f"{settings.API_V1_STR}/v2")
 
 
 @app.get("/")

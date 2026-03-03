@@ -8,6 +8,7 @@
 
 from app.models_new.database_config import DatabaseConfig
 from app.models_new.environment import Environment, EnvironmentVariable, GlobalVariable
+from app.models_new.execution import Execution, ExecutionStep, Report
 from app.models_new.interface import Interface, InterfaceFolder
 from app.models_new.keyword import Keyword
 from app.models_new.plan import PlanScenario, TestPlan
@@ -33,4 +34,7 @@ __all__ = [
     "ScenarioStep",
     "TestDataset",
     "DatasetRow",
+    "Execution",
+    "ExecutionStep",
+    "Report",
 ]

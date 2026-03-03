@@ -7,7 +7,30 @@
 """
 
 from app.models_new.database_config import DatabaseConfig
+from app.models_new.environment import Environment, EnvironmentVariable, GlobalVariable
+from app.models_new.interface import Interface, InterfaceFolder
+from app.models_new.keyword import Keyword
+from app.models_new.plan import PlanScenario, TestPlan
 from app.models_new.project import Project
+from app.models_new.scenario import Scenario, ScenarioStep, TestDataset, DatasetRow
+from app.models_new.setting import GlobalParam
 from app.models_new.user import User
 
-__all__ = ["User", "Project", "DatabaseConfig"]
+__all__ = [
+    "User",
+    "Project",
+    "DatabaseConfig",
+    "Environment",
+    "EnvironmentVariable",
+    "GlobalVariable",
+    "InterfaceFolder",
+    "Interface",
+    "Keyword",
+    "GlobalParam",
+    "TestPlan",
+    "PlanScenario",
+    "Scenario",
+    "ScenarioStep",
+    "TestDataset",
+    "DatasetRow",
+]

@@ -2,6 +2,8 @@
 
 这个文件负责设置 SQLAlchemy 2.0 引擎、Session 工厂，
 以及提供 FastAPI 依赖注入函数。
+
+Phase 1 重构：支持 models_new 中的新模型
 """
 
 from collections.abc import AsyncGenerator
@@ -10,11 +12,16 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-# 导入所有模型以确保它们被注册到 Base.metadata
+# 导入现有模型以确保它们被注册到 Base.metadata
 # 这对于 Alembic 自动生成迁移至关重要
-# 注意：必须放在 Base 定义之后，避免循环导入
 from app import models  # noqa: F401
 from app.core.base import Base
+
+# 导入新模型 (Phase 1 重构)
+# 这确保 Alembic 能检测到 models_new 中的所有表
+from app import models_new  # noqa: F401
+from app.core.base_new import Base as BaseNew  # noqa: F401
+
 from app.core.config import settings
 
 # 判断是否使用 SQLite（本地开发）或 PostgreSQL（生产）
@@ -65,10 +72,14 @@ async def init_db():
 
     在应用启动时调用，创建所有不存在的表。
     注意：生产环境应该使用 Alembic 迁移而不是这个函数。
+
+    Phase 1 重构：同时初始化旧模型和新模型的表
     """
     async with engine.begin() as conn:
-        # await conn.run_sync(Base.metadata.drop_all)  # 调试用：删除所有表
+        # 初始化现有模型的表
         await conn.run_sync(Base.metadata.create_all)
+        # 初始化新模型的表 (Phase 1 重构)
+        await conn.run_sync(BaseNew.metadata.create_all)
 
     # 初始化内置关键字种子数据 (BE-017)
     from app.core.seed_keywords import seed_builtin_keywords
@@ -77,6 +88,18 @@ async def init_db():
     async with async_session_maker() as session:
         await seed_builtin_keywords(session)
         await seed_builtin_global_params(session)
+
+
+async def drop_db():
+    """删除所有表（仅用于测试）
+
+    Phase 1 重构：同时删除旧模型和新模型的表
+    """
+    async with engine.begin() as conn:
+        # 删除新模型的表
+        await conn.run_sync(BaseNew.metadata.drop_all)
+        # 删除现有模型的表
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

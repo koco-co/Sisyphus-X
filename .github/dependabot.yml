@@ -1,0 +1,74 @@
+version: 2
+
+updates:
+  # Python dependencies
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "backend"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "pytest*"
+          - "ruff*"
+          - "pyright*"
+      prod-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "pytest*"
+          - "ruff*"
+          - "pyright*"
+
+  # npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+    groups:
+      dev-dependencies:
+        patterns:
+          - "@types/*"
+          - "eslint*"
+          - "vitest*"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "typescript*"
+      prod-dependencies:
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "@types/*"
+          - "eslint*"
+          - "vitest*"
+          - "@vitest/*"
+          - "@testing-library/*"
+          - "typescript*"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci"
+    groups:
+      all-actions:
+        patterns:
+          - "*"

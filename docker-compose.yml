@@ -50,6 +50,27 @@ services:
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - sisyphus-network
+
+  # MySQL 测试数据源 (用于造数据测试)
+  mysql-test:
+    image: mysql:8.0
+    container_name: sisyphus-mysql-test
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: test_db
+      MYSQL_USER: test_user
+      MYSQL_PASSWORD: test123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_test_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -62,6 +83,8 @@ volumes:
   redis_data:
     driver: local
   minio_data:
+    driver: local
+  mysql_test_data:
     driver: local
 
 networks:

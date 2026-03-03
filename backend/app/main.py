@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.api import api_router
 from app.core.config import settings
 from app.core.db import init_db
+from app.core.redis import close_redis
 from app.middleware.error_handler import (
     ErrorHandlerMiddleware,
     RequestLoggingMiddleware,
@@ -15,8 +16,11 @@ from app.middleware.error_handler import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Initialize DB
+    """应用生命周期管理"""
+    # 启动时
+    print(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
     await init_db()
+    print("Database initialized")
 
     # Start Background Scheduler
     import asyncio
@@ -27,17 +31,24 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    # Cleanup
+    # 关闭时
+    print("Shutting down...")
     task.cancel()
     try:
         await task
     except asyncio.CancelledError:
         pass
 
+    await close_redis()
+    print("Redis connection closed")
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
+    version=settings.APP_VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
     lifespan=lifespan,
     redirect_slashes=False,  # 禁用自动重定向，避免307错误
 )
@@ -47,18 +58,10 @@ app.add_middleware(SecurityMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(ErrorHandlerMiddleware)
 
-# 配置 CORS 以允许前端访问 (必须最后添加，使其成为最外层中间件，防止错误响应丢失CORS头)
+# CORS 配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://192.168.199.222:5173",
-        "http://localhost:5174",
-        "http://127.0.0.1:5174",
-        "http://localhost:5175",
-        "http://127.0.0.1:5175",
-    ],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -70,3 +73,10 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Sisyphus X API"}
+
+
+# 健康检查
+@app.get("/health")
+async def health_check():
+    """健康检查端点"""
+    return {"status": "ok", "version": settings.APP_VERSION}

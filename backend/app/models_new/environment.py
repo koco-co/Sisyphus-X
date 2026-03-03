@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import Column, String, DateTime, Boolean, Text, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
-from app.core.db import Base
+from app.core.base_new import Base
 
 
 class Environment(Base):

@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from app.core.base import Base
+from app.core.base_new import Base
 
 
 class GlobalParam(Base):

@@ -9,7 +9,7 @@ from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.base import Base
+from app.core.base_new import Base
 from app.utils.datetime import utcnow
 
 

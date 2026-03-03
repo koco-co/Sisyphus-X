@@ -1,6 +1,7 @@
 """Alembic 环境配置
 
 这个文件配置 Alembic 以支持 SQLAlchemy 2.0 异步迁移。
+支持 Phase 1 重构后的新模型 (models_new)。
 """
 
 import asyncio
@@ -17,12 +18,16 @@ sys.path.append(os.getcwd())
 from alembic import context
 
 # 导入 SQLAlchemy Base 和配置
-from app.core.base import Base
+# 使用 base_new.Base 以支持 models_new 中的模型
+from app.core.base_new import Base
 from app.core.config import settings
 
-# 导入所有模型以确保它们被注册到 Base.metadata
+# 导入所有新模型以确保它们被注册到 Base.metadata
 # 这对于 Alembic 自动生成迁移至关重要
-from app import models  # noqa: F401
+from app.models_new import *  # noqa: F401, F403
+
+# 同时导入旧模型以保持兼容性 (可选，用于过渡期)
+# from app import models  # noqa: F401
 
 # Alembic Config 对象，提供对 .ini 文件值的访问
 config = context.config

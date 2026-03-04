@@ -13,17 +13,19 @@ from app.middleware.error_handler import (
     SecurityMiddleware,
 )
 from app.modules.auth.routes import router as auth_router
+from app.modules.environment.routes import router as environment_router
+from app.modules.execution.routes import router as execution_router
+from app.modules.interface.routes import router as interface_router
+from app.modules.keyword.routes import router as keyword_router
+from app.modules.plan.routes import router as plan_router
+from app.modules.project.database_routes import router as database_router
 
 # 模块化路由导入
 from app.modules.project.routes import router as project_router_v2
-from app.modules.project.database_routes import router as database_router
-from app.modules.setting.global_variable_routes import router as global_variable_router
-from app.modules.interface.routes import router as interface_router
-from app.modules.environment.routes import router as environment_router
-from app.modules.scenario.routes import router as scenario_router
-from app.modules.plan.routes import router as plan_router
-from app.modules.execution.routes import router as execution_router
 from app.modules.report.routes import router as report_router
+from app.modules.scenario.routes import router as scenario_router
+from app.modules.setting.global_param_routes import router as global_param_router
+from app.modules.setting.global_variable_routes import router as global_variable_router
 
 
 @asynccontextmanager
@@ -91,6 +93,8 @@ app.include_router(scenario_router, prefix=f"{settings.API_V1_STR}/v2")
 app.include_router(plan_router, prefix=f"{settings.API_V1_STR}/v2")
 app.include_router(execution_router, prefix=f"{settings.API_V1_STR}/v2")
 app.include_router(report_router, prefix=f"{settings.API_V1_STR}/v2")
+app.include_router(keyword_router, prefix=f"{settings.API_V1_STR}/v2")
+app.include_router(global_param_router, prefix=f"{settings.API_V1_STR}/v2")
 
 
 @app.get("/")

@@ -78,23 +78,31 @@ export default function ProjectList() {
     setCreateForm({ ...createForm, [field]: value })
 
     const trimmedValue = value.trim()
-    if (field === 'name' && trimmedValue) {
-      if (trimmedValue.length > 50) {
+    if (field === 'name') {
+      if (trimmedValue && trimmedValue.length > 50) {
         setFormErrors(prev => ({
           ...prev,
           name: `项目名称不能超过50个字符（当前${trimmedValue.length}个字符）`
         }))
       } else {
-        setFormErrors(prev => ({ ...prev, name: undefined }))
+        // 删除错误而不是设为 undefined，确保 Object.keys() 不计算它
+        setFormErrors(prev => {
+          const { name: _, ...rest } = prev
+          return rest
+        })
       }
-    } else if (field === 'description' && trimmedValue) {
-      if (trimmedValue.length > 200) {
+    } else if (field === 'description') {
+      if (trimmedValue && trimmedValue.length > 200) {
         setFormErrors(prev => ({
           ...prev,
           description: `项目描述不能超过200个字符（当前${trimmedValue.length}个字符）`
         }))
       } else {
-        setFormErrors(prev => ({ ...prev, description: undefined }))
+        // 删除错误而不是设为 undefined
+        setFormErrors(prev => {
+          const { description: _, ...rest } = prev
+          return rest
+        })
       }
     }
   }
@@ -558,7 +566,10 @@ export default function ProjectList() {
                       if (v.trim().length > 50) {
                         setEditFormErrors((prev) => ({ ...prev, name: `项目名称不能超过50个字符（当前${v.trim().length}个字符）` }))
                       } else {
-                        setEditFormErrors((prev) => ({ ...prev, name: undefined }))
+                        setEditFormErrors((prev) => {
+                          const { name: _, ...rest } = prev
+                          return rest
+                        })
                       }
                     }}
                     data-testid="edit-project-name-input"
@@ -586,7 +597,11 @@ export default function ProjectList() {
                       if (v.trim().length > 200) {
                         setEditFormErrors((prev) => ({ ...prev, description: `项目描述不能超过200个字符（当前${v.trim().length}个字符）` }))
                       } else {
-                        setEditFormErrors((prev) => ({ ...prev, description: undefined }))
+                        // 删除错误而不是设为 undefined
+                        setEditFormErrors((prev) => {
+                          const { description: _, ...rest } = prev
+                          return rest
+                        })
                       }
                     }}
                     data-testid="edit-project-description-input"

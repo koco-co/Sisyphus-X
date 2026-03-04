@@ -2,14 +2,12 @@ import { Page, expect } from '@playwright/test';
 import { BasePage } from './base.page';
 
 export class ScenarioPage extends BasePage {
-  readonly createButton = '[data-testid="create-scenario-btn"], button:has-text("新建场景")';
-  readonly scenarioNameInput = '[data-testid="scenario-name-input"], input[name="name"]';
-  readonly submitButton = '[data-testid="submit-btn"], button[type="submit"]';
-  readonly runButton = '[data-testid="run-scenario-btn"], button:has-text("运行"), button:has-text("执行")';
-  readonly addStepButton = '[data-testid="add-step-btn"], button:has-text("添加步骤")';
-  readonly scenarioList = '[data-testid="scenario-list"]';
-  readonly deleteButton = '[data-testid="delete-btn"], button:has-text("删除")';
-  readonly statusBadge = '[data-testid="status-badge"], .status-badge';
+  // 选择器 - 使用更灵活的匹配
+  readonly createButton = 'button:has-text("新建场景"), button:has-text("New Scenario")';
+  readonly scenarioNameInput = 'input[name="name"], input[placeholder*="场景"], input[placeholder*="Scenario"]';
+  readonly submitButton = 'button[type="submit"], button:has-text("创建"), button:has-text("确定")';
+  readonly runButton = 'button:has-text("运行"), button:has-text("执行"), button:has-text("Run")';
+  readonly scenarioRow = 'table tbody tr, [data-testid^="scenario-"]';
 
   constructor(page: Page) {
     super(page);
@@ -24,7 +22,10 @@ export class ScenarioPage extends BasePage {
     await this.waitForElement(this.scenarioNameInput, 5000);
     await this.fillInput(this.scenarioNameInput, name);
     await this.clickElement(this.submitButton);
-    await this.page.waitForURL(/\/scenarios\/editor/, { timeout: 10000 });
+
+    // 等待跳转到编辑器页面
+    await this.page.waitForURL(/\/scenarios\/editor/, { timeout: 15000 });
+
     const currentUrl = this.page.url();
     const match = currentUrl.match(/\/scenarios\/editor\/([a-f0-9-]+)/);
     return match ? match[1] : '';

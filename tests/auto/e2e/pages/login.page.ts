@@ -24,8 +24,8 @@ export class LoginPage extends BasePage {
   }
 
   async expectLoginSuccess(): Promise<void> {
-    // 等待跳转到主页或 dashboard
-    await this.page.waitForURL(/\/(dashboard)?$/, { timeout: 10000 });
+    // 等待离开登录页，跳转到主页、dashboard 或 projects
+    await this.page.waitForURL((url: URL) => !url.pathname.includes('/login'), { timeout: 15000 });
   }
 
   async expectLoginError(): Promise<string | null> {

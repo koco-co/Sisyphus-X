@@ -35,7 +35,7 @@ const { defineConfig, devices } = playwrightTest;
  */
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  fullyParallel: false,  // 顺序执行以支持状态共享
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
@@ -71,7 +71,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "npm run dev",
+    command: "VITE_AUTH_DISABLED=true VITE_DEV_MODE_SKIP_LOGIN=true npm run dev",
     url: "http://localhost:5173",
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

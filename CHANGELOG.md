@@ -9,16 +9,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - Phase 1-9 全面重构 (2026-03-04)
+
+#### Phase 1: 基础设施
+- 数据库模型重构 (SQLAlchemy 2.0 async)
+- Alembic 迁移配置
+- 前端 feature-based 目录结构
+- shadcn/ui 组件库集成
+
+#### Phase 2: 认证与项目管理
+- JWT 认证服务
+- 用户注册/登录/登出
+- 项目 CRUD 服务
+- 数据库配置管理
+- 全局变量管理
+
+#### Phase 3: 接口定义
+- 接口文件夹管理
+- 接口定义 CRUD
+- 请求/响应 Schema
+- 前端接口编辑器
+
+#### Phase 4: 场景编排
+- 场景服务层
+- 场景步骤管理
+- 数据集管理
+- 关键字驱动
+
+#### Phase 5: 测试计划
+- 测试计划服务层
+- 计划-场景关联
+- 场景排序
+- 变量覆盖
+
+#### Phase 6: 执行引擎核心
+- 执行记录服务层
+- Celery 异步任务
+- WebSocket 实时推送
+- 执行控制 (终止/暂停/恢复)
+- YAML 构建器
+
+#### Phase 7: 测试报告
+- 报告服务层
+- 统计数据聚合
+- 报告导出 (JSON/HTML)
+- 场景结果分组
+
+#### Phase 8: 辅助模块
+- 关键字管理 (CRUD)
+- 全局参数 (辅助函数)
+- 类型过滤
+- 内置关键字保护
+
+#### Phase 9: 测试与优化
+- 代码质量检查 (ruff, ESLint)
+- React hooks 优化
+- 文档更新
+
 ### Changed
 
 - **引擎抽离**: `sisyphus-api-engine` 从本地子项目 (`Sisyphus-api-engine/`) 抽离为独立 PyPI 包，通过 `uv pip install sisyphus-api-engine` 安装
 - **后端依赖**: `backend/pyproject.toml` 新增 `sisyphus-api-engine` 正式依赖
 - **引擎文档**: 迁移至 `docs/api-engine/` 目录
 - **项目脚本**: `sisyphus_init.sh` 移除本地引擎目录相关逻辑
+- **模块化架构**: 后端采用 `app/modules/` 模块化结构
+- **前端状态管理**: Zustand + React Query 组合
+- **代码风格**: Ruff (后端) + ESLint (前端) 统一规范
 
 ### Removed
 
 - **本地子项目**: 移除 `Sisyphus-api-engine/` 子目录（已发布为独立 PyPI 包）
+- **冗余代码**: 清理未使用的导入和变量
 
 ## [0.2.0] - 2026-02-25
 

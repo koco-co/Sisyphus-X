@@ -1,8 +1,10 @@
 # backend/app/models_new/setting.py
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+
+from sqlalchemy import Column, DateTime, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+
 from app.core.base_new import Base
 
 

@@ -10,7 +10,7 @@ from app.core.db import get_session
 from app.core.deps import get_current_user
 from app.core.response import success
 from app.models_new.user import User
-from app.modules.auth import service, schemas
+from app.modules.auth import schemas, service
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 

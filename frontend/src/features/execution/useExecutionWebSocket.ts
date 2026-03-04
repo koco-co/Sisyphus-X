@@ -2,6 +2,9 @@
 import { useEffect, useRef, useState } from 'react'
 import type { WSMessage, ScenarioStartedMessage, StepCompletedMessage, ExecutionCompletedMessage } from './types'
 
+/* eslint-disable react-hooks/set-state-in-effect */
+// Note: setState calls in this file are in WebSocket callbacks/cleanup, not synchronous in effect body
+
 interface UseExecutionWebSocketOptions {
   onScenarioStarted?: (data: ScenarioStartedMessage) => void
   onStepCompleted?: (data: StepCompletedMessage) => void

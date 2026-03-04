@@ -14,14 +14,14 @@ from sqlalchemy.orm import sessionmaker
 
 # 导入现有模型以确保它们被注册到 Base.metadata
 # 这对于 Alembic 自动生成迁移至关重要
-from app import models  # noqa: F401
-from app.core.base import Base
-
 # 导入新模型 (Phase 1 重构)
 # 这确保 Alembic 能检测到 models_new 中的所有表
-from app import models_new  # noqa: F401
+from app import (
+    models,  # noqa: F401
+    models_new,  # noqa: F401
+)
+from app.core.base import Base
 from app.core.base_new import Base as BaseNew  # noqa: F401
-
 from app.core.config import settings
 
 # 判断是否使用 SQLite（本地开发）或 PostgreSQL（生产）
@@ -82,9 +82,9 @@ async def init_db():
         await conn.run_sync(BaseNew.metadata.create_all)
 
     # 初始化内置关键字种子数据 (BE-017)
-    from app.core.seed_keywords import seed_builtin_keywords
     # 初始化内置全局参数种子数据 (BE-062)
     from app.core.seed_global_params import seed_builtin_global_params
+    from app.core.seed_keywords import seed_builtin_keywords
     async with async_session_maker() as session:
         await seed_builtin_keywords(session)
         await seed_builtin_global_params(session)

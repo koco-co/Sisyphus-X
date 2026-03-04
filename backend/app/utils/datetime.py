@@ -2,7 +2,7 @@
 
 提供统一的 UTC 时间获取方法，替代已弃用的 utcnow()
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 def utcnow() -> datetime:
@@ -19,4 +19,4 @@ def utcnow() -> datetime:
         >>> now.tzinfo is None
         True
     """
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(UTC).replace(tzinfo=None)

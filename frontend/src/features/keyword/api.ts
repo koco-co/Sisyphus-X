@@ -5,7 +5,6 @@
 import { get, post, put, del } from '@/api/client'
 import type {
   Keyword,
-  KeywordBrief,
   KeywordCreate,
   KeywordUpdate,
   KeywordListResponse,

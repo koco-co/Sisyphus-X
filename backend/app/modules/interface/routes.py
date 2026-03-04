@@ -3,7 +3,6 @@
 提供接口目录和接口定义的 API 端点。
 """
 
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -102,9 +101,9 @@ async def delete_folder(
 @router.get("", summary="获取接口列表")
 async def list_interfaces(
     project_id: str,
-    folder_id: Optional[str] = Query(None, description="目录 ID，不传则返回所有接口"),
-    search: Optional[str] = Query(None, description="搜索关键词，匹配名称和路径"),
-    method: Optional[str] = Query(None, description="HTTP 方法过滤"),
+    folder_id: str | None = Query(None, description="目录 ID，不传则返回所有接口"),
+    search: str | None = Query(None, description="搜索关键词，匹配名称和路径"),
+    method: str | None = Query(None, description="HTTP 方法过滤"),
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
     session: AsyncSession = Depends(get_session),
@@ -202,7 +201,7 @@ async def delete_interface(
 async def move_interface(
     project_id: str,
     interface_id: str,
-    folder_id: Optional[str] = Query(None, description="目标目录 ID，不传则移动到根目录"),
+    folder_id: str | None = Query(None, description="目标目录 ID，不传则移动到根目录"),
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user),
 ) -> dict:

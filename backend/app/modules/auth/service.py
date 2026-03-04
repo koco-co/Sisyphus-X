@@ -1,15 +1,19 @@
 # backend/app/modules/auth/service.py
 from datetime import datetime, timedelta
-from typing import Optional
-from jose import jwt, JWTError
+
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.exceptions import ValidationException, PermissionDeniedException, ResourceAlreadyExistsException
+from app.core.exceptions import (
+    PermissionDeniedException,
+    ResourceAlreadyExistsException,
+    ValidationException,
+)
 from app.models_new.user import User
-from app.modules.auth.schemas import UserRegister, UserLogin, UserResponse, TokenResponse
+from app.modules.auth.schemas import TokenResponse, UserLogin, UserRegister, UserResponse
 
 # 密码哈希上下文
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -25,7 +29,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
 
-def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(user_id: str, expires_delta: timedelta | None = None) -> str:
     """创建 JWT Token"""
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -41,7 +45,7 @@ def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None)
     return encoded_jwt
 
 
-def decode_token(token: str) -> Optional[str]:
+def decode_token(token: str) -> str | None:
     """解码 JWT Token，返回用户 ID"""
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
@@ -103,7 +107,7 @@ class AuthService:
             user=UserResponse.model_validate(user),
         )
 
-    async def get_user(self, user_id: str) -> Optional[UserResponse]:
+    async def get_user(self, user_id: str) -> UserResponse | None:
         """获取用户信息"""
         result = await self.session.execute(
             select(User).where(User.id == user_id)

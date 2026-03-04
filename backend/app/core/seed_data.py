@@ -11,21 +11,19 @@
 """
 import asyncio
 import uuid
-from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session_maker, init_db
 from app.models_new import (
-    User,
-    Project,
     Environment,
+    GlobalParam,
     GlobalVariable,
     Keyword,
-    GlobalParam,
+    Project,
+    User,
 )
-
 
 # 默认测试用户 ID
 DEFAULT_TEST_USER_ID = "00000000-0000-0000-0000-000000000001"

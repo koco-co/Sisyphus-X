@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "sisyphus-token",
+          "value": "test-token-for-e2e"
+        },
+        {
+          "name": "sisyphus-user",
+          "value": "{\"id\":\"00000000-0000-0000-0000-000000000001\",\"username\":\"E2E Test User\",\"email\":\"e2e-test@example.com\",\"avatar\":\"https://api.dicebear.com/7.x/avataaars/svg?seed=E2E\"}"
+        }
+      ]
+    }
+  ]
+}

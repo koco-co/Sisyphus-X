@@ -1,5 +1,6 @@
 # backend/app/core/response.py
-from typing import Generic, TypeVar, Optional, List
+from typing import Generic, TypeVar
+
 from pydantic import BaseModel
 
 T = TypeVar('T')
@@ -9,12 +10,12 @@ class ApiResponse(BaseModel, Generic[T]):
     """统一 API 响应格式"""
     code: int = 0
     message: str = "success"
-    data: Optional[T] = None
+    data: T | None = None
 
 
 class PagedData(BaseModel, Generic[T]):
     """分页数据格式"""
-    items: List[T]
+    items: list[T]
     total: int
     page: int
     page_size: int

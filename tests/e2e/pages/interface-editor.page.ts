@@ -52,8 +52,9 @@ export class InterfaceEditorPage {
     this.envManageButton = page.locator('[data-testid="env-manage-btn"]');
   }
 
-  async goto(projectId: string) {
-    await this.page.goto(`/api-automation/interface?project=${projectId}`);
+  async goto(projectId?: string) {
+    // Interface management page doesn't require project ID in URL
+    await this.page.goto('/interface-management');
     await this.waitForAnimation();
   }
 

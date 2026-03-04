@@ -35,6 +35,7 @@ dependencies = [
     "redis>=7.1.1",
     "aiomysql>=0.3.2",
     "sisyphus-api-engine",
+    "celery>=5.4.0",
 ]
 
 [project.optional-dependencies]

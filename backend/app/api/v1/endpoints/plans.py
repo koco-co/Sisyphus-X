@@ -1,11 +1,12 @@
 import asyncio
-
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# WebSocket 进度推送 (BE-050)
+from app.api.v1.endpoints.websocket import manager as ws_manager
 from app.core.db import get_session
 from app.models.report import TestReport
 from app.models.scenario import Scenario, ScenarioStep
@@ -17,9 +18,6 @@ from app.schemas.test_plan import (
 )
 from app.services.engine_executor import EngineExecutor
 from app.utils.datetime import utcnow
-
-# WebSocket 进度推送 (BE-050)
-from app.api.v1.endpoints.websocket import manager as ws_manager
 
 router = APIRouter()
 

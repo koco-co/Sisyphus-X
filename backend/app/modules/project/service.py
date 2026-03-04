@@ -1,10 +1,10 @@
-from typing import List, Optional, Tuple
-from sqlalchemy import select, func, or_
+
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.utils.exceptions import NotFoundError
 from app.models_new.project import Project
 from app.modules.project.schemas import ProjectCreate, ProjectUpdate
+from app.utils.exceptions import NotFoundError
 
 
 class ProjectService:
@@ -15,11 +15,11 @@ class ProjectService:
 
     async def list_projects(
         self,
-        user_id: Optional[str] = None,
-        search: Optional[str] = None,
+        user_id: str | None = None,
+        search: str | None = None,
         page: int = 1,
         page_size: int = 20,
-    ) -> Tuple[List[Project], int]:
+    ) -> tuple[list[Project], int]:
         """获取项目列表"""
         query = select(Project)
 

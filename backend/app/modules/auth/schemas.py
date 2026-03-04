@@ -1,7 +1,8 @@
 # backend/app/modules/auth/schemas.py
-from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 from uuid import UUID
+
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserRegister(BaseModel):

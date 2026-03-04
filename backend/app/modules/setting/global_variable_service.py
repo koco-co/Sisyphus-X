@@ -1,12 +1,11 @@
 """全局变量服务层"""
-from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models_new.environment import GlobalVariable
 from app.modules.setting.schemas import GlobalVariableCreate, GlobalVariableUpdate
-from app.utils.exceptions import NotFoundError, ConflictError
+from app.utils.exceptions import ConflictError, NotFoundError
 
 
 class GlobalVariableService:
@@ -15,7 +14,7 @@ class GlobalVariableService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def list_by_project(self, project_id: str) -> List[GlobalVariable]:
+    async def list_by_project(self, project_id: str) -> list[GlobalVariable]:
         """
         获取项目下的所有全局变量
 

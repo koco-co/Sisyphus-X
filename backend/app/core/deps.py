@@ -3,10 +3,9 @@
 
 使用 app/modules/auth/service.py 的 JWT 功能和 app/models_new/user.py 模型
 """
-from typing import Optional
 
 from fastapi import Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,7 +22,7 @@ DEFAULT_TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
 
 
 async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     session: AsyncSession = Depends(get_session),
 ) -> User:
     """
@@ -76,9 +75,9 @@ async def get_current_user(
 
 
 async def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     session: AsyncSession = Depends(get_session),
-) -> Optional[User]:
+) -> User | None:
     """可选的用户认证(不强制要求登录)"""
     try:
         return await get_current_user(credentials, session)

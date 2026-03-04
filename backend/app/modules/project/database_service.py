@@ -1,7 +1,5 @@
 """数据库配置服务层"""
-import asyncio
 from datetime import datetime
-from typing import List
 
 import aiomysql
 import asyncpg
@@ -13,7 +11,6 @@ from app.models_new.database_config import DatabaseConfig
 from app.modules.project.database_schemas import (
     ConnectionTestResult,
     DatabaseConfigCreate,
-    DatabaseConfigResponse,
     DatabaseConfigUpdate,
 )
 
@@ -24,7 +21,7 @@ class DatabaseConfigService:
     def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def list_by_project(self, project_id: str) -> List[DatabaseConfig]:
+    async def list_by_project(self, project_id: str) -> list[DatabaseConfig]:
         """获取项目的所有数据库配置"""
         result = await self.session.execute(
             select(DatabaseConfig)

@@ -1,9 +1,8 @@
 """Environment management service layer."""
 
-from typing import List
 from uuid import UUID
 
-from sqlalchemy import func, select, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -27,7 +26,7 @@ class EnvironmentService:
     # Environment Management
     # ========================================================================
 
-    async def list_by_project(self, project_id: str | UUID) -> List[Environment]:
+    async def list_by_project(self, project_id: str | UUID) -> list[Environment]:
         """
         List all environments for a project.
 
@@ -225,8 +224,8 @@ class EnvironmentService:
             NotFoundError: If environment not found
             ConflictError: If variable key already exists
         """
-        # Verify environment exists
-        environment = await self.get(environment_id, with_variables=False)
+        # Verify environment exists (raises NotFoundError if not found)
+        await self.get(environment_id, with_variables=False)
 
         # Check for duplicate key
         existing = await self.session.execute(
@@ -363,7 +362,7 @@ class EnvironmentService:
 
     async def list_variables(
         self, environment_id: str | UUID
-    ) -> List[EnvironmentVariable]:
+    ) -> list[EnvironmentVariable]:
         """
         List all variables for an environment.
 

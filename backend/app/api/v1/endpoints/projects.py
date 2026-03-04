@@ -1,7 +1,6 @@
 """项目管理 API 端点"""
 import uuid
 
-
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -277,7 +276,6 @@ async def create_datasource(
     project_id: str, ds: DataSourceCreate, session: AsyncSession = Depends(get_session)
 ):
     """创建新数据源"""
-    from datetime import datetime
 
     from app.core.network import test_mysql_connection
 

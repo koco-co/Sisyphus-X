@@ -5,7 +5,6 @@ CRUD 工具函数 - 消除重复的数据库操作代码
 """
 
 from collections.abc import Sequence
-
 from typing import Any, TypeVar, cast
 
 from fastapi import HTTPException, status

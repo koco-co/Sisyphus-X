@@ -52,8 +52,6 @@ export default function PlanExecutionPage() {
     const { planId, executionId } = useParams<{ planId: string; executionId: string }>();
     const navigate = useNavigate();
     const { success, error: showError } = useToast();
-    const [currentStatus, setCurrentStatus] = useState<string>('pending');
-    const [steps, setSteps] = useState<ExecutionStep[]>([]);
     const wsRef = useRef<WebSocket | null>(null);
     const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([0]));
 
@@ -79,17 +77,10 @@ export default function PlanExecutionPage() {
         }
     });
 
+    // Use API data directly instead of duplicating state
     const execution = executionData?.execution;
-    const initialSteps = executionData?.steps ?? [];
-    const statusFromApi = executionData?.current_status ?? execution?.status;
-
-    useEffect(() => {
-        if (statusFromApi) setCurrentStatus(statusFromApi);
-    }, [statusFromApi]);
-
-    useEffect(() => {
-        setSteps(initialSteps);
-    }, [executionId, initialSteps]);
+    const steps = executionData?.steps ?? [];
+    const currentStatus = executionData?.current_status ?? execution?.status ?? 'pending';
 
     useEffect(() => {
         if (!executionId) return;

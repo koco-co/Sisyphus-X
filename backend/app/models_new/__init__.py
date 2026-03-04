@@ -13,7 +13,7 @@ from app.models_new.interface import Interface, InterfaceFolder
 from app.models_new.keyword import Keyword
 from app.models_new.plan import PlanScenario, TestPlan
 from app.models_new.project import Project
-from app.models_new.scenario import Scenario, ScenarioStep, TestDataset, DatasetRow
+from app.models_new.scenario import DatasetRow, Scenario, ScenarioStep, TestDataset
 from app.models_new.setting import GlobalParam
 from app.models_new.user import User
 

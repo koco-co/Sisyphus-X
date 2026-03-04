@@ -188,7 +188,6 @@ async def update_interface(
     interface_id: str, data: dict, session: AsyncSession = Depends(get_session)
 ):
     """更新接口"""
-    from datetime import datetime
 
     interface = await session.get(Interface, interface_id)
     if not interface:

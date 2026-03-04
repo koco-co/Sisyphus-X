@@ -91,7 +91,6 @@ async def create_environment(
 
     # Create new environment
     import uuid
-    from datetime import datetime
 
     environment = ProjectEnvironment(
         id=str(uuid.uuid4()),
@@ -234,7 +233,6 @@ async def update_environment(
     Raises:
         HTTPException: If environment not found or name conflicts
     """
-    from datetime import datetime
 
     from sqlalchemy import select
 
@@ -329,7 +327,6 @@ async def copy_environment(
         HTTPException: If source not found or name conflicts
     """
     import uuid
-    from datetime import datetime
 
     from sqlalchemy import select
 
@@ -395,7 +392,6 @@ async def clone_environment(
         HTTPException: If source not found or name conflicts
     """
     import uuid
-    from datetime import datetime
 
     from sqlalchemy import select
 

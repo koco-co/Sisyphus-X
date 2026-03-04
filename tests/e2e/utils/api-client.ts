@@ -31,11 +31,23 @@ export class ApiClient {
   }
 
   // ========== Keywords ==========
-  async createKeyword(data: any): Promise<APIResponse> {
+  async createKeyword(data: {
+    id: string;
+    name: string;
+    class_name: string;
+    method_name: string;
+    description?: string;
+    code: string;
+    parameters?: string;
+    return_type?: string;
+    is_built_in?: boolean;
+    is_enabled?: boolean;
+    project_id?: string | null;
+  }): Promise<APIResponse> {
     return this.request.post(`${this.baseUrl}/keywords/`, { data });
   }
 
-  async getKeywords(params?: { skip?: number; limit?: number }): Promise<APIResponse> {
+  async getKeywords(params?: { page?: number; size?: number }): Promise<APIResponse> {
     return this.request.get(`${this.baseUrl}/keywords/`, { params });
   }
 

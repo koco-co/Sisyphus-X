@@ -1,12 +1,11 @@
 """全局变量路由"""
-from typing import List
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_session
-from app.core.response import success
 from app.core.deps import get_current_user
+from app.core.response import success
 from app.models.user import User
 from app.modules.setting import schemas
 from app.modules.setting.global_variable_service import GlobalVariableService

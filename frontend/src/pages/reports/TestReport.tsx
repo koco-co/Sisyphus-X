@@ -26,20 +26,30 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { Tooltip } from '@/components/ui/tooltip';
 
 interface ReportItem {
-    id: number;
+    id: number | string;
     name: string;
-    scenario_id?: number;
+    scenario_id?: string;
     scenario_name?: string;
-    duration?: number;
-    total_cases?: number;
-    passed_cases?: number;
-    failed_cases?: number;
+    /** 后端返回字符串如 "1.5s"，需解析为秒数 */
+    duration?: string;
+    total?: number;
+    success?: number;
+    failed?: number;
     start_time?: string;
     end_time?: string;
     status: string;
     execution_id?: string;
     allure_report_path?: string;
     created_at?: string;
+}
+
+/** 解析后端 duration 字符串（如 "1.5s"、"2m 30s"）为秒数 */
+function parseDurationToSeconds(durationStr?: string): number | undefined {
+    if (!durationStr) return undefined;
+    const sMatch = durationStr.match(/(\d+\.?\d*)\s*s/);
+    const mMatch = durationStr.match(/(\d+)\s*m/);
+    const seconds = parseFloat(sMatch?.[1] ?? '0') + (parseInt(mMatch?.[1] ?? '0', 10) * 60);
+    return seconds || undefined;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: LucideIcon }> = {
@@ -110,8 +120,8 @@ export default function TestReport() {
     };
 
     const getPassRate = (report: ReportItem) => {
-        const total = report.total_cases || 0;
-        const passed = report.passed_cases || 0;
+        const total = report.total ?? 0;
+        const passed = report.success ?? 0;
         if (total === 0) return 0;
         return Math.round((passed / total) * 100);
     };
@@ -204,7 +214,7 @@ export default function TestReport() {
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
-                                                {report.total_cases ? (
+                                                {(report.total ?? 0) > 0 ? (
                                                     <div className="flex items-center gap-3">
                                                         {/* 进度环 */}
                                                         <div className="relative w-10 h-10 flex-shrink-0">
@@ -231,7 +241,7 @@ export default function TestReport() {
                                                             </span>
                                                         </div>
                                                         <span className="text-xs text-slate-400">
-                                                            {report.passed_cases}/{report.total_cases}
+                                                            {report.success ?? 0}/{report.total ?? 0}
                                                             <span className={`ml-1 ${passRate >= 80 ? 'text-emerald-400' : passRate >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
                                                                 ({passRate}%)
                                                             </span>
@@ -244,7 +254,7 @@ export default function TestReport() {
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-1 text-sm text-slate-500">
                                                     <Clock className="w-3.5 h-3.5" />
-                                                    {formatDuration(report.duration)}
+                                                    {formatDuration(parseDurationToSeconds(report.duration))}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-sm text-slate-500">
@@ -315,7 +325,7 @@ export default function TestReport() {
             <ConfirmDialog
                 isOpen={isDeleteOpen}
                 onClose={() => setIsDeleteOpen(false)}
-                onConfirm={() => reportToDelete && deleteMutation.mutate(reportToDelete.id)}
+                                                onConfirm={() => reportToDelete && deleteMutation.mutate(Number(reportToDelete.id))}
                 title="删除测试报告"
                 description="确定要删除此报告吗？此操作无法撤销。"
                 confirmText="删除"

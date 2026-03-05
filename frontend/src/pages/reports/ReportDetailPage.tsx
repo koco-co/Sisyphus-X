@@ -18,20 +18,30 @@ import { useToast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 
 interface ReportDetail {
-    id: number;
+    id: number | string;
     name?: string;
     scenario_name?: string;
     status: string;
-    duration?: number;
-    total_cases?: number;
-    passed_cases?: number;
-    failed_cases?: number;
+    /** 后端返回字符串如 "1.5s"，需解析为秒数 */
+    duration?: string;
+    total?: number;
+    success?: number;
+    failed?: number;
     start_time?: string;
     end_time?: string;
     created_at?: string;
     allure_report_path?: string;
     execution_id?: string;
     details?: Array<{ id: number; status: string; [key: string]: unknown }>;
+}
+
+/** 解析后端 duration 字符串（如 "1.5s"、"2m 30s"）为秒数 */
+function parseDurationToSeconds(durationStr?: string): number | undefined {
+    if (!durationStr) return undefined;
+    const sMatch = durationStr.match(/(\d+\.?\d*)\s*s/);
+    const mMatch = durationStr.match(/(\d+)\s*m/);
+    const seconds = parseFloat(sMatch?.[1] ?? '0') + (parseInt(mMatch?.[1] ?? '0', 10) * 60);
+    return seconds || undefined;
 }
 
 export default function ReportDetailPage() {
@@ -91,8 +101,9 @@ export default function ReportDetailPage() {
         return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
     };
 
-    const passRate = report?.total_cases
-        ? Math.round(((report.passed_cases ?? 0) / report.total_cases) * 100)
+    const durationSeconds = parseDurationToSeconds(report?.duration);
+    const passRate = (report?.total ?? 0) > 0
+        ? Math.round(((report?.success ?? 0) / (report?.total ?? 1)) * 100)
         : 0;
 
     if (!reportId || id <= 0) {
@@ -141,7 +152,7 @@ export default function ReportDetailPage() {
                         </h1>
                         <p className="text-slate-400 text-sm mt-1">
                             运行时间: {formatDate(report.start_time || report.created_at)}
-                            {report.duration != null && ` · 耗时 ${formatDuration(report.duration)}`}
+                            {durationSeconds != null && ` · 耗时 ${formatDuration(durationSeconds)}`}
                         </p>
                     </div>
                 </div>
@@ -168,7 +179,7 @@ export default function ReportDetailPage() {
             </motion.header>
 
             {/* 通过率进度环 */}
-            {report.total_cases != null && report.total_cases > 0 && (
+            {(report.total ?? 0) > 0 && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -201,18 +212,18 @@ export default function ReportDetailPage() {
                         <div>
                             <div className="text-slate-400 text-sm">通过</div>
                             <div className="text-emerald-400 font-semibold flex items-center gap-1">
-                                <CheckCircle2 className="w-4 h-4" /> {report.passed_cases ?? 0}
+                                <CheckCircle2 className="w-4 h-4" /> {report.success ?? 0}
                             </div>
                         </div>
                         <div>
                             <div className="text-slate-400 text-sm">失败</div>
                             <div className="text-red-400 font-semibold flex items-center gap-1">
-                                <XCircle className="w-4 h-4" /> {report.failed_cases ?? 0}
+                                <XCircle className="w-4 h-4" /> {report.failed ?? 0}
                             </div>
                         </div>
                         <div>
                             <div className="text-slate-400 text-sm">总计</div>
-                            <div className="text-white font-semibold">{report.total_cases}</div>
+                            <div className="text-white font-semibold">{report.total ?? 0}</div>
                         </div>
                     </div>
                 </motion.div>

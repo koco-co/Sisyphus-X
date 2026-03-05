@@ -41,11 +41,9 @@ interface ExecutionData {
 
 function getWsUrl(executionId: string): string {
     const base = config.apiBaseURL || '';
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const wsProtocol = origin.startsWith('https') ? 'wss:' : 'ws:';
-    const host = typeof window !== 'undefined' ? window.location.host : new URL(base).host;
-    const path = `/api/v1/ws/executions/${executionId}`;
-    return `${wsProtocol}//${host}${path}`;
+    const url = new URL(base, window.location.origin);
+    const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${wsProtocol}//${url.host}/api/v1/ws/executions/${executionId}`;
 }
 
 export default function PlanExecutionPage() {
@@ -96,7 +94,6 @@ export default function PlanExecutionPage() {
                     refetchExecution();
                 }
                 if (msg.type === 'completed' || msg.type === 'error') {
-                    setCurrentStatus(msg.data?.status ?? 'completed');
                     refetchExecution();
                 }
             } catch {

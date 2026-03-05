@@ -504,6 +504,9 @@ def _generate_scenario_yaml(
 def _convert_step_to_yaml(step: ScenarioStep) -> dict[str, Any] | None:
     """将场景步骤转换为 YAML 格式
 
+    引擎期望每个步骤包含 keyword_type 和 keyword_name 字段。
+    参考: docs/api-engine/Sisyphus-api-engine YAML 输入规范.md
+
     Args:
         step: 场景步骤对象
 
@@ -515,13 +518,15 @@ def _convert_step_to_yaml(step: ScenarioStep) -> dict[str, Any] | None:
     parameters = step.parameters or {}
 
     if keyword_type == "request":
-        # HTTP 请求步骤
+        # API/HTTP 请求步骤: keyword_type: "request", keyword_name: "http_request"
         teststep = {
             "name": step.description or keyword_name,
+            "keyword_type": "request",
+            "keyword_name": "http_request",
             "request": {
                 "method": parameters.get("method", "GET"),
                 "url": parameters.get("url", ""),
-            }
+            },
         }
 
         # 添加可选参数
@@ -548,30 +553,49 @@ def _convert_step_to_yaml(step: ScenarioStep) -> dict[str, Any] | None:
         return teststep
 
     elif keyword_type == "database":
-        # 数据库操作步骤
+        # 数据库操作步骤: keyword_type: "db", keyword_name: "execute_sql"
+        # 使用 db: {datasource, sql} 格式，而非 testcase/parameters
+        datasource = parameters.get("datasource", "")
+        sql = parameters.get("sql", "")
         teststep = {
             "name": step.description or keyword_name,
-            "testcase": keyword_name,
-            "parameters": parameters,
+            "keyword_type": "db",
+            "keyword_name": "execute_sql",
+            "db": {
+                "datasource": datasource,
+                "sql": sql,
+            },
         }
+        if "extract" in parameters and parameters["extract"]:
+            teststep["db"]["extract"] = parameters["extract"]
+        if "validate" in parameters and parameters["validate"]:
+            teststep["db"]["validate"] = parameters["validate"]
         return teststep
 
     elif keyword_type == "custom":
-        # 自定义关键字步骤
+        # 自定义/脚本步骤: keyword_type: "custom", keyword_name: "custom_script"
         teststep = {
             "name": step.description or keyword_name,
-            "testcase": keyword_name,
-            "parameters": parameters,
+            "keyword_type": "custom",
+            "keyword_name": keyword_name or "custom_script",
+            "custom": {
+                "parameters": parameters,
+            },
         }
+        if "extract" in parameters and parameters["extract"]:
+            teststep["custom"]["extract"] = parameters["extract"]
         return teststep
 
     elif keyword_type == "wait":
-        # 等待步骤
+        # 等待步骤: keyword_type: "wait", keyword_name: "wait"
         wait_seconds = parameters.get("seconds", 1)
         teststep = {
             "name": step.description or f"Wait {wait_seconds}s",
-            "variables": {"sleep_time": wait_seconds},
-            "testcase": "wait_step",
+            "keyword_type": "wait",
+            "keyword_name": "wait",
+            "custom": {
+                "parameters": {"seconds": wait_seconds},
+            },
         }
         return teststep
 
@@ -659,11 +683,11 @@ async def debug_scenario(
     # 8. 解析执行结果
     results = []
     if execution_result["success"]:
-        # 从引擎输出中提取步骤结果
+        # 从引擎输出中提取步骤结果（JSON 输出规范使用 "steps" 字段）
         engine_output = execution_result.get("result", {})
-        teststeps = engine_output.get("teststeps", [])
+        step_results = engine_output.get("steps", [])
 
-        for idx, step_result in enumerate(teststeps):
+        for idx, step_result in enumerate(step_results):
             # 根据引擎返回的结果构建步骤结果
             step_data = steps[idx] if idx < len(steps) else None
             step_id = step_data.id if step_data else str(uuid.uuid4())
@@ -706,8 +730,8 @@ async def debug_scenario(
             )
         )
 
-    # 9. 生成 Allure 报告 URL
-    report_url = f"/reports/{execution_id}/allure"
+    # 9. 调试模式不创建 TestReport 记录，report_url 设为 None
+    report_url = None
 
     # 10. 返回调试结果
     return DebugScenarioResponse(

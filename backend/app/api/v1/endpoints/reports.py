@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import get_session
 from app.models import Scenario, TestReport, TestReportDetail
 from app.schemas.pagination import PageResponse
-from app.schemas.report import ReportResponse, ReportWithDetails
+from app.schemas.report import ReportDetailResponse, ReportResponse, ReportWithDetails
 from app.utils.rich_logger import get_logger
 
 logger = get_logger(__name__)
@@ -112,8 +112,25 @@ async def list_reports(
 
         pages = (total + size - 1) // size
 
+        items = [
+            ReportResponse(
+                id=str(r.id),
+                scenario_id=r.scenario_id,
+                name=r.name,
+                status=r.status,
+                total=r.total or 0,
+                success=r.success or 0,
+                failed=r.failed or 0,
+                duration=r.duration or "0s",
+                start_time=r.start_time,
+                end_time=r.end_time,
+                created_at=r.created_at,
+            )
+            for r in reports
+        ]
+
         logger.info(f"获取测试报告列表成功: page={page}, size={size}, total={total}")
-        return PageResponse(items=reports, total=total, page=page, size=size, pages=pages)
+        return PageResponse(items=items, total=total, page=page, size=size, pages=pages)
 
     except Exception as e:
         logger.error(f"获取测试报告列表失败: {e}")
@@ -132,7 +149,19 @@ async def get_report(
             raise HTTPException(status_code=404, detail=f"报告 ID {report_id} 不存在")
 
         logger.info(f"获取测试报告成功: id={report_id}")
-        return report
+        return ReportResponse(
+            id=str(report.id),
+            scenario_id=report.scenario_id,
+            name=report.name,
+            status=report.status,
+            total=report.total or 0,
+            success=report.success or 0,
+            failed=report.failed or 0,
+            duration=report.duration or "0s",
+            start_time=report.start_time,
+            end_time=report.end_time,
+            created_at=report.created_at,
+        )
 
     except HTTPException:
         raise
@@ -160,11 +189,36 @@ async def get_report_with_details(
         result = await session.execute(stmt)
         details = list(result.scalars().all())
 
-        # 组装响应
-        response_data = {
-            **report.model_dump(),
-            "details": details,
+        # 组装响应（TestReport 为 SQLAlchemy 模型，无 model_dump，需手动构建）
+        report_dict = {
+            "id": str(report.id),
+            "scenario_id": report.scenario_id,
+            "name": report.name,
+            "status": report.status,
+            "total": report.total or 0,
+            "success": report.success or 0,
+            "failed": report.failed or 0,
+            "duration": report.duration or "0s",
+            "start_time": report.start_time,
+            "end_time": report.end_time,
+            "created_at": report.created_at,
         }
+        detail_responses = [
+            ReportDetailResponse(
+                id=str(d.id),
+                report_id=str(d.report_id),
+                node_id=d.node_id,
+                node_name=d.node_name,
+                status=d.status,
+                request_data=d.request_data,
+                response_data=d.response_data,
+                error_msg=d.error_msg,
+                elapsed=d.elapsed,
+                created_at=d.created_at,
+            )
+            for d in details
+        ]
+        response_data = ReportWithDetails(**report_dict, details=detail_responses)
 
         logger.info(f"获取测试报告详情成功: id={report_id}, details_count={len(details)}")
         return response_data

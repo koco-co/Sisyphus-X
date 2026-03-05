@@ -170,8 +170,10 @@ export function FlowToolbar() {
             const res = await scenariosApi.debug(id, payload);
             const data = res?.data?.data ?? res?.data;
             const reportUrl = data?.report_url;
-            const baseUrl = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1').replace(/\/$/, '');
-            const fullUrl = reportUrl?.startsWith('http') ? reportUrl : `${baseUrl}${reportUrl?.startsWith('/') ? '' : '/'}${reportUrl || ''}`;
+            // 调试模式不创建报告，report_url 为 null 时不打开新标签
+            const fullUrl = reportUrl
+                ? (reportUrl.startsWith('http') ? reportUrl : `${(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1').replace(/\/$/, '')}${reportUrl.startsWith('/') ? '' : '/'}${reportUrl}`)
+                : undefined;
             return { fullUrl, execution_id: data?.execution_id };
         },
         onSuccess: (data) => {

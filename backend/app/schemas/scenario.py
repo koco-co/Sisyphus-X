@@ -181,5 +181,5 @@ class DebugScenarioStepResult(BaseModel):
 class DebugScenarioResponse(BaseModel):
     """调试场景响应 Schema"""
     execution_id: str
-    report_url: str  # Allure 报告 URL
+    report_url: str | None = None  # 调试模式不创建报告，为 None
     results: list[DebugScenarioStepResult]

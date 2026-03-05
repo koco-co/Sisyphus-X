@@ -74,7 +74,7 @@ export default function ScenarioListPage() {
             page,
             size,
             search: searchQuery || undefined,
-            project_id: selectedProjectId ? Number(selectedProjectId) : undefined,
+            project_id: selectedProjectId || undefined,
         }),
         select: (data) => data.data
     });
@@ -85,7 +85,7 @@ export default function ScenarioListPage() {
 
     // 删除场景
     const deleteMutation = useMutation({
-        mutationFn: (id: number) => scenariosApi.delete(id),
+        mutationFn: (id: string) => scenariosApi.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['scenarios'] });
             setIsDeleteOpen(false);
@@ -293,7 +293,7 @@ export default function ScenarioListPage() {
             <ConfirmDialog
                 isOpen={isDeleteOpen}
                 onClose={() => setIsDeleteOpen(false)}
-                onConfirm={() => scenarioToDelete && deleteMutation.mutate(Number(scenarioToDelete.id))}
+                onConfirm={() => scenarioToDelete && deleteMutation.mutate(scenarioToDelete.id)}
                 title="删除场景"
                 description="请输入场景名称确认删除。此操作无法撤销。"
                 confirmText="删除"

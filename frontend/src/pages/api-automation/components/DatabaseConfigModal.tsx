@@ -324,28 +324,33 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                             )}
                         </div>
 
-                        <div className="p-6 pt-0 flex gap-4">
-                            <button
-                                onClick={handleTest}
-                                disabled={isTesting || !form.host || !form.username || (!editData && !form.password)}
-                                className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2
-                                    ${hasTestedSuccess ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}
-                                    disabled:opacity-50 disabled:cursor-not-allowed
-                                `}
-                                data-testid="test-database-connection-button"
-                            >
-                                {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
-                                {hasTestedSuccess ? '测试通过' : '测试连接'}
-                            </button>
-                            <button
-                                onClick={handleSubmit}
-                                disabled={createMutation.isPending || updateMutation.isPending || !hasTestedSuccess}
-                                className="flex-1 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-                                data-testid="save-database-config-button"
-                            >
-                                {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                                保存配置
-                            </button>
+                        <div className="p-6 pt-0 space-y-2">
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={handleTest}
+                                    disabled={isTesting || !form.host || !form.username || (!editData && !form.password)}
+                                    className={`flex-1 py-3 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2
+                                        ${hasTestedSuccess ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}
+                                        disabled:opacity-50 disabled:cursor-not-allowed
+                                    `}
+                                    data-testid="test-database-connection-button"
+                                >
+                                    {isTesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wifi className="w-4 h-4" />}
+                                    {hasTestedSuccess ? '测试通过' : '测试连接'}
+                                </button>
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={createMutation.isPending || updateMutation.isPending || !hasTestedSuccess}
+                                    className="flex-1 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white py-3 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                                    data-testid="save-database-config-button"
+                                >
+                                    {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    保存配置
+                                </button>
+                            </div>
+                            {!hasTestedSuccess && (
+                                <p className="text-xs text-amber-400/80 text-right">请先测试连接</p>
+                            )}
                         </div>
                     </motion.div>
                 </div>

@@ -9,7 +9,7 @@ import {
     Search,
     Trash2,
     Loader2,
-    Edit2,
+    Pencil,
     Database,
     FolderKanban,
     Globe
@@ -317,7 +317,7 @@ export default function ProjectManagement() {
                                                         data-testid={`project-edit-button-${project.id}`}
                                                         className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
                                                     >
-                                                        <Edit2 className="w-4 h-4" />
+                                                        <Pencil className="w-4 h-4" />
                                                     </button>
                                                 </Tooltip>
                                                 <Tooltip content="数据库配置" position="top">

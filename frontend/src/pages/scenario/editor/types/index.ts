@@ -1,35 +1,40 @@
-import type { Node, Edge } from 'reactflow';
-
 export type ExecutionStatus = 'idle' | 'running' | 'success' | 'failed' | 'skipped';
 
-export interface NodeData {
-    label: string;
-    type: 'api' | 'condition' | 'sql' | 'wait' | 'loop' | 'script';
-    resourceId?: string; // 关联的接口 ID 或关键字 ID
-    description?: string;
-    config?: {
-        url?: string;
-        method?: string;
-        loops?: number;
-        retry?: number;
-        wait_time?: number;
-        condition?: string;
-        sql?: string;
-        datasource?: string;
-        keyword_name?: string;
-    };
-    extract?: Record<string, string>;
-    validate?: unknown[];
-    executionStatus?: ExecutionStatus;
-    executionLog?: string;
+export interface StepAssertion {
+    type: string;
+    expression: string;
+    expected?: string;
+    message?: string;
 }
 
-export type ScenarioNode = Node<NodeData>;
-export type ScenarioEdge = Edge;
+export interface StepExtraction {
+    name: string;
+    source: string;
+    expression: string;
+}
 
-export interface ScenarioGraph {
-    nodes: ScenarioNode[];
-    edges: ScenarioEdge[];
+export interface ScenarioStep {
+    id: string;
+    description: string;
+    keywordType: string;
+    keywordName: string;
+    resourceId?: string;
+    config: Record<string, unknown>;
+    assertions: StepAssertion[];
+    extractions: StepExtraction[];
+    sortOrder: number;
+    executionStatus?: ExecutionStatus;
+}
+
+export interface ScenarioData {
+    name: string;
+    description: string;
+    projectId: string;
+    priority: string;
+    tags: string[];
+    variables: Record<string, string>;
+    preSql: string;
+    postSql: string;
 }
 
 export interface Dataset {

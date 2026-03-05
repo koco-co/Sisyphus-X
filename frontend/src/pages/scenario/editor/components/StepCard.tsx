@@ -9,6 +9,11 @@ import { Input } from '@/components/ui/input';
 import type { ScenarioStep } from '../types/index';
 import { KeywordCascade } from './KeywordCascade';
 import { useScenarioEditor } from '../ScenarioEditorContext';
+import { ApiRequestParams } from './params/ApiRequestParams';
+import { AssertionParams } from './params/AssertionParams';
+import { ExtractParams } from './params/ExtractParams';
+import { DatabaseParams } from './params/DatabaseParams';
+import { CustomKeywordParams } from './params/CustomKeywordParams';
 
 const KEYWORD_TYPE_LABELS: Record<string, string> = {
     request: '发送请求',
@@ -145,7 +150,39 @@ export function StepCard({ step, index, projectId }: StepCardProps) {
                         />
                     </div>
 
-                    {/* Placeholder for parameter panels / assertions / extractions — will be built in later tasks */}
+                    {/* Type-specific parameter panel */}
+                    {step.keywordType === 'request' && (
+                        <ApiRequestParams
+                            step={step}
+                            onUpdate={(updates) => updateStep(index, updates)}
+                            projectId={projectId}
+                        />
+                    )}
+                    {step.keywordType === 'database' && (
+                        <DatabaseParams
+                            step={step}
+                            onUpdate={(updates) => updateStep(index, updates)}
+                            projectId={projectId}
+                        />
+                    )}
+                    {step.keywordType === 'custom' && (
+                        <CustomKeywordParams
+                            step={step}
+                            onUpdate={(updates) => updateStep(index, updates)}
+                        />
+                    )}
+
+                    {/* Assertions — available for all step types */}
+                    <AssertionParams
+                        assertions={step.assertions}
+                        onUpdate={(assertions) => updateStep(index, { assertions })}
+                    />
+
+                    {/* Extractions — available for all step types */}
+                    <ExtractParams
+                        extractions={step.extractions}
+                        onUpdate={(extractions) => updateStep(index, { extractions })}
+                    />
                 </div>
             )}
         </div>

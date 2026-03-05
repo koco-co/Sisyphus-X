@@ -29,9 +29,9 @@ test.describe('核心流程冒烟测试', () => {
   });
 
   test('接口自动化-项目管理 可访问', async ({ page }) => {
-    await page.goto('/api/projects');
+    await page.goto('/projects');
     await page.waitForLoadState('networkidle');
-    await expect(page).toHaveURL(/\/api\/projects/);
+    await expect(page).toHaveURL(/\/projects/);
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 8000 });
   });
 

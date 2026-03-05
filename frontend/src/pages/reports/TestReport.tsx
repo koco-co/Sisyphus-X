@@ -52,6 +52,38 @@ function parseDurationToSeconds(durationStr?: string): number | undefined {
     return seconds || undefined;
 }
 
+function ProgressRing({ percentage, size = 40 }: { percentage: number; size?: number }) {
+    const strokeWidth = 3;
+    const radius = (size - strokeWidth) / 2;
+    const circumference = radius * 2 * Math.PI;
+    const offset = circumference - (percentage / 100) * circumference;
+    const color = percentage >= 80 ? '#22c55e' : percentage >= 50 ? '#eab308' : '#ef4444';
+
+    return (
+        <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+            <svg width={size} height={size} className="transform -rotate-90">
+                <circle
+                    cx={size / 2} cy={size / 2} r={radius}
+                    fill="none" stroke="currentColor" strokeWidth={strokeWidth}
+                    className="text-slate-700"
+                />
+                <circle
+                    cx={size / 2} cy={size / 2} r={radius}
+                    fill="none" stroke={color} strokeWidth={strokeWidth}
+                    strokeDasharray={circumference} strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    className="transition-all duration-500"
+                />
+            </svg>
+            <span
+                className="absolute inset-0 flex items-center justify-center text-[10px] font-medium text-slate-300"
+            >
+                {percentage}%
+            </span>
+        </div>
+    );
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: LucideIcon }> = {
     completed: { label: '已完成', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', icon: CheckCircle2 },
     running: { label: '运行中', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: Loader2 },
@@ -123,6 +155,20 @@ export default function TestReport() {
         const passed = report.success ?? 0;
         if (total === 0) return 0;
         return Math.round((passed / total) * 100);
+    };
+
+    const handleExport = async (reportId: number | string) => {
+        try {
+            const res = await reportsApi.export(Number(reportId));
+            const data = res.data as { download_url?: string; note?: string };
+            if (data.download_url) {
+                toast.success('导出请求已提交');
+            } else {
+                toast.info('导出功能开发中');
+            }
+        } catch {
+            toast.info('导出功能开发中');
+        }
     };
 
     return (
@@ -216,30 +262,7 @@ export default function TestReport() {
                                             <td className="px-6 py-4">
                                                 {(report.total ?? 0) > 0 ? (
                                                     <div className="flex items-center gap-3">
-                                                        {/* 进度环 */}
-                                                        <div className="relative w-10 h-10 flex-shrink-0">
-                                                            <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
-                                                                <path
-                                                                    d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31"
-                                                                    fill="none"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth="3"
-                                                                    className="text-slate-700"
-                                                                />
-                                                                <path
-                                                                    d="M18 2.5 a 15.5 15.5 0 0 1 0 31 a 15.5 15.5 0 0 1 0 -31"
-                                                                    fill="none"
-                                                                    stroke="currentColor"
-                                                                    strokeWidth="3"
-                                                                    strokeDasharray={`${passRate} 100`}
-                                                                    strokeLinecap="round"
-                                                                    className={passRate >= 80 ? 'text-emerald-500' : passRate >= 50 ? 'text-yellow-500' : 'text-red-500'}
-                                                                />
-                                                            </svg>
-                                                            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-medium text-slate-300">
-                                                                {passRate}%
-                                                            </span>
-                                                        </div>
+                                                        <ProgressRing percentage={passRate} size={40} />
                                                         <span className="text-xs text-slate-400">
                                                             {report.success ?? 0}/{report.total ?? 0}
                                                             <span className={`ml-1 ${passRate >= 80 ? 'text-emerald-400' : passRate >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
@@ -274,7 +297,7 @@ export default function TestReport() {
                                                     )}
                                                     <Tooltip content="导出报告" position="top">
                                                         <button
-                                                            onClick={() => toast.success('功能开发中')}
+                                                            onClick={() => handleExport(report.id)}
                                                             className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
                                                         >
                                                             <Download className="w-4 h-4" />

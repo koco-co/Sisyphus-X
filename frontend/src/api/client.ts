@@ -224,6 +224,8 @@ export const reportsApi = {
     get: (id: number) => api.get(`/reports/${id}`),
     getDetails: (id: number) => api.get(`/reports/${id}/details`),
     getAllureUrl: (id: number) => api.get<{ allure_url?: string }>(`/reports/${id}/allure`),
+    export: (id: number, format: 'pdf' | 'excel' = 'pdf') =>
+        api.post(`/reports/${id}/export`, null, { params: { format } }),
     delete: (id: number) => api.delete(`/reports/${id}`),
 }
 

@@ -1,25 +1,23 @@
-"""Engine executor service - Execute sisyphus-api-engine and parse results."""
+"""Engine executor service - Execute test cases via embedded sisyphus-api-engine."""
 
-import json
 import os
-import subprocess
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
+import yaml
+
+from app.engine.core.models import CaseModel
+from app.engine.core.runner import load_case, run_case
+from app.engine.errors import EngineError
+from app.engine.result.json_reporter import to_json_engine_error
+
 
 class EngineExecutor:
-    """Execute sisyphus-api-engine CLI and parse results."""
-
-    # Default engine command
-    ENGINE_CMD = "sisyphus-api-engine"
+    """Execute test cases using the embedded sisyphus-api-engine."""
 
     def __init__(self, base_temp_dir: str = "/tmp/sisyphus_debug") -> None:
-        """Initialize executor.
-
-        Args:
-            base_temp_dir: Base directory for temporary files
-        """
         self.base_temp_dir = Path(base_temp_dir)
         self.base_temp_dir.mkdir(parents=True, exist_ok=True)
 
@@ -29,7 +27,7 @@ class EngineExecutor:
         base_url: str | None = None,
         timeout: int = 300,
     ) -> dict[str, Any]:
-        """Execute YAML test case using sisyphus-api-engine.
+        """Execute YAML test case using the embedded engine.
 
         Args:
             yaml_content: YAML test case content
@@ -38,72 +36,42 @@ class EngineExecutor:
 
         Returns:
             Dictionary with success, result, and error
-
-        Raises:
-            FileNotFoundError: If sisyphus-api-engine is not installed
-            TimeoutError: If execution times out
         """
-        # Create temporary YAML file
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            suffix=".yaml",
-            delete=False,
-            dir=self.base_temp_dir,
-            encoding="utf-8",
-        ) as f:
-            f.write(yaml_content)
-            yaml_path = f.name
-
+        yaml_path = None
         try:
-            # Build command
-            cmd = [self.ENGINE_CMD, "run", "-f", yaml_path]
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=".yaml",
+                delete=False,
+                dir=self.base_temp_dir,
+                encoding="utf-8",
+            ) as f:
+                f.write(yaml_content)
+                yaml_path = f.name
 
-            if base_url:
-                cmd.extend(["--base-url", base_url])
+            case = load_case(yaml_path)
 
-            # Execute
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-            )
+            if base_url and case.config:
+                if case.config.environment:
+                    case.config.environment.base_url = base_url
+                else:
+                    case.config.base_url = base_url
 
-            # Parse output
-            if result.stdout:
-                try:
-                    output = json.loads(result.stdout)
-                    # 规范: 顶层 status 为 passed/failed
-                    success = output.get("status") == "passed"
-                    return {
-                        "success": success,
-                        "result": output,
-                        "error": None,
-                    }
-                except json.JSONDecodeError:
-                    return {
-                        "success": False,
-                        "result": {},
-                        "error": f"输出解析失败: {result.stdout[:500]}",
-                    }
-            else:
-                return {
-                    "success": False,
-                    "result": {},
-                    "error": result.stderr or "执行无输出",
-                }
+            result = run_case(case, verbose=False)
+            output = result.model_dump(mode="json")
+            success = output.get("status") == "passed"
 
-        except subprocess.TimeoutExpired:
             return {
-                "success": False,
-                "result": {},
-                "error": f"执行超时 (>{timeout}秒)",
+                "success": success,
+                "result": output,
+                "error": None,
             }
-        except FileNotFoundError:
+
+        except EngineError as e:
             return {
                 "success": False,
                 "result": {},
-                "error": "sisyphus-api-engine 未安装，请先安装: pip install sisyphus-api-engine",
+                "error": f"[{e.code}] {e.message}",
             }
         except Exception as e:
             return {
@@ -112,14 +80,52 @@ class EngineExecutor:
                 "error": str(e),
             }
         finally:
-            # Clean up temporary file
-            try:
-                os.unlink(yaml_path)
-            except Exception:
-                pass
+            if yaml_path:
+                try:
+                    os.unlink(yaml_path)
+                except Exception:
+                    pass
+
+    def execute_from_dict(
+        self,
+        case_dict: dict[str, Any],
+        publisher: Any = None,
+    ) -> dict[str, Any]:
+        """Execute a test case from a dictionary (no YAML file needed).
+
+        Args:
+            case_dict: Case definition as a dict (matching CaseModel schema)
+            publisher: Optional WebSocket publisher for real-time events
+
+        Returns:
+            Dictionary with success, result, and error
+        """
+        try:
+            case = CaseModel.model_validate(case_dict)
+            result = run_case(case, verbose=False, publisher=publisher)
+            output = result.model_dump(mode="json")
+            success = output.get("status") == "passed"
+
+            return {
+                "success": success,
+                "result": output,
+                "error": None,
+            }
+        except EngineError as e:
+            return {
+                "success": False,
+                "result": {},
+                "error": f"[{e.code}] {e.message}",
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "result": {},
+                "error": str(e),
+            }
 
     def validate(self, yaml_content: str) -> dict[str, Any]:
-        """Validate YAML format using sisyphus-api-engine.
+        """Validate YAML format by attempting to parse it as a CaseModel.
 
         Args:
             yaml_content: YAML content to validate
@@ -127,59 +133,18 @@ class EngineExecutor:
         Returns:
             Dictionary with valid flag and message
         """
-        # Create temporary YAML file
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            suffix=".yaml",
-            delete=False,
-            dir=self.base_temp_dir,
-            encoding="utf-8",
-        ) as f:
-            f.write(yaml_content)
-            yaml_path = f.name
-
         try:
-            cmd = [self.ENGINE_CMD, "validate", "-f", yaml_path]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-
-            return {
-                "valid": result.returncode == 0,
-                "message": result.stdout.strip()
-                if result.returncode == 0
-                else result.stderr.strip(),
-            }
-
-        except FileNotFoundError:
-            return {
-                "valid": False,
-                "message": "sisyphus-api-engine 未安装",
-            }
-        except subprocess.TimeoutExpired:
-            return {"valid": False, "message": "验证超时"}
+            data = yaml.safe_load(yaml_content)
+            CaseModel.model_validate(data)
+            return {"valid": True, "message": "YAML 格式正确"}
         except Exception as e:
             return {"valid": False, "message": str(e)}
-        finally:
-            # Clean up
-            try:
-                os.unlink(yaml_path)
-            except Exception:
-                pass
 
     def cleanup_temp_files(self, max_age_minutes: int = 5) -> int:
-        """Clean up old temporary files.
-
-        Args:
-            max_age_minutes: Delete files older than this (default: 5 minutes)
-
-        Returns:
-            Number of files deleted
-        """
-        import time
-
+        """Clean up old temporary files."""
         now = time.time()
         cutoff = now - (max_age_minutes * 60)
         deleted_count = 0
-
         for file_path in self.base_temp_dir.glob("*.yaml"):
             try:
                 if file_path.stat().st_mtime < cutoff:
@@ -187,7 +152,6 @@ class EngineExecutor:
                     deleted_count += 1
             except Exception:
                 pass
-
         return deleted_count
 
 
@@ -196,28 +160,12 @@ def execute_yaml(
     base_url: str | None = None,
     timeout: int = 300,
 ) -> dict[str, Any]:
-    """Execute YAML using sisyphus-api-engine (convenience function).
-
-    Args:
-        yaml_content: YAML test case content
-        base_url: Optional base URL override
-        timeout: Execution timeout in seconds
-
-    Returns:
-        Dictionary with success, result, and error
-    """
+    """Execute YAML using embedded engine (convenience function)."""
     executor = EngineExecutor()
     return executor.execute(yaml_content, base_url, timeout)
 
 
 def validate_yaml(yaml_content: str) -> dict[str, Any]:
-    """Validate YAML format (convenience function).
-
-    Args:
-        yaml_content: YAML content to validate
-
-    Returns:
-        Dictionary with valid flag and message
-    """
+    """Validate YAML format (convenience function)."""
     executor = EngineExecutor()
     return executor.validate(yaml_content)

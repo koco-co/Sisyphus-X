@@ -132,3 +132,4 @@ playwright-report/
 # Cursor IDE
 # =========================
 .cursor/
+.test-state/

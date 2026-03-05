@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { projectApi } from '../api'
 import type { Project, ProjectCreate, ProjectUpdate } from '../types'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 
 interface ProjectFormProps {
   open: boolean
@@ -34,7 +34,6 @@ const getInitialState = (project: Project | null): FormState => {
 // Internal form component that resets when key changes
 function ProjectFormInner({ project, onOpenChange }: { project: Project | null; onOpenChange: (open: boolean) => void }) {
   const queryClient = useQueryClient()
-  const toast = useToast()
 
   const [form, setForm] = useState<FormState>(() => getInitialState(project))
   const [formErrors, setFormErrors] = useState<FormErrors>({})

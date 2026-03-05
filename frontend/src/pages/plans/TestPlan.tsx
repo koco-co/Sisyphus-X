@@ -19,7 +19,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { plansApi, projectsApi, scenariosApi } from '@/api/client';
 import { Pagination } from '@/components/common/Pagination';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Tooltip } from '@/components/ui/tooltip';
 
@@ -52,7 +52,6 @@ export default function TestPlan() {
     /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { t } = useTranslation();
     const queryClient = useQueryClient();
-    const { success, error: showError } = useToast();
 
     const [page, setPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
@@ -124,10 +123,10 @@ export default function TestPlan() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
             closeCreateModal();
-            success('创建成功');
+            toast.success('创建成功');
         },
         onError: (err: unknown) => {
-            showError(err?.response?.data?.detail || '创建失败');
+            toast.error(err?.response?.data?.detail || '创建失败');
         }
     });
 
@@ -136,10 +135,10 @@ export default function TestPlan() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
             closeCreateModal();
-            success('编辑成功');
+            toast.success('编辑成功');
         },
         onError: (err: unknown) => {
-            showError(err?.response?.data?.detail || '编辑失败');
+            toast.error(err?.response?.data?.detail || '编辑失败');
         }
     });
 
@@ -149,9 +148,9 @@ export default function TestPlan() {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
             setIsDeleteOpen(false);
             setPlanToDelete(null);
-            success('删除成功');
+            toast.success('删除成功');
         },
-        onError: () => showError('删除失败')
+        onError: () => toast.error('删除失败')
     });
 
     // 添加场景到计划
@@ -160,9 +159,9 @@ export default function TestPlan() {
             plansApi.addScenario(planId, { scenario_id: scenarioId }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
-            success('场景已添加');
+            toast.success('场景已添加');
         },
-        onError: (err: unknown) => showError(err?.response?.data?.detail || '添加失败'),
+        onError: (err: unknown) => toast.error(err?.response?.data?.detail || '添加失败'),
     });
 
     const openCreateModal = () => {
@@ -342,13 +341,13 @@ export default function TestPlan() {
                                                                 const res = await plansApi.execute(plan.id);
                                                                 const executionId = (res.data as { execution_id?: string })?.execution_id;
                                                                 if (executionId) {
-                                                                    success('已开始执行');
+                                                                    toast.success('已开始执行');
                                                                     navigate(`/plans/${plan.id}/executions/${executionId}`);
                                                                 } else {
-                                                                    showError('执行失败：未返回执行 ID');
+                                                                    toast.error('执行失败：未返回执行 ID');
                                                                 }
                                                             } catch {
-                                                                showError('执行失败');
+                                                                toast.error('执行失败');
                                                             }
                                                         }}
                                                         className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
@@ -511,7 +510,7 @@ export default function TestPlan() {
                                 <button
                                     onClick={() => {
                                         if (!createForm.name.trim() || !createForm.project_id) {
-                                            showError('请填写必填项');
+                                            toast.error('请填写必填项');
                                             return;
                                         }
                                         const payload = {

@@ -16,7 +16,7 @@ import {
 import { projectApi } from '../api'
 import type { Project } from '../types'
 import { ProjectForm } from './ProjectForm'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Pagination } from '@/components/common/Pagination'
@@ -24,7 +24,6 @@ import { Tooltip } from '@/components/ui/tooltip'
 
 export function ProjectList() {
   const queryClient = useQueryClient()
-  const toast = useToast()
 
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)

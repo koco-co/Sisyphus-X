@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import { SidebarProvider } from '@/contexts/SidebarContext'
-import { ToastProvider } from '@/components/ui/Toast'
 import { Toaster } from 'sonner'
 import AppLayout from '@/components/layout/AppLayout'
 import Dashboard from '@/pages/Dashboard'
@@ -97,12 +96,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <ToastProvider>
-            <BrowserRouter>
-              <AppRoutes />
-            </BrowserRouter>
-            <Toaster position="top-right" theme="dark" richColors />
-          </ToastProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+          <Toaster position="top-right" theme="dark" richColors />
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

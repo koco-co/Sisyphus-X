@@ -4,12 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { functionalTestCasesApi } from '@/api/client'
 import { Loader2, Wand2 } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 
 export default function GenerateTestCases() {
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const { t } = useTranslation()
-  const toast = useToast()
   const navigate = useNavigate()
   const location = useLocation()
   const { requirementId, testPointIds } = location.state || {}

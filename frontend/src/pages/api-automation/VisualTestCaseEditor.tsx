@@ -18,7 +18,7 @@ import {
     Edit3
 } from 'lucide-react'
 import { apiTestCasesApi } from '@/api/client'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import type { StepItemData, StepType, TestCaseConfig } from './TestCaseEditor.types'
 import { StepList } from './components/StepList'
@@ -31,7 +31,6 @@ export default function VisualTestCaseEditor() {
     const navigate = useNavigate()
     const { projectId, testCaseId } = useParams<{ projectId: string; testCaseId: string }>()
     const queryClient = useQueryClient()
-    const { success, error: showError } = useToast()
 
     const isEditMode = !!testCaseId && testCaseId !== 'new'
 
@@ -113,15 +112,15 @@ export default function VisualTestCaseEditor() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['api-test-cases'] })
-            success(isEditMode ? '更新成功' : '创建成功')
+            toast.success(isEditMode ? '更新成功' : '创建成功')
             navigate(`/api/projects/${projectId}/test-cases`)
         },
         onError: (err: { response?: { data?: { detail?: string } } }) => {
             const detail = err.response?.data?.detail
             if (detail) {
-                showError(detail)
+                toast.error(detail)
             } else {
-                showError(isEditMode ? '更新失败' : '创建失败')
+                toast.error(isEditMode ? '更新失败' : '创建失败')
             }
         }
     })

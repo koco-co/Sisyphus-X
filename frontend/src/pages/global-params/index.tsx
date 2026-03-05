@@ -14,11 +14,12 @@ import {
     Code,
     Loader2
 } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 import { globalParamsApi } from '@/api/client'
 import CreateGlobalParamDialog from './components/CreateGlobalParamDialog'
 import EditGlobalParamDialog from './components/EditGlobalParamDialog'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { EmptyState } from '@/components/common/EmptyState'
 
 // TypeScript 类型定义
 interface GlobalParam {
@@ -58,8 +59,6 @@ export default function GlobalParamsPage() {
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
     const [editingParam, setEditingParam] = useState<GlobalParam | null>(null)
     const [deletingParam, setDeletingParam] = useState<GlobalParam | null>(null)
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-    const { success, error } = useToast()
 
     const queryClient = useQueryClient()
 
@@ -79,11 +78,11 @@ export default function GlobalParamsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['global-params'] })
-            success('全局参数创建成功')
+            toast.success('全局参数创建成功')
             setIsCreateDialogOpen(false)
         },
         onError: (error: unknown) => {
-            error(error.response?.data?.message || '创建失败')
+            toast.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '创建失败')
         }
     })
 
@@ -94,11 +93,11 @@ export default function GlobalParamsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['global-params'] })
-            success('全局参数更新成功')
+            toast.success('全局参数更新成功')
             setEditingParam(null)
         },
         onError: (error: unknown) => {
-            error(error.response?.data?.message || '更新失败')
+            toast.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '更新失败')
         }
     })
 
@@ -109,11 +108,11 @@ export default function GlobalParamsPage() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['global-params'] })
-            success('全局参数删除成功')
+            toast.success('全局参数删除成功')
             setDeletingParam(null)
         },
         onError: (error: unknown) => {
-            error(error.response?.data?.message || '删除失败')
+            toast.error((error as { response?: { data?: { message?: string } } })?.response?.data?.message || '删除失败')
         }
     })
 
@@ -232,12 +231,12 @@ export default function GlobalParamsPage() {
 
             {/* 参数列表 */}
             {filteredGroups.length === 0 ? (
-                <div className="text-center py-16">
-                    <Code className="w-16 h-16 text-slate-700 mx-auto mb-4" />
-                    <p className="text-slate-500 text-lg">
-                        {searchQuery ? '未找到匹配的全局参数' : '暂无全局参数'}
-                    </p>
-                </div>
+                <EmptyState
+                    title={searchQuery ? '未找到匹配的全局参数' : '暂无全局参数'}
+                    description={searchQuery ? '尝试调整搜索条件' : '点击「创建全局参数」添加可复用的工具函数'}
+                    icon={Code}
+                    action={!searchQuery ? { label: '创建全局参数', onClick: () => setIsCreateDialogOpen(true) } : undefined}
+                />
             ) : (
                 <div className="space-y-6">
                     {filteredGroups.map(([className, params]) => (

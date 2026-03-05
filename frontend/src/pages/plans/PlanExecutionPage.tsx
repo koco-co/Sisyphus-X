@@ -15,7 +15,7 @@ import {
     Clock,
 } from 'lucide-react';
 import { plansApi } from '@/api/client';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import config from '@/config';
 
 interface ExecutionStep {
@@ -49,7 +49,6 @@ function getWsUrl(executionId: string): string {
 export default function PlanExecutionPage() {
     const { planId, executionId } = useParams<{ planId: string; executionId: string }>();
     const navigate = useNavigate();
-    const { success, error: showError } = useToast();
     const wsRef = useRef<WebSocket | null>(null);
     const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set([0]));
 
@@ -120,10 +119,10 @@ export default function PlanExecutionPage() {
         if (!planId) return;
         try {
             await plansApi.terminate(planIdNum);
-            success('已发送终止请求');
+            toast.success('已发送终止请求');
             refetchExecution();
         } catch {
-            showError('终止失败');
+            toast.error('终止失败');
         }
     };
 

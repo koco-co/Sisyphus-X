@@ -17,7 +17,7 @@ import {
 import { Pagination } from '@/components/common/Pagination';
 import { projectsApi } from '@/api/client';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Tooltip } from '@/components/ui/tooltip';
 
@@ -34,7 +34,6 @@ interface Project {
 export default function ProjectManagement() {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
-    const { success, error: showError } = useToast();
     const [page, setPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const size = 10;
@@ -116,9 +115,9 @@ export default function ProjectManagement() {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             setIsDeleteOpen(false);
             setProjectToDelete(null);
-            success('删除成功');
+            toast.success('删除成功');
         },
-        onError: () => showError('删除失败')
+        onError: () => toast.error('删除失败')
     });
 
     // Create/Update mutations
@@ -127,21 +126,21 @@ export default function ProjectManagement() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             closeCreateModal();
-            success('创建成功');
+            toast.success('创建成功');
         },
         onError: (err: unknown) => {
             // 处理后端验证错误
             if (err?.response?.data?.detail) {
                 const detail = err.response.data.detail;
                 if (typeof detail === 'string') {
-                    showError(detail);
+                    toast.error(detail);
                 } else if (Array.isArray(detail)) {
                     // Pydantic 验证错误格式
                     const errorMsg = detail.map((e: unknown) => e.msg).join('; ');
-                    showError(errorMsg);
+                    toast.error(errorMsg);
                 }
             } else {
-                showError('创建失败');
+                toast.error('创建失败');
             }
         }
     });
@@ -151,20 +150,20 @@ export default function ProjectManagement() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             closeCreateModal();
-            success('编辑成功');
+            toast.success('编辑成功');
         },
         onError: (err: unknown) => {
             // 处理后端验证错误
             if (err?.response?.data?.detail) {
                 const detail = err.response.data.detail;
                 if (typeof detail === 'string') {
-                    showError(detail);
+                    toast.error(detail);
                 } else if (Array.isArray(detail)) {
                     const errorMsg = detail.map((e: unknown) => e.msg).join('; ');
-                    showError(errorMsg);
+                    toast.error(errorMsg);
                 }
             } else {
-                showError('编辑失败');
+                toast.error('编辑失败');
             }
         }
     });

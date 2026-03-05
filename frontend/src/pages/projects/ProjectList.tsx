@@ -14,7 +14,7 @@ import {
 import { Pagination } from '@/components/common/Pagination'
 import { projectsApi } from '@/api/client'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,7 +34,6 @@ interface Project {
 
 export default function ProjectList() {
   const queryClient = useQueryClient()
-  const { success, error: showError } = useToast()
   const [page, setPage] = useState(1)
   const [searchQuery, setSearchQuery] = useState('')
   const size = 12
@@ -125,9 +124,9 @@ export default function ProjectList() {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       setIsDeleteOpen(false)
       setProjectToDelete(null)
-      success('删除成功')
+      toast.success('删除成功')
     },
-    onError: () => showError('删除失败')
+    onError: () => toast.error('删除失败')
   })
 
   // Create mutation
@@ -137,21 +136,21 @@ export default function ProjectList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       closeCreateModal()
-      success('创建成功')
+      toast.success('创建成功')
     },
     onError: (err: { response?: { data?: { detail?: string | string[] } } }) => {
       if (err?.response?.data?.detail) {
         const detail = err.response.data.detail
         if (typeof detail === 'string') {
-          showError(detail)
+          toast.error(detail)
         } else if (Array.isArray(detail)) {
           const errorMsg =
             (detail as Array<{ msg?: string }>).map((e) => e.msg ?? '').filter(Boolean).join('; ') ||
             '创建失败'
-          showError(errorMsg)
+          toast.error(errorMsg)
         }
       } else {
-        showError('创建失败')
+        toast.error('创建失败')
       }
     }
   })
@@ -202,15 +201,15 @@ export default function ProjectList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
       closeEditModal()
-      success('编辑成功')
+      toast.success('编辑成功')
     },
     onError: (err: { response?: { data?: { detail?: string | Array<{ msg?: string }> } } }) => {
       const detail = err.response?.data?.detail
-      if (typeof detail === 'string') showError(detail)
+      if (typeof detail === 'string') toast.error(detail)
       else if (Array.isArray(detail)) {
         const msg = (detail as Array<{ msg?: string }>).map(e => e.msg ?? '').filter(Boolean).join('; ') || '编辑失败'
-        showError(msg)
-      } else showError('编辑失败')
+        toast.error(msg)
+      } else toast.error('编辑失败')
     }
   })
 

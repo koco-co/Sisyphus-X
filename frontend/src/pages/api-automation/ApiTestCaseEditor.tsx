@@ -14,7 +14,7 @@ import {
     X
 } from 'lucide-react'
 import { apiTestCasesApi } from '@/api/client'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 interface ApiTestCase {
@@ -39,7 +39,6 @@ export default function ApiTestCaseEditor() {
     const navigate = useNavigate()
     const { projectId, testCaseId } = useParams<{ projectId: string; testCaseId: string }>()
     const queryClient = useQueryClient()
-    const { success, error: showError } = useToast()
 
     const isEditMode = !!testCaseId && testCaseId !== 'new'
 
@@ -117,14 +116,14 @@ steps:
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['api-test-cases'] })
-            success(isEditMode ? '更新成功' : '创建成功')
+            toast.success(isEditMode ? '更新成功' : '创建成功')
             navigate(`/api/projects/${projectId}/test-cases`)
         },
         onError: (err: unknown) => {
             if (err?.response?.data?.detail) {
-                showError(err.response.data.detail)
+                toast.error(err.response.data.detail)
             } else {
-                showError(isEditMode ? '更新失败' : '创建失败')
+                toast.error(isEditMode ? '更新失败' : '创建失败')
             }
         }
     })
@@ -138,7 +137,7 @@ steps:
             setValidationResult(result)
             setIsValidating(false)
             if (result.valid) {
-                success('YAML 格式验证通过')
+                toast.success('YAML 格式验证通过')
             }
         },
         onError: () => {
@@ -180,7 +179,7 @@ steps:
     // Handle validate YAML
     const handleValidateYaml = () => {
         if (!formData.yaml_content) {
-            showError('请输入 YAML 内容')
+            toast.error('请输入 YAML 内容')
             return
         }
         setIsValidating(true)

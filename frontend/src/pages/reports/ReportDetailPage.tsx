@@ -14,7 +14,7 @@ import {
     Trash2,
 } from 'lucide-react';
 import { reportsApi } from '@/api/client';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 
 interface ReportDetail {
@@ -47,7 +47,6 @@ function parseDurationToSeconds(durationStr?: string): number | undefined {
 export default function ReportDetailPage() {
     const { reportId } = useParams<{ reportId: string }>();
     const navigate = useNavigate();
-    const { success, error: showError } = useToast();
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     const id = reportId ? Number(reportId) : 0;
@@ -64,10 +63,10 @@ export default function ReportDetailPage() {
     const deleteMutation = useMutation({
         mutationFn: () => reportsApi.delete(id),
         onSuccess: () => {
-            success('删除成功');
+            toast.success('删除成功');
             navigate('/reports');
         },
-        onError: () => showError('删除失败'),
+        onError: () => toast.error('删除失败'),
     });
 
     const handleAllure = async () => {
@@ -83,10 +82,10 @@ export default function ReportDetailPage() {
                 const fullUrl = url.startsWith('http') ? url : `${base.replace(/\/api\/v1$/, '')}${url}`;
                 window.open(fullUrl, '_blank');
             } else {
-                success('Allure 报告暂未生成');
+                toast.success('Allure 报告暂未生成');
             }
         } catch {
-            showError('获取 Allure 报告失败');
+            toast.error('获取 Allure 报告失败');
         }
     };
 
@@ -164,7 +163,7 @@ export default function ReportDetailPage() {
                         <ExternalLink className="w-4 h-4" /> Allure 报告
                     </button>
                     <button
-                        onClick={() => success('导出功能开发中')}
+                        onClick={() => toast.success('导出功能开发中')}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 transition-colors"
                     >
                         <Download className="w-4 h-4" /> 导出

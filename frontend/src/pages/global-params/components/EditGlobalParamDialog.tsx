@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, HelpCircle, Loader2 } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 import MonacoEditor from '@monaco-editor/react'
 
 // TypeScript 类型定义
@@ -54,7 +54,6 @@ export default function EditGlobalParamDialog({
     const [code, setCode] = useState(param.code)
     const [parsedResult, setParsedResult] = useState<ParsedDocstring | null>(null)
     const [showConfirmDialog, setShowConfirmDialog] = useState(false)
-    const { error } = useToast()
     const [showDocstringHelp, setShowDocstringHelp] = useState(false)
 
     // 当 param 改变时更新代码
@@ -147,13 +146,13 @@ export default function EditGlobalParamDialog({
     // 处理保存
     const handleSave = () => {
         if (!code.trim()) {
-            error('请输入代码')
+            toast.error('请输入代码')
             return
         }
 
         const parsed = parseDocstring(code)
         if (!parsed) {
-            error('无法解析代码，请确保使用 Google docstring 格式')
+            toast.error('无法解析代码，请确保使用 Google docstring 格式')
             return
         }
 

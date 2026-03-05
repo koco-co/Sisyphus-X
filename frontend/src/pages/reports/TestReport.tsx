@@ -21,7 +21,7 @@ import {
 import { Pagination } from '@/components/common/Pagination';
 import { reportsApi } from '@/api/client';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Tooltip } from '@/components/ui/tooltip';
 
@@ -66,7 +66,6 @@ export default function TestReport() {
     /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { t } = useTranslation();
     const queryClient = useQueryClient();
-    const { success, error: showError } = useToast();
 
     const [page, setPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
@@ -98,9 +97,9 @@ export default function TestReport() {
             queryClient.invalidateQueries({ queryKey: ['reports'] });
             setIsDeleteOpen(false);
             setReportToDelete(null);
-            success('删除成功');
+            toast.success('删除成功');
         },
-        onError: () => showError('删除失败')
+        onError: () => toast.error('删除失败')
     });
 
     const formatDate = (dateStr?: string) => {
@@ -274,7 +273,7 @@ export default function TestReport() {
                                                     )}
                                                     <Tooltip content="导出报告" position="top">
                                                         <button
-                                                            onClick={() => success('功能开发中')}
+                                                            onClick={() => toast.success('功能开发中')}
                                                             className="p-2 text-slate-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors"
                                                         >
                                                             <Download className="w-4 h-4" />

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { projectsApi } from '@/api/client';
 import {
     Database,
@@ -44,7 +44,6 @@ export default function DatabaseConfigList() {
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { success, error } = useToast();
 
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingDs, setEditingDs] = useState<DataSource | null>(null);
@@ -74,7 +73,7 @@ export default function DatabaseConfigList() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['datasources', projectId] });
         },
-        onError: () => error('更新状态失败')
+        onError: () => toast.error('更新状态失败')
     });
 
     // Delete Mutation
@@ -83,9 +82,9 @@ export default function DatabaseConfigList() {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['datasources', projectId] });
             setDeleteId(null);
-            success('删除成功');
+            toast.success('删除成功');
         },
-        onError: () => error('删除失败')
+        onError: () => toast.error('删除失败')
     });
 
     const handleCopyConfig = (ds: DataSource) => {
@@ -97,7 +96,7 @@ export default function DatabaseConfigList() {
             password: '***' // Hide password
         };
         navigator.clipboard.writeText(JSON.stringify(config));
-        success('配置信息已复制到剪贴板');
+        toast.success('配置信息已复制到剪贴板');
     };
 
     const getStatusBadge = (ds: DataSource) => {
@@ -208,7 +207,7 @@ export default function DatabaseConfigList() {
                                                 onClick={() => {
                                                     const fullVar = '${' + ds.variable_name + '}'
                                                     navigator.clipboard.writeText(fullVar)
-                                                    success(`变量 ${fullVar} 已复制到剪贴板`)
+                                                    toast.success(`变量 ${fullVar} 已复制到剪贴板`)
                                                 }}
                                                 className="p-1 text-slate-500 hover:text-cyan-400 hover:bg-cyan-400/10 rounded transition-colors"
                                                 title="复制变量"

@@ -5,7 +5,7 @@ import { Loader2, Database, Wifi, Save, Check, Eye, EyeOff } from 'lucide-react'
 import { projectsApi } from '@/api/client'
 import { CustomSelect } from '@/components/ui/CustomSelect'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 
 interface DatabaseConfigModalProps {
     isOpen: boolean
@@ -17,7 +17,6 @@ interface DatabaseConfigModalProps {
 
 export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, editData }: DatabaseConfigModalProps) {
     const queryClient = useQueryClient()
-    const { success, error } = useToast()
     const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null)
     const [isTesting, setIsTesting] = useState(false)
     const [hasTestedSuccess, setHasTestedSuccess] = useState(false)
@@ -75,10 +74,10 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
             // 然后刷新查询
             await queryClient.invalidateQueries({ queryKey: ['datasources', projectId] })
             await queryClient.refetchQueries({ queryKey: ['datasources', projectId] })
-            success('添加成功')
+            toast.success('添加成功')
             onClose()
         },
-        onError: () => error('添加数据源失败')
+        onError: () => toast.error('添加数据源失败')
     })
 
     const updateMutation = useMutation({
@@ -89,32 +88,32 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
             // 然后刷新查询
             await queryClient.invalidateQueries({ queryKey: ['datasources', projectId] })
             await queryClient.refetchQueries({ queryKey: ['datasources', projectId] })
-            success('编辑成功')
+            toast.success('编辑成功')
             onClose()
         },
-        onError: () => error('更新数据源失败')
+        onError: () => toast.error('更新数据源失败')
     })
 
     const handleTest = async () => {
         if (!form.host || !form.port) {
-            error('请输入主机地址和端口')
+            toast.error('请输入主机地址和端口')
             return
         }
 
         if (!form.username) {
-            error('请输入用户名')
+            toast.error('请输入用户名')
             return
         }
 
         // 新建模式必须输入密码
         if (!editData && !form.password) {
-            error('请输入密码')
+            toast.error('请输入密码')
             return
         }
 
         // 编辑模式如果输入了密码就测试
         if (editData && !form.password) {
-            error('请输入新密码以测试连接')
+            toast.error('请输入新密码以测试连接')
             return
         }
 
@@ -124,15 +123,15 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
             const res = await projectsApi.testDataSource(form)
             setTestResult(res.data)
             if (res.data.success) {
-                success('连接成功')
+                toast.success('连接成功')
                 setHasTestedSuccess(true)
             } else {
-                error(res.data.message)
+                toast.error(res.data.message)
                 setHasTestedSuccess(false)
             }
         /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
         } catch (e) {
-            error('测试请求失败')
+            toast.error('测试请求失败')
             setHasTestedSuccess(false)
         } finally {
             setIsTesting(false)
@@ -141,18 +140,18 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
 
     const handleSubmit = () => {
         if (!form.name || !form.db_type || !form.host || !form.port || !form.username || !form.db_name || !form.variable_name) {
-            error('请填写所有必填项')
+            toast.error('请填写所有必填项')
             return
         }
 
         // 新建模式必须输入密码
         if (!editData && !form.password) {
-            error('请输入密码')
+            toast.error('请输入密码')
             return
         }
 
         if (!hasTestedSuccess) {
-            error('请先进行连接测试并确保通过')
+            toast.error('请先进行连接测试并确保通过')
             return
         }
 

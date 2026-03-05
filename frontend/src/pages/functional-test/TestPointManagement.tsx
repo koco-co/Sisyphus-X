@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { testPointsApi, requirementsApi } from '@/api/client'
 import { Plus, Trash2, ChevronLeft, Wand2 } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 
 interface TestPoint {
   id: number
@@ -31,7 +31,6 @@ interface Requirement {
 
 export default function TestPointManagement() {
   const { t } = useTranslation()
-  const toast = useToast()
   const { requirementId } = useParams<{ requirementId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()

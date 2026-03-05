@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { aiConfigApi } from '@/api/client'
 import { Plus, Edit, Trash2, Check, Settings } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 
 interface AIProviderConfig {
   id: number
@@ -21,7 +21,6 @@ interface AIProviderConfig {
 
 export default function AIConfigManagement() {
   const { t } = useTranslation()
-  const toast = useToast()
   const queryClient = useQueryClient()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingConfig, setEditingConfig] = useState<AIProviderConfig | null>(null)

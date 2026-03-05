@@ -8,13 +8,12 @@ import Particles, { initParticlesEngine } from "@tsparticles/react";
 import { loadSlim } from "@tsparticles/slim";
 import Typewriter from 'typewriter-effect';
 import type { Container, Engine } from "@tsparticles/engine";
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
     const { t } = useTranslation()
     const { login, register, loginWithGithub, loginWithGoogle } = useAuth()
     const navigate = useNavigate()
-    const { success, error: toastError } = useToast()
 
     const [isLogin, setIsLogin] = useState(true)
     const [email, setEmail] = useState('')
@@ -194,11 +193,11 @@ export default function LoginPage() {
         try {
             if (isLogin) {
                 await login(email, password)
-                success(t('auth.loginSuccess'))
+                toast.success(t('auth.loginSuccess'))
                 navigate('/')
             } else {
                 await register(username, email, password)
-                success('注册成功！正在跳转到首页...')
+                toast.toast.success('注册成功！正在跳转到首页...')
                 // 立即跳转到首页
                 navigate('/')
             }
@@ -206,7 +205,7 @@ export default function LoginPage() {
             const error = err as { response?: { data?: { detail?: string } } }
             const errorMessage = error.response?.data?.detail || t('auth.operationFailed')
             setError(errorMessage)
-            toastError(errorMessage)
+            toast.error(errorMessage)
         } finally {
             setIsLoading(false)
         }
@@ -329,7 +328,7 @@ export default function LoginPage() {
                             onClick={async () => {
                                 const result = await loginWithGithub()
                                 if (!result.success) {
-                                    toastError(result.error || 'GitHub 登录失败')
+                                    toast.error(result.error || 'GitHub 登录失败')
                                 }
                             }}
                             data-testid="github-login-button"
@@ -344,7 +343,7 @@ export default function LoginPage() {
                             onClick={async () => {
                                 const result = await loginWithGoogle()
                                 if (!result.success) {
-                                    toastError(result.error || 'Google 登录失败')
+                                    toast.error(result.error || 'Google 登录失败')
                                 }
                             }}
                             data-testid="google-login-button"

@@ -15,7 +15,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { scenariosApi, projectsApi } from '@/api/client';
 import { Pagination } from '@/components/common/Pagination';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
-import { useToast } from '@/components/ui/Toast';
+import { toast } from 'sonner';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Tooltip } from '@/components/ui/tooltip';
 
@@ -48,7 +48,6 @@ export default function ScenarioListPage() {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const { success, error: showError } = useToast();
 
     const [page, setPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
@@ -90,9 +89,9 @@ export default function ScenarioListPage() {
             queryClient.invalidateQueries({ queryKey: ['scenarios'] });
             setIsDeleteOpen(false);
             setScenarioToDelete(null);
-            success('删除成功');
+            toast.success('删除成功');
         },
-        onError: () => showError('删除失败')
+        onError: () => toast.error('删除失败')
     });
 
     const formatDate = (dateStr?: string) => {

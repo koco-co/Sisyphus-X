@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Send, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 import axios from 'axios'
 
 interface Message {
@@ -22,7 +22,6 @@ interface ConversationState {
 
 export default function RequirementClarification() {
   const { t } = useTranslation()
-  const toast = useToast()
   const { requirementId } = useParams<{ requirementId: string }>()
   const navigate = useNavigate()
   const messagesEndRef = useRef<HTMLDivElement>(null)

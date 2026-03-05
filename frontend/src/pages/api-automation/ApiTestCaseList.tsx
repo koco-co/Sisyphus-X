@@ -19,7 +19,7 @@ import {
 import { Pagination } from '@/components/common/Pagination'
 import { apiTestCasesApi } from '@/api/client'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Tooltip } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -48,7 +48,6 @@ export default function ApiTestCaseList() {
     const navigate = useNavigate()
     const { projectId } = useParams<{ projectId: string }>()
     const queryClient = useQueryClient()
-    const { success, error: showError } = useToast()
 
     const [page, setPage] = useState(1)
     const [searchQuery, setSearchQuery] = useState('')
@@ -90,9 +89,9 @@ export default function ApiTestCaseList() {
             queryClient.invalidateQueries({ queryKey: ['api-test-cases'] })
             setIsDeleteOpen(false)
             setCaseToDelete(null)
-            success('删除成功')
+            toast.success('删除成功')
         },
-        onError: () => showError('删除失败')
+        onError: () => toast.error('删除失败')
     })
 
     // Toggle enabled mutation
@@ -105,9 +104,9 @@ export default function ApiTestCaseList() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['api-test-cases'] })
-            success('状态已更新')
+            toast.success('状态已更新')
         },
-        onError: () => showError('更新失败')
+        onError: () => toast.error('更新失败')
     })
 
     // Execute mutation
@@ -117,13 +116,13 @@ export default function ApiTestCaseList() {
         },
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['api-test-cases'] })
-            success('测试已提交执行')
+            toast.success('测试已提交执行')
             // Navigate to execution result page
             if (data?.data?.id) {
                 navigate(`/api/executions/${data.data.id}`)
             }
         },
-        onError: () => showError('执行失败')
+        onError: () => toast.error('执行失败')
     })
 
     const formatDate = (dateStr: string) => {

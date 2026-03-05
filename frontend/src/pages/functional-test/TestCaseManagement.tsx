@@ -5,7 +5,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { functionalTestCasesApi } from '@/api/client'
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { ChevronLeft, Eye, Check, Trash2, Loader2 } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 
 interface TestStep {
   step_number: number
@@ -35,7 +35,6 @@ interface TestCase {
 
 export default function TestCaseManagement() {
   const { t } = useTranslation()
-  const toast = useToast()
   const { requirementId } = useParams<{ requirementId: string }>()
   const navigate = useNavigate()
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */

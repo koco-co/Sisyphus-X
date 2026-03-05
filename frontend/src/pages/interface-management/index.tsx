@@ -10,7 +10,7 @@ import {
   Settings as SettingsIcon,
 } from 'lucide-react'
 import { interfacesApi, projectsApi } from '@/api/client'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { cn } from '@/lib/utils'
 import { InterfaceTree } from './components/InterfaceTree'
@@ -53,7 +53,6 @@ export default function InterfaceManagementPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
-  const { success: showSuccess, error: showError } = useToast()
 
   // 从路径解析参数
   const pathSegments = location.pathname.split('/')
@@ -213,12 +212,12 @@ export default function InterfaceManagementPage() {
     },
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ['interfaces'] })
-      showSuccess('保存成功')
+      toast.success('保存成功')
       if (isNew && res.data?.id) {
         navigate(`/interface-management/${res.data.id}?projectId=${currentProjectId}`, { replace: true })
       }
     },
-    onError: () => showError('保存失败')
+    onError: () => toast.error('保存失败')
   })
 
   // 生成执行日志

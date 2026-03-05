@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { requirementsApi } from '@/api/client'
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Plus, Edit, Trash2, MessageSquare, List, FileText, ChevronRight } from 'lucide-react'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 
 interface Requirement {
   id: number
@@ -22,7 +22,6 @@ interface Requirement {
 
 export default function RequirementList() {
   const { t } = useTranslation()
-  const toast = useToast()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 

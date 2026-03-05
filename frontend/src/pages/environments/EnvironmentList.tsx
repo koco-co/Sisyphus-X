@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog'
 import { projectsApi } from '@/api/client'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 import { EmptyState } from '@/components/common/EmptyState'
 
 interface Environment {
@@ -50,7 +50,6 @@ export default function EnvironmentList() {
   const { projectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { success, error: showError } = useToast()
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -76,10 +75,10 @@ export default function EnvironmentList() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
       setIsCreateDialogOpen(false)
-      success('环境创建成功')
+      toast.success('环境创建成功')
     },
     onError: (err: unknown) => {
-      showError(err.response?.data?.detail || '创建环境失败')
+      toast.error(err.response?.data?.detail || '创建环境失败')
     },
   })
 
@@ -92,10 +91,10 @@ export default function EnvironmentList() {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
       setIsEditDialogOpen(false)
       setEditingEnvironment(null)
-      success('环境更新成功')
+      toast.success('环境更新成功')
     },
     onError: (err: unknown) => {
-      showError(err.response?.data?.detail || '更新环境失败')
+      toast.error(err.response?.data?.detail || '更新环境失败')
     },
   })
 
@@ -108,10 +107,10 @@ export default function EnvironmentList() {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
       setIsDeleteDialogOpen(false)
       setEnvironmentToDelete(null)
-      success('环境删除成功')
+      toast.success('环境删除成功')
     },
     onError: (err: unknown) => {
-      showError(err.response?.data?.detail || '删除环境失败')
+      toast.error(err.response?.data?.detail || '删除环境失败')
     },
   })
 
@@ -122,10 +121,10 @@ export default function EnvironmentList() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
-      success('环境克隆成功')
+      toast.success('环境克隆成功')
     },
     onError: (err: unknown) => {
-      showError(err.response?.data?.detail || '克隆环境失败')
+      toast.error(err.response?.data?.detail || '克隆环境失败')
     },
   })
 

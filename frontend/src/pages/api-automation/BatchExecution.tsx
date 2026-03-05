@@ -10,7 +10,7 @@ import {
     ChevronRight
 } from 'lucide-react'
 import { apiTestCasesApi } from '@/api/client'
-import { useToast } from '@/components/ui/Toast'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 
 interface BatchExecutionProps {
@@ -20,7 +20,6 @@ interface BatchExecutionProps {
 
 export function BatchExecution({ testCaseIds, onComplete }: BatchExecutionProps) {
     /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-    const { success, error: showError } = useToast()
     const [results, setResults] = useState<Record<number, 'running' | 'passed' | 'failed' | 'error'>>({})
     const [currentIndex, setCurrentIndex] = useState(0)
     const [isExecuting, setIsExecuting] = useState(false)
@@ -45,7 +44,7 @@ export function BatchExecution({ testCaseIds, onComplete }: BatchExecutionProps)
 
         setIsExecuting(false)
         setCurrentIndex(0)
-        success(`批量执行完成`)
+        toast.success(`批量执行完成`)
         onComplete?.()
     }
 

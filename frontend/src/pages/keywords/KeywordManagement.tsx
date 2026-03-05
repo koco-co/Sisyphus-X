@@ -28,8 +28,6 @@ import {
   Copy,
   Eye,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
   X,
   Save,
   Info,
@@ -37,10 +35,12 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/common/EmptyState'
 import { cn } from '@/lib/utils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { MonacoEditor } from '@/components/ui/MonacoEditor'
 import { Input } from '@/components/ui/input'
+import { Pagination } from '@/components/common/Pagination'
 
 // ===== 类型定义 =====
 interface Keyword {
@@ -448,15 +448,12 @@ export default function KeywordManagement() {
                   {keywords.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-20">
-                        <div className="flex flex-col items-center justify-center text-slate-500">
-                          <div className="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center mb-4">
-                            <Code className="w-8 h-8 opacity-50" />
-                          </div>
-                          <p className="text-lg font-medium mb-1">暂无关键字</p>
-                          <p className="text-sm">
-                            {activeTab === 'custom' ? '点击「新建关键字」开始创建' : '内置关键字将在系统初始化时自动生成'}
-                          </p>
-                        </div>
+                        <EmptyState
+                          title="暂无关键字"
+                          description={activeTab === 'custom' ? '点击「新建关键字」开始创建' : '内置关键字将在系统初始化时自动生成'}
+                          icon={Code}
+                          action={activeTab === 'custom' ? { label: '新建关键字', onClick: () => setIsCreateDialogOpen(true) } : undefined}
+                        />
                       </td>
                     </tr>
                   ) : (
@@ -599,54 +596,13 @@ export default function KeywordManagement() {
                 <span className="text-xs text-slate-500">
                   共 {totalItems} 条记录，第 {currentPage} / {totalPages} 页
                 </span>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                    disabled={currentPage <= 1}
-                    className="text-slate-400 hover:text-white h-8 w-8 p-0"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    let page: number
-                    if (totalPages <= 5) {
-                      page = i + 1
-                    } else if (currentPage <= 3) {
-                      page = i + 1
-                    } else if (currentPage >= totalPages - 2) {
-                      page = totalPages - 4 + i
-                    } else {
-                      page = currentPage - 2 + i
-                    }
-                    return (
-                      <Button
-                        key={page}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCurrentPage(page)}
-                        className={cn(
-                          "h-8 w-8 p-0 text-xs",
-                          page === currentPage
-                            ? "bg-cyan-500/20 text-cyan-400"
-                            : "text-slate-400 hover:text-white"
-                        )}
-                      >
-                        {page}
-                      </Button>
-                    )
-                  })}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage >= totalPages}
-                    className="text-slate-400 hover:text-white h-8 w-8 p-0"
-                  >
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
+                <Pagination
+                  page={currentPage}
+                  size={pageSize}
+                  total={totalItems}
+                  pages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
               </div>
             )}
           </>

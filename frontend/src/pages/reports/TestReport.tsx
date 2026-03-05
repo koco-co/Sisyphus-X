@@ -68,8 +68,12 @@ export default function TestReport() {
 
     // 获取报告列表
     const { data: reportData, isLoading } = useQuery({
-        queryKey: ['reports', page, size],
-        queryFn: () => reportsApi.list({ page, size }),
+        queryKey: ['reports', page, size, searchQuery],
+        queryFn: () => reportsApi.list({
+            page,
+            size,
+            search: searchQuery.trim() || undefined,
+        }),
         select: (data) => data.data
     });
 

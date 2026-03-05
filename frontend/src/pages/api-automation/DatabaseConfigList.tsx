@@ -41,7 +41,7 @@ interface DataSource {
 }
 
 export default function DatabaseConfigList() {
-    const { id: projectId } = useParams<{ id: string }>();
+    const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { success, error } = useToast();

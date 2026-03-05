@@ -89,7 +89,12 @@ export default function TestPlan() {
     // 获取测试计划列表
     const { data: planData, isLoading } = useQuery({
         queryKey: ['plans', page, size, searchQuery, selectedProjectId],
-        queryFn: () => plansApi.list({ page, size }),
+        queryFn: () => plansApi.list({
+            page,
+            size,
+            search: searchQuery.trim() || undefined,
+            project_id: selectedProjectId || undefined,
+        }),
         select: (data) => data.data
     });
 

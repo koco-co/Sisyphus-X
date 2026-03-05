@@ -270,12 +270,23 @@ async def enrich_plan_response(plan: TestPlan, session: AsyncSession) -> dict:
 async def list_plans(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
+    project_id: str | None = Query(None, description="项目 ID 筛选"),
+    search: str | None = Query(None, description="计划名称搜索关键词"),
     session: AsyncSession = Depends(get_session),
 ):
     """获取测试计划列表 (分页)"""
     skip = (page - 1) * size
     statement = select(TestPlan).order_by(TestPlan.created_at.desc())
     count_statement = select(func.count()).select_from(TestPlan)
+
+    if project_id is not None:
+        statement = statement.where(TestPlan.project_id == project_id)
+        count_statement = count_statement.where(TestPlan.project_id == project_id)
+
+    if search:
+        search_pattern = f"%{search}%"
+        statement = statement.where(TestPlan.name.like(search_pattern))
+        count_statement = count_statement.where(TestPlan.name.like(search_pattern))
 
     total = int((await session.execute(count_statement)).scalar_one() or 0)
     result = await session.execute(statement.offset(skip).limit(size))

@@ -125,8 +125,8 @@ const keyValueArrayToObject = (pairs: KeyValuePair[]): Record<string, string> =>
 export default function ProjectSettings() {
     /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { t } = useTranslation()
-    const { id } = useParams<{ id: string }>()
-    const projectId = parseInt(id || '0')
+    const { projectId: projectIdParam } = useParams<{ projectId: string }>()
+    const projectId = parseInt(projectIdParam || '0')
     const queryClient = useQueryClient()
 
     // 当前标签页

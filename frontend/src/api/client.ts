@@ -207,7 +207,7 @@ export const dashboardApi = {
 
 // 测试报告 API
 export const reportsApi = {
-    list: (params?: { page?: number; size?: number; scenario_id?: number }) =>
+    list: (params?: { page?: number; size?: number; scenario_id?: number; search?: string }) =>
         api.get('/reports/', { params }),
     get: (id: number) => api.get(`/reports/${id}`),
     getDetails: (id: number) => api.get(`/reports/${id}/details`),

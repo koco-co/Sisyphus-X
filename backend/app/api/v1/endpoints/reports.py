@@ -74,16 +74,23 @@ async def list_reports(
     size: int = Query(10, ge=1, le=100, description="每页数量"),
     scenario_id: str | None = Query(None, description="场景ID筛选"),
     status: str | None = Query(None, description="状态筛选: success/failed/running"),
+    search: str | None = Query(None, description="报告名称搜索关键词"),
     session: AsyncSession = Depends(get_session),
 ):
     """获取测试报告列表（分页）
 
-    支持按场景ID和状态筛选，按创建时间倒序排列
+    支持按场景ID、状态和报告名称筛选，按创建时间倒序排列
     """
     try:
         skip = (page - 1) * size
         statement = select(TestReport)
         count_statement = select(func.count()).select_from(TestReport)
+
+        # 报告名称搜索
+        if search:
+            search_pattern = f"%{search}%"
+            statement = statement.where(TestReport.name.like(search_pattern))
+            count_statement = count_statement.where(TestReport.name.like(search_pattern))
 
         # 场景ID筛选
         if scenario_id is not None:

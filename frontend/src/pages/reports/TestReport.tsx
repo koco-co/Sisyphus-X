@@ -68,8 +68,8 @@ export default function TestReport() {
     const queryClient = useQueryClient();
 
     const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     const [searchQuery, setSearchQuery] = useState('');
-    const size = 10;
 
     // 删除
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -77,10 +77,10 @@ export default function TestReport() {
 
     // 获取报告列表
     const { data: reportData, isLoading } = useQuery({
-        queryKey: ['reports', page, size, searchQuery],
+        queryKey: ['reports', page, pageSize, searchQuery],
         queryFn: () => reportsApi.list({
             page,
-            size,
+            size: pageSize,
             search: searchQuery.trim() || undefined,
         }),
         select: (data) => data.data
@@ -153,6 +153,7 @@ export default function TestReport() {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') setPage(1); }}
                         placeholder="搜索报告名称..."
                         className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
                     />
@@ -311,10 +312,11 @@ export default function TestReport() {
                     <div className="px-6 py-4 border-t border-white/5 bg-slate-800/30">
                         <Pagination
                             page={page}
-                            size={size}
+                            size={pageSize}
                             total={total}
                             pages={pages}
                             onPageChange={setPage}
+                            onSizeChange={(newSize) => { setPageSize(newSize); setPage(1); }}
                         />
                     </div>
                 )}

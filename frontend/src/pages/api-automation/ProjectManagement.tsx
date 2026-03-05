@@ -35,8 +35,8 @@ export default function ProjectManagement() {
     const { t } = useTranslation();
     const queryClient = useQueryClient();
     const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     const [searchQuery, setSearchQuery] = useState('');
-    const size = 10;
 
     // Delete state
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -99,8 +99,8 @@ export default function ProjectManagement() {
 
     // Fetch projects
     const { data: projectData, isLoading } = useQuery({
-        queryKey: ['projects', page, size, searchQuery],
-        queryFn: () => projectsApi.list({ page, size, name: searchQuery || undefined }),
+        queryKey: ['projects', page, pageSize, searchQuery],
+        queryFn: () => projectsApi.list({ page, size: pageSize, name: searchQuery || undefined }),
         select: (data) => data.data
     });
 
@@ -237,8 +237,9 @@ export default function ProjectManagement() {
                         value={searchQuery}
                         onChange={(e) => {
                             setSearchQuery(e.target.value);
-                            setPage(1); // Reset to first page on search
+                            setPage(1);
                         }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') setPage(1); }}
                         data-testid="project-search-input"
                         placeholder="搜索项目名称..."
                         className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
@@ -377,10 +378,11 @@ export default function ProjectManagement() {
                     <div className="px-6 py-4 border-t border-white/5 bg-slate-800/30">
                         <Pagination
                             page={page}
-                            size={size}
+                            size={pageSize}
                             total={total}
                             pages={pages}
                             onPageChange={setPage}
+                            onSizeChange={(newSize) => { setPageSize(newSize); setPage(1); }}
                         />
                     </div>
                 )}

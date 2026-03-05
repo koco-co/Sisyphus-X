@@ -104,7 +104,7 @@ export default function KeywordManagement() {
   const [searchTerm, setSearchTerm] = useState('')
   // 分页
   const [currentPage, setCurrentPage] = useState(1)
-  const pageSize = 10
+  const [pageSize, setPageSize] = useState(10)
 
   // 弹窗状态
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -133,10 +133,10 @@ export default function KeywordManagement() {
     if (selectedType && selectedType !== 'all') params.type = selectedType
     if (searchTerm) params.search = searchTerm
     return params
-  }, [activeTab, selectedProjectId, selectedType, searchTerm, currentPage])
+  }, [activeTab, selectedProjectId, selectedType, searchTerm, currentPage, pageSize])
 
   const { data: keywordsData, isLoading: keywordsLoading } = useQuery({
-    queryKey: ['keywords', activeTab, selectedProjectId, selectedType, searchTerm, currentPage],
+    queryKey: ['keywords', activeTab, selectedProjectId, selectedType, searchTerm, currentPage, pageSize],
     queryFn: async () => {
       const response = await keywordsApi.list(getQueryParams())
       return response.data
@@ -409,6 +409,7 @@ export default function KeywordManagement() {
               type="text"
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1) }}
+              onKeyDown={(e) => { if (e.key === 'Enter') setCurrentPage(1) }}
               placeholder="搜索关键字名称或方法名..."
               className="w-full h-9 bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 transition-colors"
               data-testid="keyword-search-input"
@@ -592,16 +593,14 @@ export default function KeywordManagement() {
 
             {/* ===== 分页 ===== */}
             {totalItems > 0 && (
-              <div className="flex items-center justify-between px-6 py-3 border-t border-white/5 bg-slate-800/30">
-                <span className="text-xs text-slate-500">
-                  共 {totalItems} 条记录，第 {currentPage} / {totalPages} 页
-                </span>
+              <div className="px-6 py-3 border-t border-white/5 bg-slate-800/30">
                 <Pagination
                   page={currentPage}
                   size={pageSize}
                   total={totalItems}
                   pages={totalPages}
                   onPageChange={setCurrentPage}
+                  onSizeChange={(newSize) => { setPageSize(newSize); setCurrentPage(1) }}
                 />
               </div>
             )}

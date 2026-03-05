@@ -50,9 +50,9 @@ export default function ScenarioListPage() {
     const queryClient = useQueryClient();
 
     const [page, setPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedProjectId, setSelectedProjectId] = useState('');
-    const size = 10;
 
     // 删除状态
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -68,10 +68,10 @@ export default function ScenarioListPage() {
 
     // 获取场景列表
     const { data: scenarioData, isLoading } = useQuery({
-        queryKey: ['scenarios', page, size, searchQuery, selectedProjectId],
+        queryKey: ['scenarios', page, pageSize, searchQuery, selectedProjectId],
         queryFn: () => scenariosApi.list({
             page,
-            size,
+            size: pageSize,
             search: searchQuery || undefined,
             project_id: selectedProjectId || undefined,
         }),
@@ -158,6 +158,7 @@ export default function ScenarioListPage() {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') setPage(1); }}
                         placeholder="搜索场景名称..."
                         className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
                     />
@@ -279,10 +280,11 @@ export default function ScenarioListPage() {
                     <div className="px-6 py-4 border-t border-white/5 bg-slate-800/30">
                         <Pagination
                             page={page}
-                            size={size}
+                            size={pageSize}
                             total={total}
                             pages={pages}
                             onPageChange={setPage}
+                            onSizeChange={(newSize) => { setPageSize(newSize); setPage(1); }}
                         />
                     </div>
                 )}

@@ -45,7 +45,7 @@ export function ResponseViewer({ response, isLoading = false }: ResponseViewerPr
 
   if (isLoading) {
     return (
-      <div className="w-1/2 flex flex-col bg-slate-900/30 border-l border-white/5">
+      <div className="flex flex-col bg-slate-900/30 min-h-0">
         <div className="flex items-center justify-center h-full">
           <div className="w-8 h-8 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin" />
         </div>
@@ -55,7 +55,7 @@ export function ResponseViewer({ response, isLoading = false }: ResponseViewerPr
 
   if (!response) {
     return (
-      <div className="w-1/2 flex flex-col bg-slate-900/30 border-l border-white/5">
+      <div className="flex flex-col bg-slate-900/30 min-h-0">
         <div className="flex flex-col items-center justify-center h-full text-slate-500">
           <Send className="w-16 h-16 mb-4 opacity-10" />
           <p className="text-lg font-medium">点击 "发送" 查看响应</p>
@@ -74,7 +74,7 @@ export function ResponseViewer({ response, isLoading = false }: ResponseViewerPr
   }
 
   return (
-    <div className="w-1/2 flex flex-col bg-slate-900/30 border-l border-white/5">
+    <div className="flex flex-col bg-slate-900/30 min-h-0">
       {/* 响应头部 */}
       <ResponseHeader
         status={response.status_code}

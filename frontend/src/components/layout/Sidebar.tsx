@@ -36,18 +36,17 @@ import { useSidebar } from '@/contexts/SidebarContext'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useAuth } from '@/contexts/AuthContext'
 
-// 导航项类型定义
 interface NavItem {
     icon: React.ElementType
     labelKey: string
     href?: string
     children?: NavItem[]
+    comingSoon?: boolean
 }
 
-// 完整导航结构
 const navItems: NavItem[] = [
     { icon: LayoutDashboard, labelKey: 'nav.dashboard', href: '/' },
-    { icon: TestTube, labelKey: 'nav.functionalTesting', href: '/functional-test/requirements' },
+    { icon: TestTube, labelKey: 'nav.functionalTesting', href: '/functional-test/requirements', comingSoon: true },
     {
         icon: Zap,
         labelKey: 'nav.apiAutomation',
@@ -63,9 +62,10 @@ const navItems: NavItem[] = [
     {
         icon: BookOpen,
         labelKey: 'nav.documentCenter',
+        comingSoon: true,
         children: [
-            { icon: File, labelKey: 'nav.operationDocs', href: '/docs/operation' },
-            { icon: FileText, labelKey: 'nav.requirementDocs', href: '/docs/requirement' },
+            { icon: File, labelKey: 'nav.operationDocs', href: '/docs/operation', comingSoon: true },
+            { icon: FileText, labelKey: 'nav.requirementDocs', href: '/docs/requirement', comingSoon: true },
         ]
     },
     {
@@ -74,9 +74,9 @@ const navItems: NavItem[] = [
         children: [
             { icon: Server, labelKey: 'nav.environments', href: '/environments' },
             { icon: Sliders, labelKey: 'nav.globalParams', href: '/global-params' },
-            { icon: Bell, labelKey: 'nav.notifications', href: '/settings/notifications' },
-            { icon: Users, labelKey: 'nav.accountManagement', href: '/settings/accounts' },
-            { icon: Shield, labelKey: 'nav.permissions', href: '/settings/permissions' },
+            { icon: Bell, labelKey: 'nav.notifications', href: '/settings/notifications', comingSoon: true },
+            { icon: Users, labelKey: 'nav.accountManagement', href: '/settings/accounts', comingSoon: true },
+            { icon: Shield, labelKey: 'nav.permissions', href: '/settings/permissions', comingSoon: true },
         ]
     },
 ]
@@ -175,6 +175,30 @@ export function Sidebar() {
                             </motion.div>
                         )}
                     </AnimatePresence>
+                </div>
+            )
+        }
+
+        if (item.comingSoon) {
+            return (
+                <div
+                    key={item.href || item.labelKey}
+                    className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-200 group relative overflow-hidden cursor-not-allowed opacity-50",
+                        isCollapsed && "justify-center",
+                        "text-slate-500"
+                    )}
+                    title={isCollapsed ? `${t(item.labelKey)} (即将上线)` : undefined}
+                >
+                    <item.icon className="w-5 h-5 flex-shrink-0 text-slate-600" />
+                    {!isCollapsed && (
+                        <>
+                            <span className="font-medium flex-1">{t(item.labelKey)}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 whitespace-nowrap">
+                                即将上线
+                            </span>
+                        </>
+                    )}
                 </div>
             )
         }

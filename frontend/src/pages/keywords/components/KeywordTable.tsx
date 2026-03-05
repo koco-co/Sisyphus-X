@@ -1,18 +1,14 @@
 /**
  * 关键字 Table 组件
  *
- * 功能：使用 Table 展示关键字列表，替代 Card 列表
- *
- * 参考：frontend/src/pages/global-params/index.tsx (266-342行)
+ * 功能：使用 Table 展示关键字列表
+ * 布局与 ProjectManagement.tsx 保持一致
  */
 
 import { motion } from 'framer-motion'
 import { Loader2, Code } from 'lucide-react'
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-import { Badge } from '@/components/ui/badge'
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-import { Button } from '@/components/ui/button'
 import { KeywordRow } from './KeywordRow'
+import { EmptyState } from '@/components/common/EmptyState'
 import type { Keyword } from '../types'
 
 interface KeywordTableProps {
@@ -74,12 +70,12 @@ export function KeywordTable({
             <tbody className="divide-y divide-white/5">
               {keywords.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-20">
-                    <div className="flex flex-col items-center justify-center text-slate-400">
-                      <Code className="w-12 h-12 mb-4 opacity-50" />
-                      <p className="text-lg font-medium mb-2">暂无关键字</p>
-                      <p className="text-sm">创建您的第一个关键字</p>
-                    </div>
+                  <td colSpan={7}>
+                    <EmptyState
+                      title="暂无关键字"
+                      description="创建您的第一个关键字"
+                      icon={Code}
+                    />
                   </td>
                 </tr>
               ) : (

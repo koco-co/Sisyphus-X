@@ -286,7 +286,7 @@ export default function KeywordManagement() {
   }
 
   return (
-    <div className="p-8 space-y-6" data-testid="keywords-page">
+    <div className="p-8 max-w-[1600px] mx-auto space-y-8" data-testid="keywords-page">
       {/* ===== 页面标题 ===== */}
       <motion.header
         className="flex justify-between items-center"
@@ -294,19 +294,17 @@ export default function KeywordManagement() {
         animate={{ opacity: 1, y: 0 }}
       >
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
+          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+            <Sparkles className="w-8 h-8 text-cyan-500" />
             {t('keywords.title')}
           </h1>
-          <p className="text-slate-400 mt-2">配置可扩展的关键字函数, 在场景编排中通过下拉框引用</p>
+          <p className="text-slate-400">配置可扩展的关键字函数, 在场景编排中通过下拉框引用</p>
         </div>
 
         {activeTab === 'custom' && (
           <motion.button
             onClick={() => setIsCreateDialogOpen(true)}
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-6 py-3 rounded-2xl font-medium transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20"
+            className="bg-cyan-500 hover:bg-cyan-600 text-white px-6 py-3 rounded-2xl flex items-center gap-2 font-semibold transition-all shadow-lg shadow-cyan-500/20"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             data-testid="create-keyword-button"
@@ -319,7 +317,7 @@ export default function KeywordManagement() {
 
       {/* ===== Tab 切换 ===== */}
       <motion.div
-        className="flex gap-2 bg-slate-900/50 p-1.5 rounded-2xl w-fit backdrop-blur"
+        className="flex gap-2 bg-slate-900 p-1.5 rounded-2xl w-fit"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05 }}
@@ -354,7 +352,7 @@ export default function KeywordManagement() {
 
       {/* ===== 工具栏 ===== */}
       <motion.div
-        className="bg-slate-900/60 border border-white/5 rounded-2xl p-4 backdrop-blur"
+        className="bg-slate-900 border border-white/5 rounded-3xl p-4"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
@@ -420,7 +418,7 @@ export default function KeywordManagement() {
 
       {/* ===== 列表区域 ===== */}
       <motion.div
-        className="bg-slate-900/60 border border-white/5 rounded-2xl overflow-hidden shadow-xl backdrop-blur"
+        className="bg-slate-900 border border-white/5 rounded-3xl overflow-hidden shadow-xl"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
@@ -436,13 +434,13 @@ export default function KeywordManagement() {
               <table className="w-full text-left">
                 <thead className="bg-slate-800/50 border-b border-white/5">
                   <tr>
-                    <th className="px-6 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">名称</th>
-                    <th className="px-6 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">方法名</th>
-                    <th className="px-6 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">关键字类型</th>
-                    <th className="px-6 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">类别</th>
-                    <th className="px-6 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">启用状态</th>
-                    <th className="px-6 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider">更新时间</th>
-                    <th className="px-6 py-3.5 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">操作</th>
+                    <th className="px-6 py-4 text-sm font-medium text-slate-400">名称</th>
+                    <th className="px-6 py-4 text-sm font-medium text-slate-400">方法名</th>
+                    <th className="px-6 py-4 text-sm font-medium text-slate-400">关键字类型</th>
+                    <th className="px-6 py-4 text-sm font-medium text-slate-400">类别</th>
+                    <th className="px-6 py-4 text-sm font-medium text-slate-400">启用状态</th>
+                    <th className="px-6 py-4 text-sm font-medium text-slate-400">更新时间</th>
+                    <th className="px-6 py-4 text-sm font-medium text-slate-400 text-right">操作</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -593,7 +591,7 @@ export default function KeywordManagement() {
 
             {/* ===== 分页 ===== */}
             {totalItems > 0 && (
-              <div className="px-6 py-3 border-t border-white/5 bg-slate-800/30">
+              <div className="px-6 py-4 border-t border-white/5 bg-slate-800/30">
                 <Pagination
                   page={currentPage}
                   size={pageSize}
@@ -911,7 +909,7 @@ function KeywordFormDialog({
           <Button
             onClick={handleSubmit}
             disabled={isSaving || !formData.name || !formData.method_name}
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white"
+            className="bg-cyan-500 hover:bg-cyan-600 text-white"
           >
             {isSaving ? (
               <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> 保存中...</>

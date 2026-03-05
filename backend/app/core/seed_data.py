@@ -16,14 +16,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import async_session_maker, init_db
-from app.models_new import (
-    Environment,
-    GlobalParam,
-    GlobalVariable,
-    Keyword,
-    Project,
-    User,
-)
+from app.models.global_param import GlobalParam
+from app.models.keyword import Keyword
+from app.models.project import Project, ProjectEnvironment
+from app.models.user import User
 
 # 默认测试用户 ID
 DEFAULT_TEST_USER_ID = "00000000-0000-0000-0000-000000000001"
@@ -44,7 +40,7 @@ async def seed_users(session: AsyncSession) -> bool:
         id=DEFAULT_TEST_USER_ID,
         email="default-test-user@example.com",
         username="default_user",
-        password_hash="$2b$12$test_hash_not_for_production",  # 开发环境用
+        hashed_password="$2b$12$test_hash_not_for_production",
         is_active=True,
     )
     session.add(user)
@@ -78,27 +74,16 @@ async def seed_projects(session: AsyncSession) -> bool:
     session.add(project)
     await session.flush()  # 确保 project.id 可用
 
-    # 创建默认环境
-    env = Environment(
-        id=uuid.uuid4(),
-        project_id=uuid.UUID(project_id),
+    env = ProjectEnvironment(
+        id=str(uuid.uuid4()),
+        project_id=project_id,
         name="开发环境",
-        base_url="http://localhost:8000",
-        is_default=True,
+        domain="http://localhost:8000",
+        variables={"base_url": "http://localhost:8000"},
     )
     session.add(env)
 
-    # 创建全局变量
-    global_var = GlobalVariable(
-        id=uuid.uuid4(),
-        project_id=uuid.UUID(project_id),
-        key="base_url",
-        value="http://localhost:8000",
-        description="基础 URL",
-    )
-    session.add(global_var)
-
-    print(f"[seed_projects] Created demo project (id={project_id}) with environment and global variable")
+    print(f"[seed_projects] Created demo project (id={project_id}) with environment")
     return True
 
 
@@ -116,51 +101,28 @@ async def seed_keywords(session: AsyncSession) -> int:
     """
     builtin_keywords = [
         {
-            "keyword_type": "发送请求",
+            "class_name": "发送请求",
             "name": "HTTP 请求",
             "method_name": "http_request",
-            "is_builtin": True,
-            "params_schema": {
-                "method": {"type": "select", "options": ["GET", "POST", "PUT", "DELETE", "PATCH"]},
-                "url": {"type": "string"},
-                "headers": {"type": "key_value"},
-                "body": {"type": "json"},
-            },
+            "code": "# 内置关键字 - 由引擎处理",
         },
         {
-            "keyword_type": "断言类型",
+            "class_name": "断言类型",
             "name": "JSON 断言",
             "method_name": "assert_json",
-            "is_builtin": True,
-            "params_schema": {
-                "expression": {"type": "string", "description": "JSONPath 表达式"},
-                "operator": {
-                    "type": "select",
-                    "options": ["==", "!=", ">", "<", ">=", "<=", "contains"],
-                },
-                "expected": {"type": "string"},
-            },
+            "code": "# 内置关键字 - 由引擎处理",
         },
         {
-            "keyword_type": "提取变量",
+            "class_name": "提取变量",
             "name": "JSON 提取",
             "method_name": "extract_json",
-            "is_builtin": True,
-            "params_schema": {
-                "variable_name": {"type": "string"},
-                "variable_type": {"type": "select", "options": ["全局", "环境"]},
-                "expression": {"type": "string", "description": "JSONPath 表达式"},
-            },
+            "code": "# 内置关键字 - 由引擎处理",
         },
         {
-            "keyword_type": "数据库操作",
+            "class_name": "数据库操作",
             "name": "执行 SQL",
             "method_name": "execute_sql",
-            "is_builtin": True,
-            "params_schema": {
-                "datasource": {"type": "select", "options": []},  # 动态加载
-                "sql": {"type": "code", "language": "sql"},
-            },
+            "code": "# 内置关键字 - 由引擎处理",
         },
     ]
 
@@ -173,12 +135,12 @@ async def seed_keywords(session: AsyncSession) -> int:
             continue
 
         keyword = Keyword(
-            id=uuid.uuid4(),
-            keyword_type=kw_data["keyword_type"],
+            id=str(uuid.uuid4()),
+            class_name=kw_data["class_name"],
             name=kw_data["name"],
             method_name=kw_data["method_name"],
-            is_builtin=kw_data["is_builtin"],
-            params_schema=kw_data["params_schema"],
+            code=kw_data["code"],
+            is_built_in=True,
         )
         session.add(keyword)
         print(f"[seed_keywords] Created keyword: {kw_data['name']}")

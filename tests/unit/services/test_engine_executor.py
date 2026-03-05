@@ -1,9 +1,44 @@
-"""Test engine executor service."""
+"""Test engine executor service (embedded engine version)."""
 
 import json
-from unittest.mock import Mock, patch
+import os
+import time
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+
+
+@pytest.fixture
+def tmp_path(tmp_path):
+    """Temporary path fixture."""
+    return tmp_path / "sisyphus_debug"
+
+
+@pytest.fixture
+def mock_engine_success():
+    """Mock successful engine execution."""
+    mock_result = MagicMock()
+    mock_result.model_dump.return_value = {
+        "status": "passed",
+        "summary": {"total_steps": 0, "passed_steps": 0, "failed_steps": 0},
+        "steps": [],
+    }
+
+    with (
+        patch("app.services.engine_executor.load_case") as mock_load,
+        patch("app.services.engine_executor.run_case") as mock_run,
+    ):
+        mock_load.return_value = MagicMock()
+        mock_run.return_value = mock_result
+        yield mock_load, mock_run
+
+
+@pytest.fixture
+def mock_engine_validate():
+    """Mock successful engine YAML validation."""
+    with patch("app.services.engine_executor.CaseModel") as mock_model:
+        mock_model.model_validate.return_value = MagicMock()
+        yield mock_model
 
 
 class TestEngineExecutor:
@@ -33,19 +68,32 @@ class TestEngineExecutor:
         assert result["result"].get("status") == "passed"
         assert result["error"] is None
 
-    def test_execute_engine_not_found(self, tmp_path):
-        """Test execution when engine is not installed."""
+    def test_execute_engine_error(self, tmp_path):
+        """Test execution when engine raises EngineError."""
+        from app.engine.errors import EngineError
         from app.services.engine_executor import EngineExecutor
 
         executor = EngineExecutor(base_temp_dir=str(tmp_path))
 
-        with patch("subprocess.run") as mock_run:
-            mock_run.side_effect = FileNotFoundError()
-
-            result = executor.execute(yaml_content="test")
+        with patch("app.services.engine_executor.load_case") as mock_load:
+            mock_load.side_effect = EngineError(
+                code="ENGINE_ERROR", message="引擎执行失败"
+            )
+            result = executor.execute(yaml_content="test: data")
 
         assert result["success"] is False
-        assert "未安装" in result["error"]
+        assert "ENGINE_ERROR" in result["error"]
+
+    def test_execute_invalid_yaml(self, tmp_path):
+        """Test execution with content that fails to parse."""
+        from app.services.engine_executor import EngineExecutor
+
+        executor = EngineExecutor(base_temp_dir=str(tmp_path))
+
+        result = executor.execute(yaml_content="invalid: yaml: [")
+
+        assert result["success"] is False
+        assert result["error"] is not None
 
     def test_validate_yaml_valid(self, tmp_path, mock_engine_validate):
         """Test YAML validation with valid YAML."""
@@ -53,80 +101,45 @@ class TestEngineExecutor:
 
         executor = EngineExecutor(base_temp_dir=str(tmp_path))
 
-        result = executor.validate(
-            yaml_content="name: Test\nsteps: []"
-        )
+        result = executor.validate(yaml_content="name: Test\nsteps: []")
 
         assert result["valid"] is True
-        assert "成功" in result["message"] or result["valid"] is True
+        assert "正确" in result["message"]
 
-    def test_validate_yaml_invalid(self, tmp_path):
-        """Test YAML validation with invalid YAML."""
+    def test_validate_yaml_invalid_syntax(self, tmp_path):
+        """Test YAML validation with invalid YAML syntax."""
         from app.services.engine_executor import EngineExecutor
 
         executor = EngineExecutor(base_temp_dir=str(tmp_path))
 
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value = Mock(
-                returncode=1,
-                stderr="Invalid YAML syntax",
-            )
-
-            result = executor.validate(yaml_content="invalid: yaml: [")
+        result = executor.validate(yaml_content="invalid: yaml: [")
 
         assert result["valid"] is False
-        assert result["message"] == "Invalid YAML syntax"
+        assert result["message"]  # should contain an error description
+
+    def test_validate_yaml_invalid_structure(self, tmp_path):
+        """Test YAML validation with valid YAML but invalid CaseModel structure."""
+        from app.services.engine_executor import EngineExecutor
+
+        executor = EngineExecutor(base_temp_dir=str(tmp_path))
+
+        result = executor.validate(yaml_content="just_a_string")
+
+        assert result["valid"] is False
 
     def test_cleanup_temp_files(self, tmp_path):
         """Test temporary file cleanup."""
         from app.services.engine_executor import EngineExecutor
-        import time
 
         executor = EngineExecutor(base_temp_dir=str(tmp_path))
 
-        # Create old temp files
         old_file = tmp_path / "old_test.yaml"
         old_file.write_text("test")
         old_mtime = old_file.stat().st_mtime
 
-        # Set file as old (more than 5 minutes)
         new_mtime = old_mtime - 400
-        import os
         os.utime(old_file, (new_mtime, new_mtime))
 
-        # Run cleanup
         deleted_count = executor.cleanup_temp_files(max_age_minutes=5)
 
         assert deleted_count >= 0
-
-
-@pytest.fixture
-def tmp_path(tmp_path):
-    """Temporary path fixture."""
-    return tmp_path / "sisyphus_debug"
-
-
-@pytest.fixture
-def mock_engine_success():
-    """Mock successful engine execution (JSON 规范: 顶层 status 为 passed)."""
-    mock_result = {
-        "status": "passed",
-        "summary": {"total_steps": 0, "passed_steps": 0, "failed_steps": 0},
-        "steps": [],
-    }
-
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = Mock(
-            returncode=0,
-            stdout=json.dumps(mock_result),
-            stderr="",
-        )
-        yield mock_run
-
-
-@pytest.fixture
-def mock_engine_validate():
-    """Mock successful engine validation."""
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = Mock(returncode=0, stdout="YAML is valid")
-        yield mock_run

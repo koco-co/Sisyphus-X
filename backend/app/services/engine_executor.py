@@ -11,7 +11,6 @@ import yaml
 from app.engine.core.models import CaseModel
 from app.engine.core.runner import load_case, run_case
 from app.engine.errors import EngineError
-from app.engine.result.json_reporter import to_json_engine_error
 
 
 class EngineExecutor:

@@ -8,7 +8,7 @@ Phase 1 重构: 使用 input_params/output_params (JSONB) 代替 parameters/retu
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Index, JSON, String, Text, UniqueConstraint
+from sqlalchemy import JSON, DateTime, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.base import Base

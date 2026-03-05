@@ -579,10 +579,10 @@ start_backend() {
             return 1
         fi
         if is_port_in_use $actual_port; then
-            if wait_for_http "http://127.0.0.1:$actual_port/docs" 5; then
+            if wait_for_http "http://127.0.0.1:$actual_port/health" 5; then
                 log_success "后端服务启动成功 🐍"
                 log_info "  📍 地址: http://localhost:$actual_port"
-                log_info "  📚 API 文档: http://localhost:$actual_port/docs"
+                log_info "  📚 API 文档: http://localhost:$actual_port/api/docs"
                 cd "$SCRIPT_DIR"
                 return 0
             fi

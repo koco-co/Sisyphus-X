@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Folder,
   FolderOpen,
+  FolderPlus,
   Plus,
   Search,
   MoreHorizontal,
@@ -30,25 +31,27 @@ import {
   Copy,
   Loader2,
   GripVertical,
+  Check,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { interfacesApi } from '@/api/client'
 import { useNavigate } from 'react-router-dom'
 
 interface InterfaceItem {
-  id: number
+  id: string | number
   name: string
   method: string
   url: string
-  folder_id?: number | null
+  folder_id?: string | number | null
   order?: number
 }
 
 interface FolderItem {
-  id: number
+  id: string | number
   name: string
-  project_id: number
-  parent_id?: number | null
+  project_id: string | number
+  parent_id?: string | number | null
   order: number
 }
 
@@ -58,8 +61,8 @@ interface TreeNode {
   type: 'folder' | 'interface'
   method?: string
   children?: TreeNode[]
-  folderId?: number
-  interfaceId?: number
+  folderId?: string | number
+  interfaceId?: string | number
   order?: number
 }
 
@@ -67,7 +70,7 @@ interface ContextMenu {
   show: boolean
   x: number
   y: number
-  target: { type: 'folder' | 'interface'; id: number; name: string } | null
+  target: { type: 'folder' | 'interface'; id: string | number; name: string } | null
 }
 
 const METHOD_COLORS: Record<string, string> = {
@@ -84,17 +87,13 @@ interface InterfaceTreeProps {
   selectedInterfaceId?: number
 }
 
-// 可拖拽的文件夹项组件
-/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-function SortableFolder({ children, id, ...props }: unknown) {
+function SortableFolder({ children, id }: { children: React.ReactNode; id: string }) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
     transition,
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-    isDragging,
   } = useSortable({ id })
 
   const style = {
@@ -109,7 +108,6 @@ function SortableFolder({ children, id, ...props }: unknown) {
   )
 }
 
-// 拖拽手柄组件
 function DragHandle({ isDragging }: { isDragging: boolean }) {
   return (
     <button
@@ -129,291 +127,390 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [searchTerm, setSearchTerm] = useState('')
   const [contextMenu, setContextMenu] = useState<ContextMenu>({
-    show: false,
-    x: 0,
-    y: 0,
-    target: null
+    show: false, x: 0, y: 0, target: null,
   })
   const [activeId, setActiveId] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [renamingTarget, setRenamingTarget] = useState<{ type: 'folder' | 'interface'; id: string | number } | null>(null)
+  const [renameValue, setRenameValue] = useState('')
 
-  // 拖拽传感器配置
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   )
 
-  // 加载文件夹列表
   const { data: foldersData, isLoading: foldersLoading } = useQuery({
     queryKey: ['interface-folders', projectId],
     queryFn: async () => {
       const res = await interfacesApi.listFolders({ project_id: projectId })
       return (res.data?.items ?? res.data ?? []) as FolderItem[]
     },
-    enabled: !!projectId
+    enabled: !!projectId,
   })
 
-  // 加载接口列表
   const { data: interfacesData, isLoading: interfacesLoading } = useQuery({
     queryKey: ['interfaces', projectId],
     queryFn: async () => {
       const res = await interfacesApi.list({ project_id: projectId })
       return (res.data?.items ?? res.data ?? []) as InterfaceItem[]
     },
-    enabled: !!projectId
+    enabled: !!projectId,
   })
 
-  // 移动接口到文件夹
   const moveMutation = useMutation({
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-    mutationFn: ({ interfaceId, targetFolderId }: { interfaceId: number; targetFolderId: number | null }) => {
-      // TODO: 调用后端移动接口 API
-      return Promise.resolve()
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['interfaces', projectId] })
-    }
+    mutationFn: ({ interfaceId, targetFolderId }: { interfaceId: string | number; targetFolderId: string | null }) =>
+      interfacesApi.moveInterface(interfaceId, targetFolderId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['interfaces', projectId] }),
   })
 
-  // 批量更新排序
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   const reorderMutation = useMutation({
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-    mutationFn: ({ orders }: { orders: Array<{ id: number; order: number }> }) => {
-      // TODO: 调用后端批量排序 API
-      return Promise.resolve()
-    },
+    mutationFn: ({ type, orders }: { type: 'folder' | 'interface'; orders: Array<{ id: string; sort_order: number }> }) =>
+      type === 'folder' ? interfacesApi.reorderFolders(orders) : interfacesApi.reorderInterfaces(orders),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['interfaces', projectId] })
       queryClient.invalidateQueries({ queryKey: ['interface-folders', projectId] })
-    }
+    },
+  })
+
+  const renameFolderMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string | number; name: string }) =>
+      interfacesApi.updateFolder(id, { name }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['interface-folders', projectId] }),
+  })
+
+  const renameInterfaceMutation = useMutation({
+    mutationFn: ({ id, name }: { id: string | number; name: string }) =>
+      interfacesApi.update(id, { name }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['interfaces', projectId] }),
+  })
+
+  const createSubfolderMutation = useMutation({
+    mutationFn: ({ parentId, name }: { parentId: string | number; name: string }) =>
+      interfacesApi.createFolder({ project_id: projectId, name, parent_id: parentId }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['interface-folders', projectId] })
+      saveExpanded({ ...expanded, [`folder-${variables.parentId}`]: true })
+    },
+  })
+
+  const copyInterfaceMutation = useMutation({
+    mutationFn: (id: string | number) => interfacesApi.copyInterface(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['interfaces', projectId] }),
+  })
+
+  const deleteFolderMutation = useMutation({
+    mutationFn: (id: string | number) => interfacesApi.deleteFolder(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['interface-folders', projectId] }),
   })
 
   const folders = foldersData ?? []
   const interfaces = interfacesData ?? []
   const isLoading = foldersLoading || interfacesLoading
 
-  // 从 localStorage 加载展开状态
   useEffect(() => {
     const saved = localStorage.getItem(`interface-tree-expanded-${projectId}`)
     if (saved) {
       try {
-        const parsed = JSON.parse(saved)
-        queueMicrotask(() => setExpanded(parsed))
-      } catch {
-        // 忽略无效 JSON
-      }
+        queueMicrotask(() => setExpanded(JSON.parse(saved)))
+      } catch { /* ignore */ }
     }
   }, [projectId])
 
-  // 保存展开状态
-  const saveExpanded = (newExpanded: Record<string, boolean>) => {
-    setExpanded(newExpanded)
-    localStorage.setItem(`interface-tree-expanded-${projectId}`, JSON.stringify(newExpanded))
-  }
+  const saveExpanded = useCallback((next: Record<string, boolean>) => {
+    setExpanded(next)
+    localStorage.setItem(`interface-tree-expanded-${projectId}`, JSON.stringify(next))
+  }, [projectId])
 
-  // 构建树形结构
+  /* ───────── Build recursive tree ───────── */
   const buildTree = (): TreeNode[] => {
     const tree: TreeNode[] = []
-
-    // 按排序排列文件夹
+    const folderMap = new Map<string, TreeNode>()
     const sortedFolders = [...folders].sort((a, b) => (a.order || 0) - (b.order || 0))
 
-    // 创建文件夹节点
-    sortedFolders.forEach((folder) => {
-      const folderNode: TreeNode = {
-        id: `folder-${folder.id}`,
-        name: folder.name,
+    for (const f of sortedFolders) {
+      folderMap.set(String(f.id), {
+        id: `folder-${f.id}`,
+        name: f.name,
         type: 'folder',
-        folderId: folder.id,
-        order: folder.order,
-        children: []
+        folderId: f.id,
+        order: f.order,
+        children: [],
+      })
+    }
+
+    const unassigned: TreeNode[] = []
+    for (const api of [...interfaces].sort((a, b) => (a.order || 0) - (b.order || 0))) {
+      const node: TreeNode = {
+        id: `interface-${api.id}`,
+        name: api.name,
+        type: 'interface',
+        method: api.method,
+        interfaceId: api.id,
+        order: api.order,
       }
+      if (api.folder_id) {
+        const parent = folderMap.get(String(api.folder_id))
+        if (parent) { parent.children!.push(node) } else { unassigned.push(node) }
+      } else {
+        unassigned.push(node)
+      }
+    }
 
-      // 将属于此文件夹的接口添加为子节点，并按排序排列
-      interfaces
-        .filter((api) => api.folder_id === folder.id)
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
-        .forEach((api) => {
-          folderNode.children?.push({
-            id: `interface-${api.id}`,
-            name: api.name,
-            type: 'interface',
-            method: api.method,
-            interfaceId: api.id,
-            order: api.order
-          })
-        })
+    for (const f of sortedFolders) {
+      const node = folderMap.get(String(f.id))!
+      if (f.parent_id) {
+        const parent = folderMap.get(String(f.parent_id))
+        if (parent) { parent.children!.push(node) } else { tree.push(node) }
+      } else {
+        tree.push(node)
+      }
+    }
 
-      tree.push(folderNode)
-    })
+    const sortChildren = (nodes: TreeNode[]) => {
+      nodes.sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+        return (a.order || 0) - (b.order || 0)
+      })
+      for (const n of nodes) if (n.children?.length) sortChildren(n.children)
+    }
+    sortChildren(tree)
 
-    // 添加未分类的接口
-    const unassignedInterfaces = interfaces
-      .filter(api => !api.folder_id)
-      .sort((a, b) => (a.order || 0) - (b.order || 0))
-
-    if (unassignedInterfaces.length > 0) {
-      const unassignedFolder: TreeNode = {
+    if (unassigned.length > 0) {
+      tree.push({
         id: 'folder-unassigned',
         name: '未分类',
         type: 'folder',
-        children: unassignedInterfaces.map((api) => ({
-          id: `interface-${api.id}`,
-          name: api.name,
-          type: 'interface',
-          method: api.method,
-          interfaceId: api.id,
-          order: api.order
-        }))
-      }
-      tree.push(unassignedFolder)
+        children: unassigned,
+      })
     }
-
     return tree
   }
 
   const tree = buildTree()
-  const folderIds = tree.map(node => node.id)
+  const topLevelIds = tree.map(n => n.id)
 
-  // 过滤树
+  /* ───────── Filter tree recursively ───────── */
   const filterTree = (nodes: TreeNode[]): TreeNode[] => {
     if (!searchTerm) return nodes
-
-    const filtered: TreeNode[] = []
-
-    nodes.forEach((node) => {
-      if (node.type === 'folder' && node.children) {
-        const filteredChildren = node.children.filter((child) =>
-          child.name.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        if (filteredChildren.length > 0) {
-          filtered.push({ ...node, children: filteredChildren })
-        }
+    const term = searchTerm.toLowerCase()
+    return nodes.reduce<TreeNode[]>((acc, node) => {
+      const nameMatch = node.name.toLowerCase().includes(term)
+      if (node.type === 'interface') {
+        if (nameMatch) acc.push(node)
+        return acc
       }
-      if (node.name.toLowerCase().includes(searchTerm.toLowerCase())) {
-        filtered.push(node)
+      const filteredChildren = node.children ? filterTree(node.children) : []
+      if (nameMatch) {
+        acc.push(node)
+      } else if (filteredChildren.length > 0) {
+        acc.push({ ...node, children: filteredChildren })
       }
-    })
-
-    return filtered
+      return acc
+    }, [])
   }
 
   const filteredTree = filterTree(tree)
 
-  const toggle = (id: string) => {
-    saveExpanded({
-      ...expanded,
-      [id]: !expanded[id]
-    })
-  }
+  const toggle = (id: string) => saveExpanded({ ...expanded, [id]: !expanded[id] })
 
-  // 拖拽开始
+  /* ───────── DnD handlers ───────── */
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string)
     setIsDragging(true)
-    // 关闭右键菜单
-    if (contextMenu.show) {
-      setContextMenu(prev => ({ ...prev, show: false }))
-    }
+    if (contextMenu.show) setContextMenu(prev => ({ ...prev, show: false }))
   }
 
-  // 拖拽结束
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event
     setActiveId(null)
     setIsDragging(false)
+    if (!over || active.id === over.id) return
 
-    if (!over) return
+    const aid = active.id as string
+    const oid = over.id as string
+    const aDash = aid.indexOf('-')
+    const oDash = oid.indexOf('-')
+    const aType = aid.substring(0, aDash)
+    const aId = aid.substring(aDash + 1)
+    const oType = oid.substring(0, oDash)
+    const oId = oid.substring(oDash + 1)
 
-    const activeId = active.id as string
-    const overId = over.id as string
-
-    // 检查是否移动到不同位置
-    if (activeId === overId) return
-
-    // 解析拖拽项信息
-    const [activeType, activeIdNum] = activeId.split('-')
-    const [overType, overIdNum] = overId.split('-')
-
-    // 处理接口拖拽到文件夹
-    if (activeType === 'interface' && overType === 'folder') {
-      const targetFolderId = overIdNum === 'unassigned' ? null : parseInt(overIdNum)
-      const interfaceId = parseInt(activeIdNum)
-
-      // 调用移动接口 API
-      await moveMutation.mutateAsync({ interfaceId, targetFolderId })
+    if (aType === 'interface' && oType === 'folder') {
+      await moveMutation.mutateAsync({
+        interfaceId: aId,
+        targetFolderId: oId === 'unassigned' ? null : oId,
+      })
       return
     }
 
-    // 处理同类型排序（文件夹排序文件夹，接口排序接口）
-    if (activeType === overType) {
-      // 计算新排序
-      /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-      const allIds = activeType === 'folder' ? folderIds : []
-      // TODO: 实现排序逻辑
+    if (aType === oType && aType === 'folder') {
+      const orders = topLevelIds
+        .filter(id => id !== 'folder-unassigned')
+        .map((id, idx) => ({ id: id.replace('folder-', ''), sort_order: idx }))
+      reorderMutation.mutate({ type: 'folder', orders })
     }
   }
 
-  // 右键菜单处理
+  /* ───────── Context menu ───────── */
   const handleContextMenu = (e: React.MouseEvent, target: ContextMenu['target']) => {
     e.preventDefault()
     e.stopPropagation()
-    setContextMenu({
-      show: true,
-      x: e.clientX,
-      y: e.clientY,
-      target
-    })
+    setContextMenu({ show: true, x: e.clientX, y: e.clientY, target })
   }
 
-  const closeContextMenu = () => {
-    setContextMenu(prev => ({ ...prev, show: false }))
+  const closeContextMenu = () => setContextMenu(prev => ({ ...prev, show: false }))
+
+  const startRename = (type: 'folder' | 'interface', id: string | number, name: string) => {
+    setRenamingTarget({ type, id })
+    setRenameValue(name)
   }
 
-  // 菜单操作
+  const confirmRename = () => {
+    if (!renamingTarget || !renameValue.trim()) { setRenamingTarget(null); return }
+    if (renamingTarget.type === 'folder') {
+      renameFolderMutation.mutate({ id: renamingTarget.id, name: renameValue.trim() })
+    } else {
+      renameInterfaceMutation.mutate({ id: renamingTarget.id, name: renameValue.trim() })
+    }
+    setRenamingTarget(null)
+  }
+
   const handleMenuAction = async (action: string) => {
     if (!contextMenu.target) return
-
-    /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { type, id, name } = contextMenu.target
 
     switch (action) {
       case 'rename':
-        // TODO: 打开重命名弹窗
+        startRename(type, id, name)
         break
       case 'delete':
         if (type === 'folder') {
-          // TODO: 删除文件夹
+          deleteFolderMutation.mutate(id)
         } else {
           await interfacesApi.delete(id)
           queryClient.invalidateQueries({ queryKey: ['interfaces', projectId] })
         }
         break
       case 'copy':
-        if (type === 'interface') {
-          // TODO: 复制接口
+        if (type === 'interface') copyInterfaceMutation.mutate(id)
+        break
+      case 'new-subfolder': {
+        const folderName = prompt('请输入子文件夹名称：')
+        if (folderName?.trim()) {
+          createSubfolderMutation.mutate({ parentId: id, name: folderName.trim() })
         }
         break
+      }
     }
-
     closeContextMenu()
   }
 
-  // 点击外部关闭右键菜单
   useEffect(() => {
-    const handleClick = () => closeContextMenu()
-    if (contextMenu.show) {
-      document.addEventListener('click', handleClick)
-      return () => document.removeEventListener('click', handleClick)
-    }
+    if (!contextMenu.show) return
+    const handler = () => closeContextMenu()
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
   }, [contextMenu.show])
+
+  /* ───────── Recursive renderers ───────── */
+  const renderInterfaceNode = (node: TreeNode, depth: number) => {
+    const isRenaming = renamingTarget?.type === 'interface' && String(renamingTarget.id) === String(node.interfaceId)
+    return (
+      <div
+        key={node.id}
+        className={cn(
+          'flex items-center gap-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer group transition-all',
+          selectedInterfaceId !== undefined && String(selectedInterfaceId) === String(node.interfaceId) && 'bg-cyan-500/10',
+          isDragging && activeId === node.id && 'opacity-50',
+        )}
+        style={{ paddingLeft: depth * 16 + 8 }}
+        onClick={() => !isRenaming && node.interfaceId !== undefined && onSelectInterface(Number(node.interfaceId))}
+        onContextMenu={(e) => handleContextMenu(e, { type: 'interface', id: node.interfaceId!, name: node.name })}
+      >
+        <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0', METHOD_COLORS[node.method || 'GET'])}>
+          {node.method?.toUpperCase()}
+        </span>
+        {isRenaming ? (
+          <div className="flex items-center gap-1 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+            <input
+              autoFocus
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') confirmRename(); if (e.key === 'Escape') setRenamingTarget(null) }}
+              className="flex-1 min-w-0 bg-slate-800 border border-cyan-500/50 rounded px-1.5 py-0.5 text-sm text-white outline-none"
+            />
+            <button onClick={confirmRename} className="p-0.5 text-emerald-400 hover:text-emerald-300"><Check className="w-3.5 h-3.5" /></button>
+            <button onClick={() => setRenamingTarget(null)} className="p-0.5 text-slate-400 hover:text-slate-300"><X className="w-3.5 h-3.5" /></button>
+          </div>
+        ) : (
+          <span className={cn(
+            'text-sm truncate',
+            selectedInterfaceId !== undefined && String(selectedInterfaceId) === String(node.interfaceId) ? 'text-cyan-400' : 'text-slate-300 group-hover:text-white',
+          )}>
+            {node.name}
+          </span>
+        )}
+      </div>
+    )
+  }
+
+  const renderFolderNode = (node: TreeNode, depth: number) => {
+    const isRenaming = renamingTarget?.type === 'folder' && String(renamingTarget.id) === String(node.folderId)
+    const isExpanded = expanded[node.id]
+    const hasChildren = node.children && node.children.length > 0
+    const isVirtual = node.id === 'folder-unassigned'
+
+    return (
+      <div key={node.id}>
+        <div
+          className={cn(
+            'flex items-center gap-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer text-slate-300 hover:text-white group transition-all',
+            isDragging && activeId === node.id && 'opacity-50',
+          )}
+          style={{ paddingLeft: depth * 16 }}
+          onContextMenu={(e) => !isVirtual && node.folderId && handleContextMenu(e, { type: 'folder', id: node.folderId, name: node.name })}
+        >
+          {depth === 0 && <DragHandle isDragging={activeId === node.id} />}
+          <div onClick={() => toggle(node.id)} className="flex items-center gap-2 flex-1 min-w-0">
+            {hasChildren
+              ? (isExpanded ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />)
+              : <div className="w-4 shrink-0" />}
+            {isExpanded
+              ? <FolderOpen className="w-4 h-4 text-cyan-400 shrink-0" />
+              : <Folder className="w-4 h-4 text-slate-500 shrink-0" />}
+            {isRenaming ? (
+              <div className="flex items-center gap-1 flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+                <input
+                  autoFocus
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') confirmRename(); if (e.key === 'Escape') setRenamingTarget(null) }}
+                  className="flex-1 min-w-0 bg-slate-800 border border-cyan-500/50 rounded px-1.5 py-0.5 text-sm text-white outline-none"
+                />
+                <button onClick={(e) => { e.stopPropagation(); confirmRename() }} className="p-0.5 text-emerald-400 hover:text-emerald-300"><Check className="w-3.5 h-3.5" /></button>
+                <button onClick={(e) => { e.stopPropagation(); setRenamingTarget(null) }} className="p-0.5 text-slate-400 hover:text-slate-300"><X className="w-3.5 h-3.5" /></button>
+              </div>
+            ) : (
+              <>
+                <span className="text-sm font-medium flex-1 truncate">{node.name}</span>
+                {node.children && <span className="text-xs text-slate-600">{node.children.length}</span>}
+              </>
+            )}
+          </div>
+        </div>
+
+        {isExpanded && node.children && (
+          <div className="mt-0.5">
+            {node.children.map(child =>
+              child.type === 'folder'
+                ? renderFolderNode(child, depth + 1)
+                : renderInterfaceNode(child, depth + 1)
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="w-80 h-full border-r border-white/5 flex flex-col bg-slate-900/30">
@@ -423,7 +520,7 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
           <h2 className="text-sm font-semibold text-white">接口列表</h2>
           <div className="flex gap-1">
             <button
-              onClick={() => navigate(`/api/interfaces/new?projectId=${projectId}`)}
+              onClick={() => navigate(`/interface-management/new${projectId ? `?projectId=${projectId}` : ''}`)}
               className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors"
               title="新建接口"
             >
@@ -449,7 +546,7 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
         </div>
       </div>
 
-      {/* Tree View with Drag & Drop */}
+      {/* Tree View */}
       <div className="flex-1 overflow-y-auto p-2" onClick={closeContextMenu}>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
@@ -460,79 +557,14 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
             {searchTerm ? '未找到匹配的接口' : '暂无接口'}
           </div>
         ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={folderIds} strategy={verticalListSortingStrategy}>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <SortableContext items={topLevelIds} strategy={verticalListSortingStrategy}>
               {filteredTree.map(node => (
                 <SortableFolder key={node.id} id={node.id}>
-                  <div
-                    className={cn(
-                      "flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer text-slate-300 hover:text-white group transition-all",
-                      isDragging && activeId === node.id && "opacity-50"
-                    )}
-                  >
-                    <DragHandle isDragging={activeId === node.id} />
-                    <div onClick={() => toggle(node.id)} className="flex items-center gap-2 flex-1">
-                      {node.children && node.children.length > 0 ? (
-                        expanded[node.id] ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />
-                      ) : <div className="w-4" />}
-                      {expanded[node.id] ? (
-                        <FolderOpen className="w-4 h-4 text-cyan-400" />
-                      ) : (
-                        <Folder className="w-4 h-4 text-slate-500" />
-                      )}
-                      <span className="text-sm font-medium flex-1 truncate">{node.name}</span>
-                      {node.children && (
-                        <span className="text-xs text-slate-600">{node.children.length}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {expanded[node.id] && node.children && (
-                    <div className="pl-4 mt-1 space-y-0.5 border-l border-white/5 ml-3.5">
-                      {node.children.map(child => (
-                        <div
-                          key={child.id}
-                          className={cn(
-                            "flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer group transition-all",
-                            selectedInterfaceId === child.interfaceId && "bg-cyan-500/10",
-                            isDragging && activeId === child.id && "opacity-50"
-                          )}
-                          onClick={() => child.interfaceId && onSelectInterface(child.interfaceId)}
-                          onContextMenu={(e) => handleContextMenu(e, {
-                            type: 'interface',
-                            id: child.interfaceId!,
-                            name: child.name
-                          })}
-                        >
-                          <DragHandle isDragging={activeId === child.id} />
-                          <span className={cn(
-                            "text-[10px] font-bold px-1.5 py-0.5 rounded",
-                            METHOD_COLORS[child.method || 'GET']
-                          )}>
-                            {child.method?.toUpperCase()}
-                          </span>
-                          <span className={cn(
-                            "text-sm truncate",
-                            selectedInterfaceId === child.interfaceId
-                              ? "text-cyan-400"
-                              : "text-slate-300 group-hover:text-white"
-                          )}>
-                            {child.name}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {renderFolderNode(node, 0)}
                 </SortableFolder>
               ))}
             </SortableContext>
-
-            {/* 拖拽时的预览 */}
             <DragOverlay>
               {activeId ? (
                 <div className="flex items-center gap-2 px-3 py-2 bg-cyan-500/20 border border-cyan-500/30 rounded-lg">
@@ -545,7 +577,7 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
         )}
       </div>
 
-      {/* 右键菜单 */}
+      {/* Context Menu */}
       {contextMenu.show && contextMenu.target && (
         <div
           className="fixed z-50 min-w-[160px] bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1"
@@ -558,6 +590,15 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
             <Edit className="w-4 h-4" />
             重命名
           </button>
+          {contextMenu.target.type === 'folder' && (
+            <button
+              onClick={() => handleMenuAction('new-subfolder')}
+              className="w-full px-4 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 flex items-center gap-2"
+            >
+              <FolderPlus className="w-4 h-4" />
+              新建子文件夹
+            </button>
+          )}
           {contextMenu.target.type === 'interface' && (
             <button
               onClick={() => handleMenuAction('copy')}

@@ -180,7 +180,9 @@ export default function InterfaceManagementPage() {
         method: interfaceData.method || 'GET',
         params: objectToKeyValueArray(interfaceData.params || {}),
         headers: objectToKeyValueArray(interfaceData.headers || {}),
-        auth: { type: 'no_auth' }, // TODO: 从接口数据加载认证配置
+        auth: interfaceData.auth_config && Object.keys(interfaceData.auth_config).length > 0
+          ? (interfaceData.auth_config as AuthConfig)
+          : { type: 'no_auth' },
         body: typeof interfaceData.body === 'string'
           ? interfaceData.body
           : JSON.stringify(interfaceData.body || {}, null, 2),
@@ -234,6 +236,7 @@ export default function InterfaceManagementPage() {
           headers: keyValueArrayToObject(data.headers),
           body: data.bodyType === 'json' ? JSON.parse(data.body || '{}') : data.body,
           body_type: data.bodyType,
+          auth_config: data.auth_config,
         })
       } else {
         return interfacesApi.update(interfaceId!, data)
@@ -414,6 +417,7 @@ export default function InterfaceManagementPage() {
         ? (() => { try { return JSON.parse(requestData.body) } catch { return {} } })()
         : requestData.body,
       body_type: requestData.bodyType,
+      auth_config: requestData.auth,
     })
   }
 

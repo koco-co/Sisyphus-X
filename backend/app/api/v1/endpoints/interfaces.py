@@ -1,7 +1,7 @@
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -102,8 +102,48 @@ async def create_folder(
     return folder
 
 
+@router.put("/folders/reorder")
+async def reorder_folders(
+    items: list[dict[str, Any]] = Body(...),
+    session: AsyncSession = Depends(get_session),
+):
+    """Batch reorder interface folders."""
+    for item in items:
+        fid = item.get("id")
+        sort_order = item.get("sort_order", 0)
+        if fid:
+            folder = await session.get(InterfaceFolder, str(fid))
+            if folder:
+                folder.order = sort_order
+    await session.commit()
+    return {"success": True}
+
+
+@router.put("/folders/{folder_id}", response_model=FolderResponse)
+async def update_folder(
+    folder_id: str,
+    data: FolderCreate,
+    session: AsyncSession = Depends(get_session),
+):
+    """Update interface folder (rename, move, reorder)."""
+    folder = await session.get(InterfaceFolder, folder_id)
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+
+    if data.name:
+        folder.name = data.name
+    if data.parent_id is not None:
+        folder.parent_id = data.parent_id
+    if data.order is not None:
+        folder.order = data.order
+
+    await session.commit()
+    await session.refresh(folder)
+    return folder
+
+
 @router.delete("/folders/{folder_id}")
-async def delete_folder(folder_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_folder(folder_id: str, session: AsyncSession = Depends(get_session)):
     """删除接口文件夹"""
     folder = await session.get(InterfaceFolder, folder_id)
     if not folder:
@@ -175,6 +215,23 @@ async def import_from_curl(
     return interface
 
 
+@router.put("/reorder")
+async def reorder_interfaces(
+    items: list[dict[str, Any]] = Body(...),
+    session: AsyncSession = Depends(get_session),
+):
+    """Batch reorder interfaces."""
+    for item in items:
+        iid = item.get("id")
+        sort_order = item.get("sort_order", 0)
+        if iid:
+            interface = await session.get(Interface, str(iid))
+            if interface:
+                interface.order = sort_order
+    await session.commit()
+    return {"success": True}
+
+
 @router.get("/{interface_id}", response_model=InterfaceResponse)
 async def read_interface(interface_id: str, session: AsyncSession = Depends(get_session)):
     interface = await session.get(Interface, interface_id)
@@ -206,6 +263,7 @@ async def update_interface(
         "body_type",
         "cookies",
         "folder_id",
+        "auth_config",
     ]
     for key, value in data.items():
         if key in allowed_fields:

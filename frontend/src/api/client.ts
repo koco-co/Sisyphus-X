@@ -96,29 +96,41 @@ export const projectsApi = {
 // 接口相关 API
 export const interfacesApi = {
     list: (params?: { page?: number; size?: number; folder_id?: number; project_id?: number }) => api.get('/interfaces/', { params }),
-    get: (id: number) => api.get(`/interfaces/${id}`),
+    get: (id: number | string) => api.get(`/interfaces/${id}`),
     create: (data: {
-        project_id: number
+        project_id: number | string
         name: string
         url: string
         method: string
         status?: string
         description?: string
-        folder_id?: number | null
+        folder_id?: number | string | null
         headers?: Record<string, string>
         params?: Record<string, unknown>
         cookies?: Record<string, string>
         body?: unknown
         body_type?: string
+        auth_config?: Record<string, unknown>
     }) =>
         api.post('/interfaces/', data),
-    update: (id: number, data: unknown) => api.put(`/interfaces/${id}`, data),
-    delete: (id: number) => api.delete(`/interfaces/${id}`),
+    update: (id: number | string, data: unknown) => api.put(`/interfaces/${id}`, data),
+    delete: (id: number | string) => api.delete(`/interfaces/${id}`),
     sendRequest: (data: { url: string; method: string; headers?: Record<string, string>; params?: Record<string, unknown>; body?: unknown; files?: Record<string, string> }) =>
         api.post('/interfaces/debug/send', data),
     listFolders: (params?: { project_id?: number }) => api.get('/interfaces/folders', { params }),
-    createFolder: (data: { project_id: number; name: string; parent_id?: number }) => api.post('/interfaces/folders', data),
-    deleteFolder: (id: number) => api.delete(`/interfaces/folders/${id}`),
+    createFolder: (data: { project_id: number | string; name: string; parent_id?: number | string }) =>
+        api.post('/interfaces/folders', data),
+    updateFolder: (id: number | string, data: { name?: string; parent_id?: string | null; order?: number }) =>
+        api.put(`/interfaces/folders/${id}`, data),
+    deleteFolder: (id: number | string) => api.delete(`/interfaces/folders/${id}`),
+    reorderFolders: (data: Array<{ id: string; sort_order: number }>) =>
+        api.put('/interfaces/folders/reorder', data),
+    reorderInterfaces: (data: Array<{ id: string; sort_order: number }>) =>
+        api.put('/interfaces/reorder', data),
+    moveInterface: (id: number | string, targetFolderId: string | null) =>
+        api.put(`/interfaces/${id}/move`, { target_folder_id: targetFolderId }),
+    copyInterface: (id: number | string, data?: { name?: string }) =>
+        api.post(`/interfaces/${id}/copy`, data || {}),
     importSwagger: (formData: FormData) => api.post('/interfaces/import/swagger', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),

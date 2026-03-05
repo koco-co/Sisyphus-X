@@ -6,10 +6,11 @@ from pydantic import BaseModel, Field
 
 
 class PlanCreate(BaseModel):
-    """创建测试计划请求"""
+    """创建测试计划请求 — 计划可以空创建,场景稍后通过 /scenarios 子接口添加"""
 
     name: str = Field(..., min_length=1, max_length=255, description="测试计划名称")
-    scenario_id: str = Field(..., description="场景ID")
+    project_id: str = Field(..., description="项目ID")
+    description: str | None = Field(None, description="测试计划描述")
     cron_expression: str | None = Field(None, max_length=255, description="Cron定时表达式")
     status: str = Field(default="active", description="状态: active/paused/archived")
 
@@ -19,7 +20,6 @@ class PlanUpdate(BaseModel):
 
     name: str | None = Field(None, min_length=1, max_length=255, description="测试计划名称")
     description: str | None = Field(None, description="测试计划描述")
-    scenario_id: str | None = Field(None, description="场景ID")
     cron_expression: str | None = Field(None, max_length=255, description="Cron定时表达式")
     status: str | None = Field(None, description="状态: active/paused/archived")
 
@@ -38,3 +38,20 @@ class PlanResponse(BaseModel):
     last_run: datetime | None = None
     created_at: datetime
     updated_at: datetime
+
+
+# === 场景管理子接口 Schema ===
+
+
+class AddScenarioToPlan(BaseModel):
+    """向计划添加场景"""
+
+    scenario_id: str = Field(..., description="场景ID")
+    execution_order: int = Field(..., ge=0, description="执行顺序")
+
+
+class ReorderScenarioItem(BaseModel):
+    """重排序单项"""
+
+    scenario_id: str = Field(..., description="场景ID")
+    execution_order: int = Field(..., ge=0, description="新执行顺序")

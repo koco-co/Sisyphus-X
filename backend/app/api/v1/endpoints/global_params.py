@@ -50,7 +50,7 @@ class GoogleDocstringParser:
             code: Python 代码字符串
 
         Returns:
-            包含 class_name, method_name, description, parameters, return_value 的字典
+            包含 class_name, method_name, description, input_params, output_params 的字典
 
         Raises:
             ValueError: 代码格式错误或无法解析
@@ -95,8 +95,8 @@ class GoogleDocstringParser:
             "class_name": class_name,
             "method_name": method_name,
             "description": parsed.get("description"),
-            "parameters": parsed.get("parameters", []),
-            "return_value": parsed.get("return_value"),
+            "input_params": parsed.get("parameters", []),
+            "output_params": [parsed.get("return_value")] if parsed.get("return_value") else [],
         }
 
     @staticmethod
@@ -294,9 +294,8 @@ async def create_global_param(
         method_name=parsed["method_name"],
         code=data.code,
         description=parsed.get("description"),
-        parameters=parsed.get("parameters"),
-        return_value=parsed.get("return_value"),
-        created_by=current_user.id,
+        input_params=parsed.get("input_params"),
+        output_params=parsed.get("output_params"),
     )
 
     session.add(global_param)
@@ -344,18 +343,18 @@ async def update_global_param(
             global_param.method_name = parsed["method_name"]
             global_param.code = data.code
             global_param.description = parsed.get("description")
-            global_param.parameters = parsed.get("parameters")
-            global_param.return_value = parsed.get("return_value")
+            global_param.input_params = parsed.get("input_params")
+            global_param.output_params = parsed.get("output_params")
         except ValueError as e:
             raise HTTPException(status_code=400, detail=f"代码解析失败: {e}")
     else:
         # 仅更新元数据
         if data.description is not None:
             global_param.description = data.description
-        if data.parameters is not None:
-            global_param.parameters = [p.model_dump() for p in data.parameters]
-        if data.return_value is not None:
-            global_param.return_value = data.return_value.model_dump()
+        if data.input_params is not None:
+            global_param.input_params = [p.model_dump() for p in data.input_params]
+        if data.output_params is not None:
+            global_param.output_params = [p.model_dump() for p in data.output_params]
 
     await session.commit()
     await session.refresh(global_param)

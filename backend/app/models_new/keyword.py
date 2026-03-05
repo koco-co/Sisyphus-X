@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.base_new import Base
 
@@ -13,7 +13,7 @@ class Keyword(Base):
     __tablename__ = "keywords"
     __table_args__ = {"extend_existing": True}
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     keyword_type = Column(String(100), nullable=False)  # 发送请求/断言类型/提取变量/数据库操作/自定义操作
     name = Column(String(255), nullable=False)
     method_name = Column(String(100), nullable=False)

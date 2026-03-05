@@ -1,6 +1,7 @@
 """全局参数 Pydantic Schemas
 
 按照 docs/数据库设计.md §3.17 定义
+Phase 1 重构: 使用 input_params/output_params 代替 parameters/return_value
 """
 
 from datetime import datetime
@@ -8,22 +9,13 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class ParameterInfo(BaseModel):
-    """参数信息 Schema"""
+class ParamDefinition(BaseModel):
+    """参数定义 Schema"""
 
     name: str
-    type: str
+    type: str = "str"
     description: str | None = None
-    required: bool = True
     default: str | None = None
-
-
-class ReturnValueInfo(BaseModel):
-    """返回值信息 Schema"""
-
-    type: str
-    description: str | None = None
-    example: str | None = None
 
 
 class GlobalParamBase(BaseModel):
@@ -33,8 +25,8 @@ class GlobalParamBase(BaseModel):
     method_name: str = Field(..., description="方法名")
     code: str = Field(..., description="Python 代码")
     description: str | None = Field(None, description="描述")
-    parameters: list[ParameterInfo] | None = Field(default=None, description="入参释义")
-    return_value: ReturnValueInfo | None = Field(default=None, description="出参释义")
+    input_params: list[ParamDefinition] = Field(default_factory=list, description="入参释义")
+    output_params: list[ParamDefinition] = Field(default_factory=list, description="出参释义")
 
 
 class GlobalParamCreate(GlobalParamBase):
@@ -48,8 +40,8 @@ class GlobalParamUpdate(BaseModel):
 
     code: str | None = None
     description: str | None = None
-    parameters: list[ParameterInfo] | None = None
-    return_value: ReturnValueInfo | None = None
+    input_params: list[ParamDefinition] | None = None
+    output_params: list[ParamDefinition] | None = None
 
 
 class GlobalParamResponse(GlobalParamBase):
@@ -58,9 +50,7 @@ class GlobalParamResponse(GlobalParamBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
-    created_by: str
-    created_at: datetime
-    updated_at: datetime
+    created_at: datetime | None = None
 
 
 class GlobalParamList(BaseModel):

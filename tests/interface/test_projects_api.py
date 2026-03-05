@@ -8,7 +8,6 @@ from httpx import AsyncClient
 from sqlalchemy import select
 
 from app.models.project import Project, ProjectDataSource
-from app.models.database_config import DatabaseConfig
 
 
 @pytest.mark.asyncio
@@ -189,7 +188,7 @@ class TestDatabaseConfig:
                 "port": 3306,
                 "username": "root",
                 "password": "password123",
-                "database": "test_db",
+                "db_name": "test_db",
                 "is_enabled": True,
             },
         )
@@ -213,7 +212,7 @@ class TestDatabaseConfig:
                 "port": 5432,
                 "username": "postgres",
                 "password": "password123",
-                "database": "test_db",
+                "db_name": "test_db",
             },
         )
         assert response.status_code == 201
@@ -352,7 +351,7 @@ class TestDatabaseConfig:
 
         # 验证数据库中已被删除
         result = await db_session.execute(
-            select(DatabaseConfig).where(DatabaseConfig.id == config_id)
+            select(ProjectDataSource).where(ProjectDataSource.id == config_id)
         )
         config = result.scalar_one_or_none()
         assert config is None
@@ -374,7 +373,7 @@ class TestDatabaseConnection:
                 "port": 3306,
                 "username": "root",
                 "password": "wrongpassword",  # 故意使用错误密码
-                "database": "test_db",
+                "db_name": "test_db",
             },
         )
         config_id = create_response.json()["id"]
@@ -439,15 +438,15 @@ class TestPasswordEncryption:
 
         # 从数据库读取
         result = await db_session.execute(
-            select(DatabaseConfig).where(DatabaseConfig.id == config_id)
+            select(ProjectDataSource).where(ProjectDataSource.id == config_id)
         )
         config = result.scalar_one()
 
         # 密码应该被加密,不等于明文
         from app.core.crypto import decrypt_password
-        decrypted_password = decrypt_password(config.password)
+        decrypted_password = decrypt_password(config.password_hash)
         assert decrypted_password == plain_password
-        assert config.password != plain_password
+        assert config.password_hash != plain_password
 
 
 @pytest.mark.asyncio

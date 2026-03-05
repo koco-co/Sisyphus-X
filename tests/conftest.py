@@ -27,7 +27,6 @@ from app.core.security import get_password_hash
 from app.models.user import User
 from app.models.project import Project, InterfaceFolder, Interface, ProjectEnvironment, ProjectDataSource
 from app.models.keyword import Keyword
-from app.models.database_config import DatabaseConfig
 from app.models.env_variable import EnvVariable
 from app.models.api_test_case import ApiTestCase, ApiTestExecution, ApiTestStep, ApiTestStepResult
 from app.models.scenario import Scenario, ScenarioStep, Dataset

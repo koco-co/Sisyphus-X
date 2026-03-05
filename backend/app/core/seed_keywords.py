@@ -5,6 +5,7 @@
 """
 
 import json
+import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,14 +13,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.keyword import Keyword
 from app.utils.datetime import utcnow
 
-# 内置关键字定义
+# 内置关键字定义 - 使用有效的 UUID
+# 表结构: id, project_id, name, class_name, method_name, description, code, parameters, return_type, is_built_in, is_enabled
 BUILTIN_KEYWORDS = [
     {
-        "id": "builtin-send-request",
+        "id": str(uuid.UUID("00000000-0000-0000-0000-000000000001")),
         "name": "发送请求",
         "class_name": "request",
         "method_name": "send_http_request",
-        "description": "支持requests库中所有支持的请求方式(GET、POST、PUT、DELETE、PATCH、HEAD、OPTIONS等)",
+        "description": "发送HTTP请求,支持GET/POST/PUT/DELETE等方法",
         "code": '''import requests
 from typing import Any, Optional
 
@@ -92,9 +94,10 @@ def send_http_request(
             {"name": "timeout", "type": "int", "description": "超时时间, 单位: 秒, 默认30", "required": False},
             {"name": "cookies", "type": "dict", "description": "Cookie字典", "required": False},
         ]),
+        "return_type": "requests.Response",
     },
     {
-        "id": "builtin-assertion",
+        "id": str(uuid.UUID("00000000-0000-0000-0000-000000000002")),
         "name": "断言类型",
         "class_name": "assertion",
         "method_name": "assert_response",
@@ -212,9 +215,10 @@ def _compare(actual: Any, operator: str, expected: Any) -> bool:
             {"name": "operator", "type": "string", "description": "判断符号(eq/neq/gt/gte/lt/lte/contains等)", "required": True},
             {"name": "expected_value", "type": "any", "description": "预期结果", "required": True},
         ]),
+        "return_type": "dict",
     },
     {
-        "id": "builtin-extract-variable",
+        "id": str(uuid.UUID("00000000-0000-0000-0000-000000000003")),
         "name": "提取变量",
         "class_name": "extract",
         "method_name": "extract_variable",
@@ -288,9 +292,10 @@ def extract_variable(
             {"name": "variable_scope", "type": "string", "description": "变量作用域(global/environment)", "required": False},
             {"name": "default_value", "type": "any", "description": "默认值, 提取失败时使用", "required": False},
         ]),
+        "return_type": "dict",
     },
     {
-        "id": "builtin-db-operation",
+        "id": str(uuid.UUID("00000000-0000-0000-0000-000000000004")),
         "name": "数据库操作",
         "class_name": "database",
         "method_name": "execute_sql",
@@ -388,9 +393,10 @@ def execute_sql(
             {"name": "extract_variable_name", "type": "string", "description": "提取的变量名称", "required": False},
             {"name": "extract_field", "type": "string", "description": "提取的字段名", "required": False},
         ]),
+        "return_type": "dict",
     },
     {
-        "id": "builtin-custom-operation",
+        "id": str(uuid.UUID("00000000-0000-0000-0000-000000000005")),
         "name": "自定义操作",
         "class_name": "custom",
         "method_name": "custom_placeholder",
@@ -436,6 +442,7 @@ def custom_placeholder(
             {"name": "name", "type": "string", "description": "操作名称", "required": False},
             {"name": "description", "type": "string", "description": "操作描述", "required": False},
         ]),
+        "return_type": "dict",
     },
 ]
 
@@ -460,20 +467,21 @@ async def seed_builtin_keywords(session: AsyncSession) -> None:
             # 更新现有内置关键字的代码和参数(保持最新)
             existing.code = kw_data["code"]
             existing.parameters = kw_data["parameters"]
-            existing.description = kw_data["description"]
+            existing.class_name = kw_data["class_name"]
             existing.updated_at = utcnow()
             session.add(existing)
         else:
             # 创建新的内置关键字
             keyword = Keyword(
                 id=kw_data["id"],
-                project_id=None,
+                project_id=None,  # 内置关键字没有项目关联
                 name=kw_data["name"],
                 class_name=kw_data["class_name"],
                 method_name=kw_data["method_name"],
-                description=kw_data["description"],
+                description=kw_data.get("description"),
                 code=kw_data["code"],
-                parameters=kw_data["parameters"],
+                parameters=kw_data.get("parameters"),
+                return_type=kw_data.get("return_type"),
                 is_built_in=True,
                 is_enabled=True,
             )

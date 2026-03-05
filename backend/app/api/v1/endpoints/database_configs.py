@@ -13,8 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_current_user
 from app.core.crypto import decrypt_password, encrypt_password
 from app.core.db import get_session
-from app.models.database_config import DatabaseConfig
-from app.models.project import Project
+from app.models.project import Project, ProjectDataSource
 from app.models.user import User
 from app.schemas.database_config import (
     DatabaseConfigCreate,
@@ -28,9 +27,9 @@ from app.utils.datetime import utcnow
 router = APIRouter()
 
 
-def _config_info(host: str, port: int, initial_database: str | None) -> str:
+def _config_info(host: str, port: int, db_name: str | None) -> str:
     """BE-014: 组装配置信息展示字段 host:port/db"""
-    db_part = f"/{initial_database}" if initial_database else ""
+    db_part = f"/{db_name}" if db_name else ""
     return f"{host}:{port}{db_part}"
 
 
@@ -119,10 +118,10 @@ async def list_database_configs(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="项目不存在")
 
     # 构建查询
-    query = select(DatabaseConfig).where(DatabaseConfig.project_id == project_id)
+    query = select(ProjectDataSource).where(ProjectDataSource.project_id == project_id)
 
     if is_enabled is not None:
-        query = query.where(DatabaseConfig.is_enabled == is_enabled)
+        query = query.where(ProjectDataSource.is_enabled == is_enabled)
 
     # 获取总数
     count_statement = select(func.count()).select_from(query.subquery())
@@ -131,7 +130,7 @@ async def list_database_configs(
 
     # 分页查询
     skip = (page - 1) * size
-    statement = query.order_by(DatabaseConfig.created_at.desc()).offset(skip).limit(size)
+    statement = query.order_by(ProjectDataSource.created_at.desc()).offset(skip).limit(size)
     result = await session.execute(statement)
     configs = result.scalars().all()
 
@@ -149,15 +148,16 @@ async def list_database_configs(
             "db_type": config.db_type,
             "host": config.host,
             "port": config.port,
-            "initial_database": config.initial_database,
+            "db_name": config.db_name,
             "username": config.username,
             "password": "******",  # 脱敏
             "is_enabled": config.is_enabled,
-            "connection_status": config.connection_status,
-            "last_tested_at": config.last_tested_at.isoformat() if config.last_tested_at else None,
+            "status": config.status,
+            "last_test_at": config.last_test_at.isoformat() if config.last_test_at else None,
+            "error_msg": config.error_msg,
             "created_at": config.created_at.isoformat(),
             "updated_at": config.updated_at.isoformat(),
-            "config_info": _config_info(config.host, config.port, config.initial_database),
+            "config_info": _config_info(config.host, config.port, config.db_name),
         }
         items.append(DatabaseConfigResponse(**config_dict))
 
@@ -197,9 +197,9 @@ async def create_database_config(
 
     # 检查变量名唯一性
     if config_in.variable_name:
-        existing_statement = select(DatabaseConfig).where(
-            DatabaseConfig.project_id == project_id,
-            DatabaseConfig.variable_name == config_in.variable_name,
+        existing_statement = select(ProjectDataSource).where(
+            ProjectDataSource.project_id == project_id,
+            ProjectDataSource.variable_name == config_in.variable_name,
         )
         existing_result = await session.execute(existing_statement)
         if existing_result.scalar_one_or_none():
@@ -209,7 +209,7 @@ async def create_database_config(
     encrypted_password = encrypt_password(config_in.password)
 
     # 创建数据库配置
-    config = DatabaseConfig(
+    config = ProjectDataSource(
         id=str(uuid.uuid4()),
         project_id=project_id,
         name=config_in.name,
@@ -217,11 +217,11 @@ async def create_database_config(
         db_type=config_in.db_type,
         host=config_in.host,
         port=config_in.port,
-        initial_database=config_in.initial_database,
+        db_name=config_in.db_name,
         username=config_in.username,
-        password=encrypted_password,
+        password_hash=encrypted_password,
         is_enabled=config_in.is_enabled,
-        connection_status="unknown",
+        status="unknown",
     )
     session.add(config)
     await session.commit()
@@ -236,15 +236,16 @@ async def create_database_config(
         "db_type": config.db_type,
         "host": config.host,
         "port": config.port,
-        "initial_database": config.initial_database,
+        "db_name": config.db_name,
         "username": config.username,
         "password": "******",
         "is_enabled": config.is_enabled,
-        "connection_status": config.connection_status,
-        "last_tested_at": None,
+        "status": config.status,
+        "last_test_at": None,
+        "error_msg": None,
         "created_at": config.created_at.isoformat(),
         "updated_at": config.updated_at.isoformat(),
-        "config_info": _config_info(config.host, config.port, config.initial_database),
+        "config_info": _config_info(config.host, config.port, config.db_name),
     }
     return DatabaseConfigResponse(**config_dict)
 
@@ -268,7 +269,7 @@ async def get_database_config(
     Raises:
         HTTPException 404: 配置不存在
     """
-    config = await session.get(DatabaseConfig, db_id)
+    config = await session.get(ProjectDataSource, db_id)
     if not config or config.project_id != project_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="数据库配置不存在")
 
@@ -281,15 +282,16 @@ async def get_database_config(
         "db_type": config.db_type,
         "host": config.host,
         "port": config.port,
-        "initial_database": config.initial_database,
+        "db_name": config.db_name,
         "username": config.username,
         "password": "******",
         "is_enabled": config.is_enabled,
-        "connection_status": config.connection_status,
-        "last_tested_at": config.last_tested_at.isoformat() if config.last_tested_at else None,
+        "status": config.status,
+        "last_test_at": config.last_test_at.isoformat() if config.last_test_at else None,
+        "error_msg": config.error_msg,
         "created_at": config.created_at.isoformat(),
         "updated_at": config.updated_at.isoformat(),
-        "config_info": _config_info(config.host, config.port, config.initial_database),
+        "config_info": _config_info(config.host, config.port, config.db_name),
     }
     return DatabaseConfigResponse(**config_dict)
 
@@ -318,16 +320,16 @@ async def update_database_config(
         HTTPException 404: 配置不存在
         HTTPException 409: 变量名已存在
     """
-    config = await session.get(DatabaseConfig, db_id)
+    config = await session.get(ProjectDataSource, db_id)
     if not config or config.project_id != project_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="数据库配置不存在")
 
     # 检查变量名唯一性
     if config_in.variable_name and config_in.variable_name != config.variable_name:
-        existing_statement = select(DatabaseConfig).where(
-            DatabaseConfig.project_id == project_id,
-            DatabaseConfig.variable_name == config_in.variable_name,
-            DatabaseConfig.id != db_id,
+        existing_statement = select(ProjectDataSource).where(
+            ProjectDataSource.project_id == project_id,
+            ProjectDataSource.variable_name == config_in.variable_name,
+            ProjectDataSource.id != db_id,
         )
         existing_result = await session.execute(existing_statement)
         if existing_result.scalar_one_or_none():
@@ -338,7 +340,7 @@ async def update_database_config(
 
     # 如果更新密码，需要加密
     if "password" in update_data:
-        update_data["password"] = encrypt_password(update_data["password"])
+        update_data["password_hash"] = encrypt_password(update_data.pop("password"))
 
     for field, value in update_data.items():
         setattr(config, field, value)
@@ -357,15 +359,16 @@ async def update_database_config(
         "db_type": config.db_type,
         "host": config.host,
         "port": config.port,
-        "initial_database": config.initial_database,
+        "db_name": config.db_name,
         "username": config.username,
         "password": "******",
         "is_enabled": config.is_enabled,
-        "connection_status": config.connection_status,
-        "last_tested_at": config.last_tested_at.isoformat() if config.last_tested_at else None,
+        "status": config.status,
+        "last_test_at": config.last_test_at.isoformat() if config.last_test_at else None,
+        "error_msg": config.error_msg,
         "created_at": config.created_at.isoformat(),
         "updated_at": config.updated_at.isoformat(),
-        "config_info": _config_info(config.host, config.port, config.initial_database),
+        "config_info": _config_info(config.host, config.port, config.db_name),
     }
     return DatabaseConfigResponse(**config_dict)
 
@@ -388,7 +391,7 @@ async def delete_database_config(
     Raises:
         HTTPException 404: 配置不存在
     """
-    config = await session.get(DatabaseConfig, db_id)
+    config = await session.get(ProjectDataSource, db_id)
     if not config or config.project_id != project_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="数据库配置不存在")
 
@@ -417,12 +420,12 @@ async def test_database_connection_endpoint(
     Raises:
         HTTPException 404: 配置不存在
     """
-    config = await session.get(DatabaseConfig, db_id)
+    config = await session.get(ProjectDataSource, db_id)
     if not config or config.project_id != project_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="数据库配置不存在")
 
     # 解密密码
-    plain_password = decrypt_password(config.password)
+    plain_password = decrypt_password(config.password_hash)
 
     # 测试连接
     success, message, latency = await test_database_connection(
@@ -431,15 +434,19 @@ async def test_database_connection_endpoint(
         port=config.port,
         username=config.username,
         password=plain_password,
-        database=config.initial_database,
+        database=config.db_name,
     )
 
     # 更新连接状态
-    config.connection_status = "connected" if success else "failed"
-    config.last_tested_at = utcnow()
+    config.status = "connected" if success else "failed"
+    config.last_test_at = utcnow()
+    if not success:
+        config.error_msg = message
+    else:
+        config.error_msg = None
     session.add(config)
     await session.commit()
 
     return DatabaseConfigTestResult(
-        success=success, connection_status=config.connection_status, message=message
+        success=success, status=config.status, message=message, latency_ms=latency
     )

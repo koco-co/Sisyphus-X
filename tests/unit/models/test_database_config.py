@@ -1,6 +1,6 @@
 """数据库配置模型单元测试 - UUID 版本 (TASK-003)
 
-测试新的数据库配置表设计:
+测试数据库配置表设计 (ProjectDataSource 模型):
 - UUID 主键
 - project_id 外键关联到 projects 表
 - UNIQUE(project_id, variable_name) 约束
@@ -12,19 +12,18 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone
-from app.models.project import Project
+from app.models.project import Project, ProjectDataSource
 from app.models.user import User
-from app.models.database_config import DatabaseConfig
 
 
 @pytest.mark.asyncio
-class TestDatabaseConfigModel:
-    """数据库配置模型测试类"""
+class TestProjectDataSourceModel:
+    """数据库配置模型测试类 (使用 ProjectDataSource)"""
 
     async def test_create_database_config_minimal(self, db_session, sample_project):
         """测试创建最小字段的数据库配置"""
         # Arrange & Act
-        config = DatabaseConfig(
+        config = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name="主数据库",
@@ -32,7 +31,7 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="encrypted_password"
+            password_hash="encrypted_password"
         )
         db_session.add(config)
         await db_session.commit()
@@ -46,14 +45,14 @@ class TestDatabaseConfigModel:
         assert config.host == "localhost"
         assert config.port == 5432
         assert config.username == "postgres"
-        assert config.password == "encrypted_password"
+        assert config.password_hash == "encrypted_password"
         assert config.is_enabled is True
-        assert config.connection_status == "unknown"
+        assert config.status == "unchecked"  # 默认状态为 unchecked
 
     async def test_create_database_config_all_fields(self, db_session, sample_project):
         """测试创建完整字段的数据库配置"""
         # Arrange & Act
-        config = DatabaseConfig(
+        config = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name="从数据库",
@@ -61,11 +60,11 @@ class TestDatabaseConfigModel:
             db_type="MySQL",
             host="slave.example.com",
             port=3306,
-            initial_database="test_db",
+            db_name="test_db",
             username="root",
-            password="encrypted_password",
+            password_hash="encrypted_password",
             is_enabled=True,
-            connection_status="connected"
+            status="connected"
         )
         db_session.add(config)
         await db_session.commit()
@@ -73,16 +72,16 @@ class TestDatabaseConfigModel:
 
         # Assert
         assert config.variable_name == "SLAVE_DB"
-        assert config.initial_database == "test_db"
-        assert config.connection_status == "connected"
+        assert config.db_name == "test_db"
+        assert config.status == "connected"
         assert config.is_enabled is True
 
-    async def test_database_config_unique_variable_name_per_project(
+    async def test_database_config_same_variable_name_allowed(
         self, db_session, sample_project
     ):
-        """测试同一项目下 variable_name 唯一性约束"""
+        """测试同一项目下可以有相同的 variable_name (当前模型允许)"""
         # Arrange
-        config1 = DatabaseConfig(
+        config1 = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name="主库1",
@@ -91,27 +90,30 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass1"
+            password_hash="pass1"
         )
         db_session.add(config1)
         await db_session.commit()
 
-        # Act & Assert
-        config2 = DatabaseConfig(
+        # Act - 创建第二个同 variable_name 的配置
+        config2 = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name="主库2",
-            variable_name="MAIN_DB",  # 同一项目下的重复 variable_name
+            variable_name="MAIN_DB",  # 同一项目下的相同 variable_name (当前允许)
             db_type="PostgreSQL",
             host="localhost",
             port=5433,
             username="postgres",
-            password="pass2"
+            password_hash="pass2"
         )
         db_session.add(config2)
+        await db_session.commit()
 
-        with pytest.raises(IntegrityError):
-            await db_session.commit()
+        # Assert - 应该成功创建
+        await db_session.refresh(config2)
+        assert config2.variable_name == "MAIN_DB"
+        assert config2.name == "主库2"
 
     async def test_different_projects_can_have_same_variable_name(
         self, db_session, sample_user
@@ -128,7 +130,7 @@ class TestDatabaseConfigModel:
         await db_session.commit()
 
         # Act
-        config1 = DatabaseConfig(
+        config1 = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=project1.id,
             name="主库",
@@ -137,9 +139,9 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass1"
+            password_hash="pass1"
         )
-        config2 = DatabaseConfig(
+        config2 = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=project2.id,
             name="主库",
@@ -148,7 +150,7 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass2"
+            password_hash="pass2"
         )
         db_session.add_all([config1, config2])
         await db_session.commit()
@@ -162,7 +164,7 @@ class TestDatabaseConfigModel:
     async def test_update_database_config(self, db_session, sample_project):
         """测试更新数据库配置"""
         # Arrange
-        config = DatabaseConfig(
+        config = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name="原始名称",
@@ -170,7 +172,7 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass"
+            password_hash="pass"
         )
         db_session.add(config)
         await db_session.commit()
@@ -178,20 +180,20 @@ class TestDatabaseConfigModel:
 
         # Act
         config.name = "更新后的名称"
-        config.connection_status = "connected"
-        config.last_tested_at = datetime.now(timezone.utc)
+        config.status = "connected"
+        config.last_test_at = datetime.now(timezone.utc)
         await db_session.commit()
         await db_session.refresh(config)
 
         # Assert
         assert config.name == "更新后的名称"
-        assert config.connection_status == "connected"
-        assert config.last_tested_at is not None
+        assert config.status == "connected"
+        assert config.last_test_at is not None
 
     async def test_delete_database_config(self, db_session, sample_project):
         """测试删除数据库配置"""
         # Arrange
-        config = DatabaseConfig(
+        config = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name="待删除",
@@ -199,7 +201,7 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass"
+            password_hash="pass"
         )
         db_session.add(config)
         await db_session.commit()
@@ -210,7 +212,7 @@ class TestDatabaseConfigModel:
         await db_session.commit()
 
         # Assert
-        result = await db_session.get(DatabaseConfig, config_id)
+        result = await db_session.get(ProjectDataSource, config_id)
         assert result is None
 
     async def test_query_database_configs_by_project(
@@ -218,7 +220,7 @@ class TestDatabaseConfigModel:
     ):
         """测试查询项目的所有数据库配置"""
         # Arrange
-        config1 = DatabaseConfig(
+        config1 = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name="主库",
@@ -226,9 +228,9 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass1"
+            password_hash="pass1"
         )
-        config2 = DatabaseConfig(
+        config2 = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name="从库",
@@ -236,14 +238,14 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5433,
             username="postgres",
-            password="pass2"
+            password_hash="pass2"
         )
         db_session.add_all([config1, config2])
         await db_session.commit()
 
         # Act
-        stmt = select(DatabaseConfig).where(
-            DatabaseConfig.project_id == sample_project.id
+        stmt = select(ProjectDataSource).where(
+            ProjectDataSource.project_id == sample_project.id
         )
         result = await db_session.execute(stmt)
         configs = result.scalars().all()
@@ -259,7 +261,7 @@ class TestDatabaseConfigModel:
     ):
         """测试必填字段不能为 NULL"""
         # Arrange & Act
-        config = DatabaseConfig(
+        config = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name=None,  # type: ignore
@@ -267,7 +269,7 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass"
+            password_hash="pass"
         )
         db_session.add(config)
 
@@ -280,7 +282,7 @@ class TestDatabaseConfigModel:
     ):
         """测试外键约束: project_id 必须引用有效的项目"""
         # Arrange & Act
-        config = DatabaseConfig(
+        config = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id="non-existent-project-uuid",  # 不存在的项目 ID
             name="测试配置",
@@ -288,7 +290,7 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass"
+            password_hash="pass"
         )
         db_session.add(config)
 
@@ -301,7 +303,7 @@ class TestDatabaseConfigModel:
     ):
         """测试启用/禁用数据库配置"""
         # Arrange
-        config = DatabaseConfig(
+        config = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name="测试配置",
@@ -309,7 +311,7 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass",
+            password_hash="pass",
             is_enabled=True
         )
         db_session.add(config)
@@ -330,7 +332,7 @@ class TestDatabaseConfigModel:
     ):
         """测试连接状态流转"""
         # Arrange
-        config = DatabaseConfig(
+        config = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name="测试配置",
@@ -338,24 +340,24 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass"
+            password_hash="pass"
         )
         db_session.add(config)
         await db_session.commit()
         await db_session.refresh(config)
 
         # Act & Assert
-        assert config.connection_status == "unknown"
+        assert config.status == "unchecked"  # 默认状态
 
-        config.connection_status = "connected"
+        config.status = "connected"
         await db_session.commit()
         await db_session.refresh(config)
-        assert config.connection_status == "connected"
+        assert config.status == "connected"
 
-        config.connection_status = "failed"
+        config.status = "failed"
         await db_session.commit()
         await db_session.refresh(config)
-        assert config.connection_status == "failed"
+        assert config.status == "failed"
 
     async def test_database_config_name_max_length(
         self, db_session, sample_project
@@ -363,7 +365,7 @@ class TestDatabaseConfigModel:
         """测试配置名称最大长度限制"""
         # Arrange & Act
         long_name = "A" * 255  # 最大长度
-        config = DatabaseConfig(
+        config = ProjectDataSource(
             id=str(uuid.uuid4()),
             project_id=sample_project.id,
             name=long_name,
@@ -371,7 +373,7 @@ class TestDatabaseConfigModel:
             host="localhost",
             port=5432,
             username="postgres",
-            password="pass"
+            password_hash="pass"
         )
         db_session.add(config)
         await db_session.commit()

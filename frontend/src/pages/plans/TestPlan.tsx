@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,9 +11,11 @@ import {
     Loader2,
     ChevronRight,
     ChevronDown,
+    ChevronUp,
     X,
     Workflow,
     Play,
+    GripVertical,
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { plansApi, projectsApi, scenariosApi } from '@/api/client';
@@ -47,6 +49,21 @@ interface Scenario {
     tags?: string[];
 }
 
+interface PlanScenarioItem {
+    id: string;
+    scenario_id: string;
+    scenario_name?: string;
+    execution_order: number;
+    created_at?: string;
+}
+
+const PRIORITY_STYLES: Record<string, string> = {
+    P0: 'bg-red-500/10 text-red-400 border-red-500/20',
+    P1: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    P2: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+    P3: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+};
+
 export default function TestPlan() {
     const navigate = useNavigate();
     /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
@@ -58,26 +75,23 @@ export default function TestPlan() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedProjectId, setSelectedProjectId] = useState('');
 
-    // 删除
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [planToDelete, setPlanToDelete] = useState<TestPlanItem | null>(null);
 
-    // 创建/编辑
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingPlan, setEditingPlan] = useState<TestPlanItem | null>(null);
     const [createForm, setCreateForm] = useState({ name: '', project_id: '', description: '' });
 
-    // 场景抽屉
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [drawerPlanId, setDrawerPlanId] = useState<string | null>(null);
     const [scenarioSearchQuery, setScenarioSearchQuery] = useState('');
     const [scenarioPage, setScenarioPage] = useState(1);
 
-    // 预留配置折叠（FE-064, FE-065）
     const [jenkinsExpanded, setJenkinsExpanded] = useState(false);
     const [webhookExpanded, setWebhookExpanded] = useState(false);
 
-    // 获取项目列表
+    // --- Data queries ---
+
     const { data: projectData } = useQuery({
         queryKey: ['projects'],
         queryFn: () => projectsApi.list({ page: 1, size: 100 }),
@@ -85,7 +99,6 @@ export default function TestPlan() {
     });
     const projects: Project[] = projectData?.items || [];
 
-    // 获取测试计划列表
     const { data: planData, isLoading } = useQuery({
         queryKey: ['plans', page, pageSize, searchQuery, selectedProjectId],
         queryFn: () => plansApi.list({
@@ -101,14 +114,13 @@ export default function TestPlan() {
     const total = planData?.total || 0;
     const pages = planData?.pages || 0;
 
-    // 获取可添加的场景列表（抽屉用）
     const { data: scenarioData, isLoading: scenariosLoading } = useQuery({
-        queryKey: ['scenarios-for-plan', scenarioPage, scenarioSearchQuery, createForm.project_id],
+        queryKey: ['scenarios-for-plan', scenarioPage, scenarioSearchQuery, editingPlan?.project_id || createForm.project_id],
         queryFn: () => scenariosApi.list({
             page: scenarioPage,
             size: 10,
             search: scenarioSearchQuery || undefined,
-            project_id: createForm.project_id || undefined,
+            project_id: (editingPlan?.project_id || createForm.project_id) || undefined,
         }),
         select: (data) => data.data,
         enabled: isDrawerOpen,
@@ -117,33 +129,48 @@ export default function TestPlan() {
     const availableScenarios: Scenario[] = scenarioData?.items || [];
     const scenarioTotalPages = scenarioData?.pages || 0;
 
-    // 创建/更新
+    // Fetch associated scenarios when editing a plan
+    const { data: planScenariosData, refetch: refetchPlanScenarios } = useQuery({
+        queryKey: ['plan-scenarios', editingPlan?.id],
+        queryFn: async () => {
+            const res = await plansApi.listScenarios(editingPlan!.id);
+            return (res.data?.items ?? res.data) as PlanScenarioItem[];
+        },
+        enabled: !!editingPlan,
+    });
+    const planScenarios: PlanScenarioItem[] = planScenariosData || [];
+
+    // --- Mutations ---
+
     const createMutation = useMutation({
-        mutationFn: (data: unknown) => plansApi.create(data),
+        mutationFn: (data: { name: string; project_id: string; description?: string }) => plansApi.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
             closeCreateModal();
             toast.success('创建成功');
         },
         onError: (err: unknown) => {
-            toast.error(err?.response?.data?.detail || '创建失败');
+            const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            toast.error(msg || '创建失败');
         }
     });
 
     const updateMutation = useMutation({
-        mutationFn: (data: unknown) => plansApi.update(data.id, data),
+        mutationFn: ({ id, ...data }: { id: string; name?: string; description?: string }) =>
+            plansApi.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
             closeCreateModal();
             toast.success('编辑成功');
         },
         onError: (err: unknown) => {
-            toast.error(err?.response?.data?.detail || '编辑失败');
+            const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            toast.error(msg || '编辑失败');
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id: number) => plansApi.delete(id),
+        mutationFn: (id: string) => plansApi.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
             setIsDeleteOpen(false);
@@ -153,16 +180,41 @@ export default function TestPlan() {
         onError: () => toast.error('删除失败')
     });
 
-    // 添加场景到计划
     const addScenarioMutation = useMutation({
-        mutationFn: ({ planId, scenarioId }: { planId: number; scenarioId: number }) =>
-            plansApi.addScenario(planId, { scenario_id: scenarioId }),
+        mutationFn: ({ planId, scenarioId, executionOrder }: { planId: string; scenarioId: string; executionOrder: number }) =>
+            plansApi.addScenario(planId, { scenario_id: scenarioId, execution_order: executionOrder }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plans'] });
+            refetchPlanScenarios();
             toast.success('场景已添加');
         },
-        onError: (err: unknown) => toast.error(err?.response?.data?.detail || '添加失败'),
+        onError: (err: unknown) => {
+            const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            toast.error(msg || '添加失败');
+        },
     });
+
+    const removeScenarioMutation = useMutation({
+        mutationFn: ({ planId, scenarioId }: { planId: string; scenarioId: string }) =>
+            plansApi.removeScenario(planId, scenarioId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['plans'] });
+            refetchPlanScenarios();
+            toast.success('场景已移除');
+        },
+        onError: () => toast.error('移除失败'),
+    });
+
+    const reorderMutation = useMutation({
+        mutationFn: ({ planId, items }: { planId: string; items: Array<{ scenario_id: string; execution_order: number }> }) =>
+            plansApi.reorderScenarios(planId, items),
+        onSuccess: () => {
+            refetchPlanScenarios();
+        },
+        onError: () => toast.error('排序失败'),
+    });
+
+    // --- Helpers ---
 
     const openCreateModal = () => {
         setEditingPlan(null);
@@ -186,12 +238,12 @@ export default function TestPlan() {
         setCreateForm({ name: '', project_id: '', description: '' });
     };
 
-    const openScenarioDrawer = (planId: string) => {
+    const openScenarioDrawer = useCallback((planId: string) => {
         setDrawerPlanId(planId);
         setIsDrawerOpen(true);
         setScenarioSearchQuery('');
         setScenarioPage(1);
-    };
+    }, []);
 
     const getProjectName = (projectId: string) => {
         const p = projects.find(p => String(p.id) === String(projectId));
@@ -203,6 +255,48 @@ export default function TestPlan() {
         return new Date(dateStr).toLocaleString('zh-CN', {
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit',
+        });
+    };
+
+    const handleSavePlan = () => {
+        if (!createForm.name.trim() || !createForm.project_id) {
+            toast.error('请填写必填项');
+            return;
+        }
+        if (editingPlan) {
+            updateMutation.mutate({
+                id: editingPlan.id,
+                name: createForm.name.trim(),
+                description: createForm.description.trim() || undefined,
+            });
+        } else {
+            createMutation.mutate({
+                name: createForm.name.trim(),
+                project_id: createForm.project_id,
+                description: createForm.description.trim() || undefined,
+            });
+        }
+    };
+
+    const handleMoveScenario = (index: number, direction: 'up' | 'down') => {
+        if (!editingPlan) return;
+        const list = [...planScenarios];
+        const targetIndex = direction === 'up' ? index - 1 : index + 1;
+        if (targetIndex < 0 || targetIndex >= list.length) return;
+
+        [list[index], list[targetIndex]] = [list[targetIndex], list[index]];
+        const items = list.map((s, i) => ({ scenario_id: s.scenario_id, execution_order: i }));
+        reorderMutation.mutate({ planId: editingPlan.id, items });
+    };
+
+    const handleAddScenarioFromDrawer = (scenario: Scenario) => {
+        const targetPlanId = drawerPlanId || editingPlan?.id;
+        if (!targetPlanId) return;
+        const nextOrder = planScenarios.length;
+        addScenarioMutation.mutate({
+            planId: targetPlanId,
+            scenarioId: scenario.id,
+            executionOrder: nextOrder,
         });
     };
 
@@ -231,7 +325,7 @@ export default function TestPlan() {
                 </motion.button>
             </motion.header>
 
-            {/* 工具栏 */}
+            {/* Toolbar */}
             <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -261,7 +355,7 @@ export default function TestPlan() {
                 </div>
             </motion.div>
 
-            {/* 列表 */}
+            {/* Plan list table */}
             <motion.div
                 className="bg-slate-900 border border-white/5 rounded-3xl overflow-hidden shadow-xl"
                 initial={{ opacity: 0, y: 20 }}
@@ -405,11 +499,11 @@ export default function TestPlan() {
                 )}
             </motion.div>
 
-            {/* 删除确认 */}
+            {/* Delete confirmation */}
             <ConfirmDialog
                 isOpen={isDeleteOpen}
                 onClose={() => setIsDeleteOpen(false)}
-                onConfirm={() => planToDelete && deleteMutation.mutate(Number(planToDelete.id))}
+                onConfirm={() => planToDelete && deleteMutation.mutate(planToDelete.id)}
                 title="删除测试计划"
                 description="请输入计划名称确认删除。此操作无法撤销。"
                 confirmText="删除"
@@ -417,7 +511,7 @@ export default function TestPlan() {
                 verificationText={planToDelete?.name}
             />
 
-            {/* 创建/编辑弹窗 */}
+            {/* Create / Edit panel */}
             <AnimatePresence>
                 {isCreateOpen && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={closeCreateModal}>
@@ -426,120 +520,185 @@ export default function TestPlan() {
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.95 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl p-8"
+                            className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
                         >
-                            <h3 className="text-xl font-bold text-white mb-6">
-                                {editingPlan ? '编辑计划' : '新建测试计划'}
-                            </h3>
+                            <div className="p-8">
+                                <h3 className="text-xl font-bold text-white mb-6">
+                                    {editingPlan ? '编辑计划' : '新建测试计划'}
+                                </h3>
 
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-slate-400 text-sm mb-2 font-medium">
-                                        计划名称 <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={createForm.name}
-                                        onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                                        placeholder="例如: 核心链路回归测试"
-                                        className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-slate-400 text-sm mb-2 font-medium">
-                                        所属项目 <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        value={createForm.project_id}
-                                        onChange={(e) => setCreateForm({ ...createForm, project_id: e.target.value })}
-                                        className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 transition-colors"
-                                    >
-                                        <option value="">请选择项目</option>
-                                        {projects.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-slate-400 text-sm mb-2">描述</label>
-                                    <textarea
-                                        value={createForm.description}
-                                        onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                                        placeholder="测试计划描述..."
-                                        rows={3}
-                                        className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white resize-none focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
-                                    />
-                                </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-slate-400 text-sm mb-2 font-medium">
+                                            计划名称 <span className="text-red-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={createForm.name}
+                                            onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                                            placeholder="例如: 核心链路回归测试"
+                                            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-slate-400 text-sm mb-2 font-medium">
+                                            所属项目 <span className="text-red-500">*</span>
+                                        </label>
+                                        <select
+                                            value={createForm.project_id}
+                                            onChange={(e) => setCreateForm({ ...createForm, project_id: e.target.value })}
+                                            disabled={!!editingPlan}
+                                            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 transition-colors disabled:opacity-50"
+                                        >
+                                            <option value="">请选择项目</option>
+                                            {projects.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-slate-400 text-sm mb-2">描述</label>
+                                        <textarea
+                                            value={createForm.description}
+                                            onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                                            placeholder="测试计划描述..."
+                                            rows={3}
+                                            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3 text-white resize-none focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
+                                        />
+                                    </div>
 
-                                {/* Jenkins 环境（预留 FE-064） */}
-                                <div className="border border-white/5 rounded-xl overflow-hidden">
-                                    <button
-                                        type="button"
-                                        onClick={() => setJenkinsExpanded((v) => !v)}
-                                        className="w-full px-4 py-3 flex items-center justify-between text-left text-slate-400 hover:bg-white/5 transition-colors"
-                                    >
-                                        <span className="text-sm font-medium">Jenkins 环境（预留）</span>
-                                        {jenkinsExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                    </button>
-                                    {jenkinsExpanded && (
-                                        <div className="px-4 pb-3 text-slate-500 text-sm">敬请期待：后续版本将支持 Jenkins 环境配置。</div>
+                                    {/* Associated scenarios (only when editing) */}
+                                    {editingPlan && (
+                                        <div className="border-t border-white/5 pt-4 mt-4">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <h4 className="text-white font-medium text-sm flex items-center gap-2">
+                                                    <Workflow className="w-4 h-4 text-cyan-400" />
+                                                    关联场景
+                                                    <span className="text-xs text-slate-500">({planScenarios.length})</span>
+                                                </h4>
+                                                <button
+                                                    onClick={() => openScenarioDrawer(editingPlan.id)}
+                                                    className="flex items-center gap-1 px-3 py-1.5 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 rounded-lg text-xs font-medium transition-colors"
+                                                >
+                                                    <Plus className="w-3 h-3" /> 添加场景
+                                                </button>
+                                            </div>
+
+                                            {planScenarios.length === 0 ? (
+                                                <div className="text-center py-6 text-slate-500 text-sm bg-slate-800/30 rounded-xl border border-dashed border-white/10">
+                                                    <Workflow className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                                                    暂无关联场景，点击上方按钮添加
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-1.5 max-h-[280px] overflow-y-auto pr-1">
+                                                    {planScenarios.map((ps, idx) => (
+                                                        <motion.div
+                                                            key={ps.id}
+                                                            layout
+                                                            className="flex items-center gap-3 p-3 bg-slate-800/50 border border-white/5 rounded-xl group hover:border-white/10 transition-colors"
+                                                        >
+                                                            <GripVertical className="w-4 h-4 text-slate-600 flex-shrink-0" />
+
+                                                            <span className="text-xs text-slate-500 font-mono w-5 text-right flex-shrink-0">
+                                                                {idx + 1}
+                                                            </span>
+
+                                                            <div className="flex-1 min-w-0">
+                                                                <span className="text-white text-sm truncate block">
+                                                                    {ps.scenario_name || ps.scenario_id}
+                                                                </span>
+                                                            </div>
+
+                                                            <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <button
+                                                                    onClick={() => handleMoveScenario(idx, 'up')}
+                                                                    disabled={idx === 0 || reorderMutation.isPending}
+                                                                    className="p-1 text-slate-400 hover:text-white hover:bg-white/10 rounded disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                                                                    title="上移"
+                                                                >
+                                                                    <ChevronUp className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => handleMoveScenario(idx, 'down')}
+                                                                    disabled={idx === planScenarios.length - 1 || reorderMutation.isPending}
+                                                                    className="p-1 text-slate-400 hover:text-white hover:bg-white/10 rounded disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                                                                    title="下移"
+                                                                >
+                                                                    <ChevronDown className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => removeScenarioMutation.mutate({
+                                                                        planId: editingPlan.id,
+                                                                        scenarioId: ps.scenario_id,
+                                                                    })}
+                                                                    disabled={removeScenarioMutation.isPending}
+                                                                    className="p-1 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+                                                                    title="移除"
+                                                                >
+                                                                    <X className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </motion.div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     )}
+
+                                    {/* Jenkins (placeholder) */}
+                                    <div className="border border-white/5 rounded-xl overflow-hidden">
+                                        <button
+                                            type="button"
+                                            onClick={() => setJenkinsExpanded((v) => !v)}
+                                            className="w-full px-4 py-3 flex items-center justify-between text-left text-slate-400 hover:bg-white/5 transition-colors"
+                                        >
+                                            <span className="text-sm font-medium">Jenkins 环境（预留）</span>
+                                            {jenkinsExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                        </button>
+                                        {jenkinsExpanded && (
+                                            <div className="px-4 pb-3 text-slate-500 text-sm">敬请期待：后续版本将支持 Jenkins 环境配置。</div>
+                                        )}
+                                    </div>
+
+                                    {/* Webhook (placeholder) */}
+                                    <div className="border border-white/5 rounded-xl overflow-hidden">
+                                        <button
+                                            type="button"
+                                            onClick={() => setWebhookExpanded((v) => !v)}
+                                            className="w-full px-4 py-3 flex items-center justify-between text-left text-slate-400 hover:bg-white/5 transition-colors"
+                                        >
+                                            <span className="text-sm font-medium">Webhook 配置（预留）</span>
+                                            {webhookExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                        </button>
+                                        {webhookExpanded && (
+                                            <div className="px-4 pb-3 text-slate-500 text-sm">敬请期待：后续版本将支持 Webhook 通知配置。</div>
+                                        )}
+                                    </div>
                                 </div>
 
-                                {/* Webhook 配置（预留 FE-065） */}
-                                <div className="border border-white/5 rounded-xl overflow-hidden">
+                                <div className="flex justify-end gap-4 mt-8">
                                     <button
-                                        type="button"
-                                        onClick={() => setWebhookExpanded((v) => !v)}
-                                        className="w-full px-4 py-3 flex items-center justify-between text-left text-slate-400 hover:bg-white/5 transition-colors"
+                                        onClick={closeCreateModal}
+                                        className="px-6 py-3 text-slate-400 hover:text-white transition-colors"
                                     >
-                                        <span className="text-sm font-medium">Webhook 配置（预留）</span>
-                                        {webhookExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                        取消
                                     </button>
-                                    {webhookExpanded && (
-                                        <div className="px-4 pb-3 text-slate-500 text-sm">敬请期待：后续版本将支持 Webhook 通知配置。</div>
-                                    )}
+                                    <button
+                                        onClick={handleSavePlan}
+                                        disabled={!createForm.name.trim() || !createForm.project_id || createMutation.isPending || updateMutation.isPending}
+                                        className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center gap-2 transition-colors"
+                                    >
+                                        {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
+                                        {editingPlan ? '保存' : '创建'}
+                                    </button>
                                 </div>
-                            </div>
-
-                            <div className="flex justify-end gap-4 mt-8">
-                                <button
-                                    onClick={closeCreateModal}
-                                    className="px-6 py-3 text-slate-400 hover:text-white transition-colors"
-                                >
-                                    取消
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (!createForm.name.trim() || !createForm.project_id) {
-                                            toast.error('请填写必填项');
-                                            return;
-                                        }
-                                        const payload = {
-                                            name: createForm.name.trim(),
-                                            project_id: Number(createForm.project_id),
-                                            description: createForm.description.trim(),
-                                            created_by: 'auto-assigned',
-                                        };
-                                        if (editingPlan) {
-                                            updateMutation.mutate({ ...payload, id: Number(editingPlan.id) });
-                                        } else {
-                                            createMutation.mutate(payload);
-                                        }
-                                    }}
-                                    disabled={!createForm.name.trim() || !createForm.project_id || createMutation.isPending || updateMutation.isPending}
-                                    className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center gap-2 transition-colors"
-                                >
-                                    {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
-                                    {editingPlan ? '保存' : '创建'}
-                                </button>
                             </div>
                         </motion.div>
                     </div>
                 )}
             </AnimatePresence>
 
-            {/* 场景选择抽屉 */}
+            {/* Scenario selection drawer */}
             <AnimatePresence>
                 {isDrawerOpen && (
                     <>
@@ -568,7 +727,6 @@ export default function TestPlan() {
                                     </button>
                                 </div>
 
-                                {/* 搜索 */}
                                 <div className="relative mb-4">
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                                     <input
@@ -580,7 +738,6 @@ export default function TestPlan() {
                                     />
                                 </div>
 
-                                {/* 场景列表 */}
                                 {scenariosLoading ? (
                                     <div className="flex justify-center py-10 text-slate-500">
                                         <Loader2 className="w-5 h-5 animate-spin mr-2" /> 加载中...
@@ -592,49 +749,46 @@ export default function TestPlan() {
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
-                                        {availableScenarios.map((scenario) => (
-                                            <div
-                                                key={scenario.id}
-                                                className="flex items-center justify-between p-4 bg-slate-800/50 border border-white/5 rounded-xl hover:border-white/10 transition-colors"
-                                            >
-                                                <div className="flex-1 min-w-0 mr-3">
-                                                    <p className="text-white text-sm font-medium truncate">
-                                                        {scenario.name}
-                                                    </p>
-                                                    <p className="text-slate-500 text-xs mt-1 truncate">
-                                                        {scenario.description || '-'}
-                                                    </p>
-                                                    <div className="flex items-center gap-2 mt-2">
-                                                        <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${{
-                                                            P0: 'bg-red-500/10 text-red-400 border-red-500/20',
-                                                            P1: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-                                                            P2: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
-                                                            P3: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
-                                                        }[scenario.priority] || 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
-                                                            }`}>
-                                                            {scenario.priority}
-                                                        </span>
-                                                        {scenario.tags && (scenario.tags as string[]).slice(0, 2).map((tag, i) => (
-                                                            <span key={i} className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{tag}</span>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    onClick={() => drawerPlanId && addScenarioMutation.mutate({
-                                                        planId: Number(drawerPlanId),
-                                                        scenarioId: Number(scenario.id)
-                                                    })}
-                                                    disabled={addScenarioMutation.isPending}
-                                                    className="px-3 py-1.5 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
+                                        {availableScenarios.map((scenario) => {
+                                            const alreadyAdded = planScenarios.some(ps => ps.scenario_id === scenario.id);
+                                            return (
+                                                <div
+                                                    key={scenario.id}
+                                                    className="flex items-center justify-between p-4 bg-slate-800/50 border border-white/5 rounded-xl hover:border-white/10 transition-colors"
                                                 >
-                                                    <Plus className="w-3 h-3" /> 添加
-                                                </button>
-                                            </div>
-                                        ))}
+                                                    <div className="flex-1 min-w-0 mr-3">
+                                                        <p className="text-white text-sm font-medium truncate">
+                                                            {scenario.name}
+                                                        </p>
+                                                        <p className="text-slate-500 text-xs mt-1 truncate">
+                                                            {scenario.description || '-'}
+                                                        </p>
+                                                        <div className="flex items-center gap-2 mt-2">
+                                                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${PRIORITY_STYLES[scenario.priority] || PRIORITY_STYLES.P2}`}>
+                                                                {scenario.priority}
+                                                            </span>
+                                                            {scenario.tags?.slice(0, 2).map((tag, i) => (
+                                                                <span key={i} className="text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">{tag}</span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                    {alreadyAdded ? (
+                                                        <span className="px-3 py-1.5 text-xs text-slate-500 bg-slate-700/30 rounded-lg">已添加</span>
+                                                    ) : (
+                                                        <button
+                                                            onClick={() => handleAddScenarioFromDrawer(scenario)}
+                                                            disabled={addScenarioMutation.isPending}
+                                                            className="px-3 py-1.5 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 rounded-lg text-xs font-medium transition-colors flex items-center gap-1"
+                                                        >
+                                                            <Plus className="w-3 h-3" /> 添加
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
 
-                                {/* 分页 */}
                                 {scenarioTotalPages > 1 && (
                                     <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
                                         <span>第 {scenarioPage} / {scenarioTotalPages} 页</span>

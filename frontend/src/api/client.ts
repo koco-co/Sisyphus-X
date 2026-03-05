@@ -267,8 +267,8 @@ export const plansApi = {
     }) => api.put(`/plans/${planId}/scenarios/${planScenarioId}`, data),
     removeScenario: (planId: string | number, planScenarioId: string | number) =>
         api.delete(`/plans/${planId}/scenarios/${planScenarioId}`),
-    batchUpdateScenarios: (planId: string | number, scenarios: Array<{ id: string | number; sort_order: number }>) =>
-        api.put(`/plans/${planId}/scenarios/batch`, { scenarios }),
+    reorderScenarios: (planId: string | number, items: Array<{ scenario_id: string; execution_order: number }>) =>
+        api.put(`/plans/${planId}/scenarios/reorder`, items),
 
     // 执行控制
     execute: (id: string | number) => api.post(`/plans/${id}/execute`),

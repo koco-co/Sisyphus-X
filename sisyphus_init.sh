@@ -19,8 +19,7 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly LOG_DIR="$SCRIPT_DIR/logs"
 readonly BACKEND_DIR="$SCRIPT_DIR/backend"
 readonly FRONTEND_DIR="$SCRIPT_DIR/frontend"
-# 引擎已作为独立 PyPI 包发布,不再需要本地目录
-# readonly ENGINE_DIR="$SCRIPT_DIR/Sisyphus-api-engine"
+# 引擎已内嵌于 backend/app/engine/，无需独立目录
 
 readonly BACKEND_PORT=8000
 readonly FRONTEND_PORT=5173
@@ -149,16 +148,22 @@ is_port_in_use() {
     lsof -Pi :"$1" -sTCP:LISTEN -t >/dev/null 2>&1
 }
 
-# 强制释放指定端口（若有进程占用则直接 kill -9）
 force_kill_port() {
     local port=$1
-    # 获取监听该端口的所有进程
     local pids
     pids=$(lsof -ti tcp:"$port" 2>/dev/null || true)
     if [ -n "$pids" ]; then
-        log_step "强制释放端口 $port (PID: $pids)..."
-        kill -9 $pids 2>/dev/null || true
-        sleep 1
+        log_step "释放端口 $port (PID: $pids)..."
+        kill $pids 2>/dev/null || true
+        sleep 2
+        # If still alive, force kill
+        local remaining
+        remaining=$(lsof -ti tcp:"$port" 2>/dev/null || true)
+        if [ -n "$remaining" ]; then
+            log_warning "进程未响应 SIGTERM，强制终止..."
+            kill -9 $remaining 2>/dev/null || true
+            sleep 1
+        fi
     else
         log_debug "端口 $port 当前未被占用"
     fi
@@ -396,7 +401,7 @@ cmd_install() {
     cd "$SCRIPT_DIR"
     echo ""
 
-    log_success "🎉 所有依赖安装完成 (sisyphus-api-engine 已通过 pyproject.toml 依赖自动安装)"
+    log_success "🎉 所有依赖安装完成 (引擎已内嵌于 backend/app/engine/)"
 }
 
 # ============================================================
@@ -1144,18 +1149,16 @@ cmd_help() {
     echo ""
     echo -e "  ${GREEN}status${NC}  查看所有服务运行状态"
     echo ""
-    echo -e "  ${GREEN}install${NC} 安装所有依赖 (后端 + 前端 + 引擎)"
+    echo -e "  ${GREEN}install${NC} 安装所有依赖 (后端 + 前端)"
     echo ""
     echo -e "  ${GREEN}lint${NC}    运行代码规范检查 (Ruff + ESLint)"
     echo ""
     echo -e "  ${GREEN}test${NC}    [--all|--unit|--interface|--auto|--e2e]"
     echo "          运行测试 (默认: --all)"
-    echo "            --all       后端 tests/unit + tests/interface,"
-    echo "                        引擎 tests/unit (pytest) + tests/yaml (CLI) + examples/,"
-    echo "                        自动化 tests/auto (Playwright) + 前端单测"
-    echo "            --unit      仅运行后端 tests/unit + 引擎 tests/unit (pytest)"
-    echo "            --interface 仅运行后端 tests/interface"
-    echo "            --auto      仅运行 tests/auto (Playwright E2E 自动化)"
+    echo "            --all       后端 tests/unit + tests/interface + 自动化 tests/auto + 前端单测"
+    echo "            --unit      仅运行后端单元测试 (tests/unit)"
+    echo "            --interface 仅运行后端接口测试 (tests/interface)"
+    echo "            --auto      仅运行 Playwright E2E 自动化测试 (tests/auto)"
     echo "            --e2e       仅运行前端自身 E2E 测试 (frontend)"
     echo ""
     echo -e "  ${GREEN}migrate${NC} 执行数据库迁移 (Alembic)"

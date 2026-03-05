@@ -9,6 +9,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### MVP 内部收尾 (2026-03-05)
+
+#### 架构清理
+- **删除 v2 代码**: 移除 `app/modules/`、`app/models_new/`、`app/core/base_new.py`，保留 v1 作为唯一后端 API
+- **内嵌引擎**: 将 `sisyphus-api-engine` 源码复制到 `backend/app/engine/`，替换 subprocess CLI 调用为直接 Python API (`load_case` / `run_case`)
+- **前端清理**: 超范围菜单加「即将上线」标记，移除占位路由和 42 个未使用的文件
+
+#### 主链路修复
+- 修复项目设置路由参数不匹配 (`:projectId` vs `id`)
+- 修复测试计划/报告搜索参数未传后端
+- 修复场景调试 YAML 生成缺少 `keyword_type`/`keyword_name`
+- 修复 PlanExecutionPage WebSocket URL 指向前端而非后端
+- 修复测试报告前后端字段名不一致 (`total_cases` → `total`)
+- 修复 `model_dump()` 在 SQLAlchemy 模型上的崩溃
+
+#### UI 统一
+- 统一 Toast 通知到 sonner (26+ 文件)
+- Keywords 分页替换为共享 Pagination 组件
+- Keywords/GlobalParams 空状态替换为共享 EmptyState 组件
+
+#### 工程化
+- `sisyphus_init.sh`: `force_kill_port` 改为先 SIGTERM 再 SIGKILL
+- 更新帮助文档和依赖描述
+
 ### Added - Phase 1-9 全面重构 (2026-03-04)
 
 #### Phase 1: 基础设施
@@ -68,17 +92,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **引擎抽离**: `sisyphus-api-engine` 从本地子项目 (`Sisyphus-api-engine/`) 抽离为独立 PyPI 包，通过 `uv pip install sisyphus-api-engine` 安装
-- **后端依赖**: `backend/pyproject.toml` 新增 `sisyphus-api-engine` 正式依赖
-- **引擎文档**: 迁移至 `docs/api-engine/` 目录
-- **项目脚本**: `sisyphus_init.sh` 移除本地引擎目录相关逻辑
-- **模块化架构**: 后端采用 `app/modules/` 模块化结构
+- **引擎内嵌**: `sisyphus-api-engine` 源码嵌入 `backend/app/engine/`，不再作为独立 PyPI 包
+- **单一后端**: 删除 v2 模块化架构 (`app/modules/`)，保留 v1 (`app/api/v1/endpoints/`)
 - **前端状态管理**: Zustand + React Query 组合
 - **代码风格**: Ruff (后端) + ESLint (前端) 统一规范
 
 ### Removed
 
-- **本地子项目**: 移除 `Sisyphus-api-engine/` 子目录（已发布为独立 PyPI 包）
+- **v2 后端代码**: `app/modules/`、`app/models_new/`、`app/core/base_new.py`、`app/core/deps.py`
+- **12 个未挂载端点**: execution, ai_config, ai_clarification, api_test_cases 等
+- **功能测试页面**: `pages/functional-test/` 全目录
+- **重复页面/组件**: PlaceholderPage, pages/interface/, pages/projects/ 等
 - **冗余代码**: 清理未使用的导入和变量
 
 ## [0.2.0] - 2026-02-25

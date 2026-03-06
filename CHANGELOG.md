@@ -33,6 +33,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sisyphus_init.sh`: `force_kill_port` 改为先 SIGTERM 再 SIGKILL
 - 更新帮助文档和依赖描述
 
+#### 清理与文档 (2026-03-05)
+- 删除测试产物目录 (playwright-report-verification, test-results, .test-state)
+- 删除废弃脚本 scripts/run-e2e-full.sh
+- 更新 README、CLAUDE.md 与当前实现一致（引擎内嵌描述）
+- sisyphus_init.sh 增加 start --debug 前台流式日志模式
+
 ### Added - Phase 1-9 全面重构 (2026-03-04)
 
 #### Phase 1: 基础设施

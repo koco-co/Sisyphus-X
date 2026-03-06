@@ -549,6 +549,13 @@ start_backend() {
 
     > "$LOG_DIR/backend.log"
 
+    if [ "${SISYPHUS_DEBUG:-0}" = "1" ]; then
+        log_info "🐍 后端 (debug 模式): 前台运行，日志实时输出，Ctrl+C 停止..."
+        cd "$SCRIPT_DIR"
+        (cd "$BACKEND_DIR" && uv run uvicorn app.main:app --reload --host 0.0.0.0 --port $actual_port 2>&1) | tee -a "$LOG_DIR/backend.log"
+        return $?
+    fi
+
     nohup uv run uvicorn app.main:app --reload --host 0.0.0.0 --port $actual_port \
         > "$LOG_DIR/backend.log" 2>&1 &
     local pid=$!
@@ -621,6 +628,13 @@ start_frontend() {
 
     > "$LOG_DIR/frontend.log"
 
+    if [ "${SISYPHUS_DEBUG:-0}" = "1" ]; then
+        log_info "⚛️  前端 (debug 模式): 前台运行，日志实时输出，Ctrl+C 停止..."
+        cd "$SCRIPT_DIR"
+        (cd "$FRONTEND_DIR" && npm run dev -- --host 0.0.0.0 --port $actual_port 2>&1) | tee -a "$LOG_DIR/frontend.log"
+        return $?
+    fi
+
     nohup npm run dev -- --host 0.0.0.0 --port $actual_port < /dev/null > "$LOG_DIR/frontend.log" 2>&1 &
     local pid=$!
     echo $pid > "$LOG_DIR/frontend.pid"
@@ -655,14 +669,26 @@ start_frontend() {
 }
 
 cmd_start() {
-    local target="${1:---all}"
+    local target="--all"
+    SISYPHUS_DEBUG=0
+    for arg in "$@"; do
+        case "$arg" in
+            --debug) SISYPHUS_DEBUG=1 ;;
+            --all|--backend|--frontend|--infra) target="$arg" ;;
+        esac
+    done
+
     ensure_log_dir
     ensure_root_dir
 
     trap 'error_handler ${LINENO} $?' ERR
 
     print_separator
-    log_info "🚀 启动 Sisyphus-X 服务 ($target)..."
+    if [ "${SISYPHUS_DEBUG}" = "1" ]; then
+        log_info "🚀 启动 Sisyphus-X 服务 ($target) [debug 模式: 前台流式输出]..."
+    else
+        log_info "🚀 启动 Sisyphus-X 服务 ($target)..."
+    fi
     echo ""
 
     # 依赖检查
@@ -689,9 +715,16 @@ cmd_start() {
             echo ""
             cmd_migrate || log_warning "迁移未完成，继续启动..."
             echo ""
-            start_backend
-            echo ""
-            start_frontend
+            if [ "${SISYPHUS_DEBUG}" = "1" ]; then
+                # debug 模式: 前端后台运行，后端前台运行（用户可见后端日志）
+                start_frontend
+                echo ""
+                start_backend
+            else
+                start_backend
+                echo ""
+                start_frontend
+            fi
             ;;
         --infra)
             start_infra
@@ -829,7 +862,7 @@ cmd_restart() {
     echo ""
     cmd_stop "$target"
     echo ""
-    cmd_start "$target"
+    cmd_start "$@"
 }
 
 # ============================================================
@@ -1138,8 +1171,8 @@ cmd_help() {
     echo ""
     echo -e "${BOLD}命令:${NC}"
     echo ""
-    echo -e "  ${GREEN}start${NC}   [--all|--backend|--frontend|--infra]"
-    echo "          启动服务 (默认: --all)"
+    echo -e "  ${GREEN}start${NC}   [--all|--backend|--frontend|--infra] [--debug]"
+    echo "          启动服务 (默认: --all)。--debug 时前台流式输出日志"
     echo ""
     echo -e "  ${GREEN}stop${NC}    [--all|--backend|--frontend|--infra]"
     echo "          停止服务 (默认: --all)"
@@ -1171,6 +1204,7 @@ cmd_help() {
     echo ""
     echo -e "${BOLD}示例:${NC}"
     echo "  ./sisyphus_init.sh start              # 启动所有服务"
+    echo "  ./sisyphus_init.sh start --debug      # 前台流式输出日志"
     echo "  ./sisyphus_init.sh start --backend    # 仅启动后端"
     echo "  ./sisyphus_init.sh stop               # 停止所有服务"
     echo "  ./sisyphus_init.sh restart --frontend # 重启前端"

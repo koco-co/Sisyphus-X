@@ -13,6 +13,8 @@
     "test:run": "vitest run",
     "test:coverage": "vitest --coverage",
     "test:e2e": "playwright test",
+    "test:acceptance": "playwright test -c playwright-acceptance.config.ts",
+    "test:acceptance:headed": "playwright test -c playwright-acceptance.config.ts --headed",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",

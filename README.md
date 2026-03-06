@@ -18,7 +18,7 @@
 
 ## 产品定位
 
-Sisyphus-X 是一款面向测试团队的自动化测试管理平台，提供从「接口定义 → 场景编排 → 测试计划 → 测试报告」的全链路接口自动化能力。核心执行器 `sisyphus-api-engine` 以 YAML 驱动，支持 CLI 调用和多种报告格式输出。
+Sisyphus-X 是一款面向测试团队的自动化测试管理平台，提供从「接口定义 → 场景编排 → 测试计划 → 测试报告」的全链路接口自动化能力。核心执行引擎已内嵌于后端 (`backend/app/engine/`)，以 YAML 驱动，支持直接 Python API 调用。
 
 ### 核心能力
 
@@ -31,7 +31,7 @@ Sisyphus-X 是一款面向测试团队的自动化测试管理平台，提供从
 | 测试计划   | 多场景编排执行、实时进度报告、终止/暂停              |
 | 测试报告   | 平台报告 + Allure 报告、历史记录、导出               |
 | 全局参数   | 工具函数注册与 `{{参数方法名}}` 引用                 |
-| 核心执行器 | sisyphus-api-engine: YAML 驱动、CLI 调用、多格式输出 |
+| 核心执行器 | 内嵌于 backend/app/engine/：YAML 驱动、Python API 调用 |
 
 ### 后续规划
 
@@ -39,7 +39,7 @@ Sisyphus-X 是一款面向测试团队的自动化测试管理平台，提供从
 - APP 自动化 (sisyphus-app-engine)
 - 消息通知管理
 
----
+--- 
 
 ## 技术栈
 
@@ -75,7 +75,7 @@ Sisyphus-X 是一款面向测试团队的自动化测试管理平台，提供从
 - PostgreSQL 15
 - Redis 7
 - MinIO (对象存储)
-- sisyphus-api-engine (YAML 驱动)
+- 内嵌引擎 (backend/app/engine/，YAML 驱动)
 - Docker Compose
 
 </td>
@@ -105,6 +105,7 @@ Sisyphus-X/
 │   │   ├── schemas/            # Pydantic Schema
 │   │   ├── services/           # 业务逻辑层
 │   │   ├── core/               # 核心配置 (DB/Security/Config)
+│   │   ├── engine/             # 内嵌执行引擎 (YAML 驱动)
 │   │   └── middleware/         # 中间件
 │   ├── alembic/                # 数据库迁移
 │   └── pyproject.toml          # 依赖 + Ruff/Pyright/Pytest 配置
@@ -207,6 +208,7 @@ npm run dev
 
 ```bash
 ./sisyphus_init.sh start     # 启动所有服务
+./sisyphus_init.sh start --debug   # 前台流式输出（后端/前端日志实时打印）
 ./sisyphus_init.sh stop      # 停止所有服务
 ./sisyphus_init.sh restart   # 重启所有服务
 ./sisyphus_init.sh status    # 查看服务状态
@@ -245,16 +247,18 @@ npm run dev
 | `uv run alembic revision --autogenerate -m "msg"` | 创建迁移         |
 | `uv run alembic upgrade head`                     | 应用迁移         |
 
-### 引擎 (独立 PyPI 包)
+### 内嵌引擎
 
-> 安装: `uv pip install sisyphus-api-engine` (已在 `backend/pyproject.toml` 中声明依赖)
+引擎源码位于 `backend/app/engine/`，通过 Python API 直接调用：
 
-| 命令                                                              | 说明                     |
-| ----------------------------------------------------------------- | ------------------------ |
-| `sisyphus-api-engine --case <yaml>`                               | 执行测试用例 (文本报告)  |
-| `sisyphus-api-engine --case <yaml> -O json`                       | JSON 输出 (平台集成模式) |
-| `sisyphus-api-engine --case <yaml> -O allure --allure-dir <dir>`  | Allure 报告              |
-| `sisyphus-api-engine --case <yaml> -O html --html-dir <dir>`      | HTML 报告                |
+```python
+from app.engine.core.runner import load_case, run_case
+
+case = load_case("path/to/case.yaml")
+result = run_case(case, publisher=ws_publisher)  # publisher 可选
+```
+
+> 引擎文档: [docs/api-engine/](./docs/api-engine/)
 
 ---
 

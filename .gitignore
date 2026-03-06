@@ -127,6 +127,7 @@ allure-results/
 allure-report/
 test-results/
 playwright-report/
+playwright-report-verification/
 
 # =========================
 # Cursor IDE

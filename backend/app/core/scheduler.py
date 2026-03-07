@@ -28,7 +28,9 @@ async def check_datasources():
     try:
         async with async_session() as session:
             # Get all enabled datasources
-            statement = select(ProjectDataSource).where(ProjectDataSource.is_enabled.is_(True))
+            statement = select(ProjectDataSource).where(
+                ProjectDataSource.is_enabled.is_(True)
+            )
             result = await session.execute(statement)
             datasources = result.scalars().all()
 
@@ -76,7 +78,9 @@ async def cleanup_expired_allure_reports():
             await session.commit()
             rowcount = result.rowcount if hasattr(result, "rowcount") else 0
             if rowcount and rowcount > 0:
-                logger.info(f"Cleared allure_report_path for {rowcount} expired report(s).")
+                logger.info(
+                    f"Cleared allure_report_path for {rowcount} expired report(s)."
+                )
     except Exception as e:
         logger.error(f"Error in Allure cleanup task: {e}")
 

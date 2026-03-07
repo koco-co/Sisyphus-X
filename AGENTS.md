@@ -45,3 +45,15 @@ Git 历史采用 Conventional Commits 风格，如 `feat: ...`、`fix: ...`、`d
 ./sisyphus_init.sh # 启动所有服务 (Docker 中间件 + 后端 + 前端)
 ./sisyphus_init.sh start --backend --debug # 仅启动后端并前台流式输出
 ./sisyphus_init.sh start --frontend --debug # 仅启动前端并前台流式输出
+
+# 项目开发规范
+
+## 代码风格
+
+开发范式和代码风格遵循 Google Style，注释使用中文。
+
+# 提交前检查
+
+每次提交前, 检查是否需要更新以下文档: README.md、CHANGELOG.md、CLAUDE.md、AGENTS.md。
+
+如果存在需求变更、新增时, 更新需求文档: docs/Sisyphus-X需求文档.md。

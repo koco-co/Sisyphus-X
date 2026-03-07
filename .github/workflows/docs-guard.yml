@@ -1,0 +1,58 @@
+name: Docs Guard
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  docs-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check required docs update
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DOC_REGEX='^(README\.md|CHANGELOG\.md|AGENTS\.md|CLAUDE\.md|docs/.*\.md)$'
+          CODE_REGEX='^(backend/|frontend/|tests/|scripts/|sisyphus_init\.sh|docker-compose\.yml|Makefile)'
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA='${{ github.event.pull_request.base.sha }}'
+            HEAD_SHA='${{ github.event.pull_request.head.sha }}'
+          else
+            BASE_SHA='${{ github.event.before }}'
+            HEAD_SHA='${{ github.sha }}'
+            if [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+              BASE_SHA="${HEAD_SHA}~1"
+            fi
+          fi
+
+          echo "Compare range: ${BASE_SHA}...${HEAD_SHA}"
+          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+
+          echo "Changed files:"
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "$CHANGED_FILES"
+          else
+            echo "(none)"
+          fi
+
+          CODE_CHANGED_COUNT="$(echo "$CHANGED_FILES" | grep -Ec "$CODE_REGEX" || true)"
+          DOC_CHANGED_COUNT="$(echo "$CHANGED_FILES" | grep -Ec "$DOC_REGEX" || true)"
+
+          echo "Code-related changed: ${CODE_CHANGED_COUNT}"
+          echo "Doc changed: ${DOC_CHANGED_COUNT}"
+
+          if [ "$CODE_CHANGED_COUNT" -gt 0 ] && [ "$DOC_CHANGED_COUNT" -eq 0 ]; then
+            echo "::error::检测到代码相关改动，但未更新文档。请至少更新以下范围之一：README.md、CHANGELOG.md、docs/*.md、AGENTS.md、CLAUDE.md"
+            exit 1
+          fi
+
+          echo "Docs Guard passed."

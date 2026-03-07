@@ -24,6 +24,7 @@ import { useScenarioEditor } from './ScenarioEditorContext';
 import { StepListEditor } from './components/StepListEditor';
 import { DatasetDialog } from './components/DatasetDialog';
 import type { ScenarioStep } from './types/index';
+import { hydrateScenarioStepParameters, serializeScenarioStepParameters } from './utils/stepParameterUtils';
 
 type TabId = 'steps' | 'variables' | 'preSql' | 'postSql';
 
@@ -140,17 +141,20 @@ export default function ScenarioEditorLayout() {
                     sort_order: number;
                 }>;
 
-                const mappedSteps: ScenarioStep[] = rawSteps.map((s) => ({
-                    id: String(s.id),
-                    description: s.description || '',
-                    keywordType: s.keyword_type || '',
-                    keywordName: s.keyword_name || '',
-                    resourceId: (s.parameters?.resourceId as string) || undefined,
-                    config: (s.parameters?.config as Record<string, unknown>) || {},
-                    assertions: (s.parameters?.assertions as ScenarioStep['assertions']) || [],
-                    extractions: (s.parameters?.extractions as ScenarioStep['extractions']) || [],
-                    sortOrder: s.sort_order,
-                }));
+                const mappedSteps: ScenarioStep[] = rawSteps.map((s) => {
+                    const hydrated = hydrateScenarioStepParameters(s.parameters);
+                    return {
+                        id: String(s.id),
+                        description: s.description || '',
+                        keywordType: s.keyword_type || '',
+                        keywordName: s.keyword_name || '',
+                        resourceId: hydrated.resourceId,
+                        config: hydrated.config,
+                        assertions: hydrated.assertions as ScenarioStep['assertions'],
+                        extractions: hydrated.extractions as ScenarioStep['extractions'],
+                        sortOrder: s.sort_order,
+                    };
+                });
 
                 setSteps(mappedSteps);
             } catch {
@@ -218,12 +222,12 @@ export default function ScenarioEditorLayout() {
                         description: s.description,
                         keyword_type: s.keywordType,
                         keyword_name: s.keywordName,
-                        parameters: {
+                        parameters: serializeScenarioStepParameters({
                             resourceId: s.resourceId,
                             config: s.config,
                             assertions: s.assertions,
                             extractions: s.extractions,
-                        },
+                        }),
                         sort_order: i,
                     });
                 }

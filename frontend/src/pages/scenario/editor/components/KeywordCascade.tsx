@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { keywordsApi, interfacesApi } from '@/api/client';
 import { CustomSelect } from '@/components/ui/CustomSelect';
+import { shouldShowInterfaceSelector } from './keywordCascadeUtils';
 
 const KEYWORD_TYPES = [
     { value: 'request', label: '发送请求' },
@@ -58,7 +59,7 @@ export function KeywordCascade({ value, onChange, projectId }: KeywordCascadePro
     }));
 
     // L3: fetch interfaces for the project — only when type=request AND name=HTTP请求
-    const showInterfaceSelector = keywordType === 'request' && keywordName === 'HTTP请求';
+    const showInterfaceSelector = shouldShowInterfaceSelector(keywordType, keywordName);
 
     const { data: interfacesData } = useQuery({
         queryKey: ['interfaces', 'cascade', projectId],

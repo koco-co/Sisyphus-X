@@ -41,6 +41,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { MonacoEditor } from '@/components/ui/MonacoEditor'
 import { Input } from '@/components/ui/input'
 import { Pagination } from '@/components/common/Pagination'
+import { getKeywordClassNameForSubmit, getKeywordTypeValue } from './keywordFormUtils'
 
 // ===== 类型定义 =====
 interface Keyword {
@@ -714,7 +715,7 @@ function KeywordFormDialog({
 }: KeywordFormDialogProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
-    class_name: initialData?.class_name || 'custom',
+    class_name: getKeywordTypeValue(initialData?.class_name),
     method_name: initialData?.method_name || '',
     description: initialData?.description || '',
     code: initialData?.code || `def custom_keyword():\n    """自定义关键字"""\n    # 在这里实现你的逻辑\n    pass\n`,
@@ -762,7 +763,7 @@ function KeywordFormDialog({
     }
     await onSubmit({
       name: formData.name,
-      class_name: formData.class_name,
+      class_name: getKeywordClassNameForSubmit(formData.class_name, initialData?.class_name),
       method_name: formData.method_name,
       description: formData.description,
       code: formData.code,

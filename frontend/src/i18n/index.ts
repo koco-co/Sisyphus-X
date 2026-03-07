@@ -5,7 +5,7 @@ import enUS from './locales/en-US.json'
 
 // 获取系统语言
 const getSystemLanguage = (): string => {
-    const browserLang = navigator.language || (navigator as unknown).userLanguage
+    const browserLang = navigator.language || (navigator as unknown as { userLanguage?: string }).userLanguage || 'en'
     if (browserLang.startsWith('zh')) {
         return 'zh-CN'
     }

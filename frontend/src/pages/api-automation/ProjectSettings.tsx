@@ -564,7 +564,7 @@ export default function ProjectSettings() {
                                     <label className="block text-slate-400 text-sm mb-2">数据库类型</label>
                                     <CustomSelect
                                         value={dsForm.db_type}
-                                        onChange={(val) => setDsForm({ ...dsForm, db_type: val })}
+                                        onChange={(val) => setDsForm({ ...dsForm, db_type: val as string })}
                                         options={[
                                             { label: 'MySQL', value: 'mysql' },
                                             { label: 'PostgreSQL', value: 'postgresql' },

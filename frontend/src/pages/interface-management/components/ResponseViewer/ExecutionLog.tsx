@@ -77,13 +77,13 @@ export function ExecutionLog({ logs, defaultExpanded = false }: ExecutionLogProp
                     )}>
                       {log.message}
                     </p>
-                    {log.details && (
+                    {log.details != null ? (
                       <pre className="mt-2 text-xs text-slate-500 font-mono bg-slate-900/50 rounded p-2 overflow-x-auto">
                         {typeof log.details === 'string'
                           ? log.details
                           : JSON.stringify(log.details, null, 2)}
                       </pre>
-                    )}
+                    ) : null}
                   </div>
                 </div>
               </div>

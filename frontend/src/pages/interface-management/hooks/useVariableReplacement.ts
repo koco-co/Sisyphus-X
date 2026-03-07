@@ -33,10 +33,11 @@ export function useVariableReplacement(options: VariableReplacementOptions = {})
     }
 
     if (obj && typeof obj === 'object') {
-      const result: unknown = {}
-      for (const key in obj) {
-        if (Object.prototype.hasOwnProperty.call(obj, key)) {
-          result[key] = replaceObject(obj[key])
+      const record = obj as Record<string, unknown>
+      const result: Record<string, unknown> = {}
+      for (const key in record) {
+        if (Object.prototype.hasOwnProperty.call(record, key)) {
+          result[key] = replaceObject(record[key])
         }
       }
       return result

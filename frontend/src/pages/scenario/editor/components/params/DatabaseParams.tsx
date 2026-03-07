@@ -23,7 +23,7 @@ export function DatabaseParams({ step, onUpdate, projectId }: DatabaseParamsProp
 
     const { data: dsData } = useQuery({
         queryKey: ['datasources', projectId],
-        queryFn: () => projectsApi.listDataSources(Number(projectId)),
+        queryFn: () => projectsApi.listDataSources(projectId),
         enabled: !!projectId,
     });
 

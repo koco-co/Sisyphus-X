@@ -11,8 +11,7 @@ import {
     Loader2,
     Pencil,
     Database,
-    FolderKanban,
-    Globe
+    FolderKanban
 } from 'lucide-react';
 import { Pagination } from '@/components/common/Pagination';
 import { projectsApi } from '@/api/client';
@@ -47,6 +46,7 @@ export default function ProjectManagement() {
     const [editingProject, setEditingProject] = useState<Project | null>(null);
     const [createForm, setCreateForm] = useState({ name: '', key: '', description: '' });
     const [formErrors, setFormErrors] = useState<{ name?: string; description?: string }>({});
+    const hasFormErrors = Boolean(formErrors.name || formErrors.description);
 
     // 验证表单
     const validateForm = (): boolean => {
@@ -83,7 +83,10 @@ export default function ProjectManagement() {
                     name: `项目名称不能超过50个字符（当前${trimmedValue.length}个字符）`
                 }));
             } else {
-                setFormErrors(prev => ({ ...prev, name: undefined }));
+                setFormErrors(prev => {
+                    const { name: _name, ...rest } = prev;
+                    return rest;
+                });
             }
         } else if (field === 'description' && trimmedValue) {
             if (trimmedValue.length > 200) {
@@ -92,8 +95,21 @@ export default function ProjectManagement() {
                     description: `项目描述不能超过200个字符（当前${trimmedValue.length}个字符）`
                 }));
             } else {
-                setFormErrors(prev => ({ ...prev, description: undefined }));
+                setFormErrors(prev => {
+                    const { description: _description, ...rest } = prev;
+                    return rest;
+                });
             }
+        } else if (field === 'name' && !trimmedValue) {
+            setFormErrors(prev => {
+                const { name: _name, ...rest } = prev;
+                return rest;
+            });
+        } else if (field === 'description' && !trimmedValue) {
+            setFormErrors(prev => {
+                const { description: _description, ...rest } = prev;
+                return rest;
+            });
         }
     };
 
@@ -110,7 +126,7 @@ export default function ProjectManagement() {
 
     // Delete mutation
     const deleteMutation = useMutation({
-        mutationFn: (id: number) => projectsApi.delete(id),
+        mutationFn: (id: string | number) => projectsApi.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             setIsDeleteOpen(false);
@@ -122,21 +138,20 @@ export default function ProjectManagement() {
 
     // Create/Update mutations
     const createMutation = useMutation({
-        mutationFn: (data: unknown) => projectsApi.create(data),
+        mutationFn: (data: { name: string; key: string; owner: string; description?: string }) => projectsApi.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             closeCreateModal();
             toast.success('创建成功');
         },
         onError: (err: unknown) => {
-            // 处理后端验证错误
-            if (err?.response?.data?.detail) {
-                const detail = err.response.data.detail;
+            const error = err as { response?: { data?: { detail?: string | Array<{ msg: string }> } } };
+            if (error?.response?.data?.detail) {
+                const detail = error.response.data.detail;
                 if (typeof detail === 'string') {
                     toast.error(detail);
                 } else if (Array.isArray(detail)) {
-                    // Pydantic 验证错误格式
-                    const errorMsg = detail.map((e: unknown) => e.msg).join('; ');
+                    const errorMsg = detail.map((e) => e.msg).join('; ');
                     toast.error(errorMsg);
                 }
             } else {
@@ -146,20 +161,20 @@ export default function ProjectManagement() {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (data: unknown) => projectsApi.update(data.id, data),
+        mutationFn: (data: { id: string | number; name: string; description: string }) => projectsApi.update(data.id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects'] });
             closeCreateModal();
             toast.success('编辑成功');
         },
         onError: (err: unknown) => {
-            // 处理后端验证错误
-            if (err?.response?.data?.detail) {
-                const detail = err.response.data.detail;
+            const error = err as { response?: { data?: { detail?: string | Array<{ msg: string }> } } };
+            if (error?.response?.data?.detail) {
+                const detail = error.response.data.detail;
                 if (typeof detail === 'string') {
                     toast.error(detail);
                 } else if (Array.isArray(detail)) {
-                    const errorMsg = detail.map((e: unknown) => e.msg).join('; ');
+                    const errorMsg = detail.map((e) => e.msg).join('; ');
                     toast.error(errorMsg);
                 }
             } else {
@@ -327,14 +342,6 @@ export default function ProjectManagement() {
                                                         data-testid="database-config-button"
                                                     >
                                                         <Database className="w-4 h-4" />
-                                                    </Link>
-                                                </Tooltip>
-                                                <Tooltip content="环境配置" position="top">
-                                                    <Link
-                                                        to={`/projects/${project.id}/environments`}
-                                                        className="p-2 text-slate-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
-                                                    >
-                                                        <Globe className="w-4 h-4" />
                                                     </Link>
                                                 </Tooltip>
                                                 <Tooltip content="删除" position="top">
@@ -516,7 +523,7 @@ export default function ProjectManagement() {
                                             createMutation.mutate(payload);
                                         }
                                     }}
-                                    disabled={createForm.name.trim() === '' || Object.keys(formErrors).length > 0 || createMutation.isPending || updateMutation.isPending}
+                                    disabled={createForm.name.trim() === '' || hasFormErrors || createMutation.isPending || updateMutation.isPending}
                                     data-testid="submit-project-button"
                                     className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl flex items-center gap-2 transition-colors"
                                 >

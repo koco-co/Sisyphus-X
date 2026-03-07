@@ -225,18 +225,27 @@ export default function InterfaceManagementPage() {
 
   // 保存接口
   const saveMutation = useMutation({
-    mutationFn: (data: unknown) => {
+    mutationFn: (data: {
+      name: string
+      url: string
+      method: string
+      params: Record<string, string>
+      headers: Record<string, string>
+      body: unknown
+      body_type: string
+      auth_config: AuthConfig
+    }) => {
       if (isNew) {
         return interfacesApi.create({
           project_id: currentProjectId || 0,
           name: data.name,
           url: data.url,
           method: data.method,
-          params: keyValueArrayToObject(data.params),
-          headers: keyValueArrayToObject(data.headers),
-          body: data.bodyType === 'json' ? JSON.parse(data.body || '{}') : data.body,
-          body_type: data.bodyType,
-          auth_config: data.auth_config,
+          params: data.params,
+          headers: data.headers,
+          body: data.body_type === 'json' ? JSON.parse((data.body as string) || '{}') : data.body,
+          body_type: data.body_type,
+          auth_config: data.auth_config as unknown as Record<string, unknown>,
         })
       } else {
         return interfacesApi.update(interfaceId!, data)
@@ -392,10 +401,11 @@ export default function InterfaceManagementPage() {
       })
     } catch (err: unknown) {
       const endTime = Date.now()
+      const axiosErr = err as { response?: { status?: number; headers?: Record<string, string> }; message?: string }
       setResponse({
-        status_code: err.response?.status || 0,
-        headers: err.response?.headers || {},
-        body: { error: err.message || '请求失败' },
+        status_code: axiosErr.response?.status || 0,
+        headers: axiosErr.response?.headers || {},
+        body: { error: axiosErr.message || '请求失败' },
         elapsed: (endTime - startTime) / 1000,
         size: 0,
         logs: generateExecutionLogs(startTime, endTime, true)
@@ -439,7 +449,7 @@ export default function InterfaceManagementPage() {
       body: typeof data.body === 'string' ? data.body : JSON.stringify(data.body || {}, null, 2),
       bodyType: data.body_type,
       formDataPairs: data.body_type === 'form-data'
-        ? objectToKeyValueArray(data.body || {})
+        ? objectToKeyValueArray((data.body || {}) as Record<string, string>)
         : [],
     })
   }

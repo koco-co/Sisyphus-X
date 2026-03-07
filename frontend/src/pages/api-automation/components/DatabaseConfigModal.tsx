@@ -7,12 +7,24 @@ import { CustomSelect } from '@/components/ui/CustomSelect'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
+interface DatabaseConfigData {
+    id: number
+    name: string
+    db_type: string
+    host: string
+    port: number
+    db_name?: string
+    username?: string
+    variable_name?: string
+    is_enabled?: boolean
+}
+
 interface DatabaseConfigModalProps {
     isOpen: boolean
     onClose: () => void
-    projectId: number
+    projectId: string | number
     projectName: string
-    editData?: unknown // Data source to edit
+    editData?: DatabaseConfigData
 }
 
 export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, editData }: DatabaseConfigModalProps) {
@@ -66,8 +78,13 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
     }, [editData, isOpen])
 
     // Mutations
+    type DataSourcePayload = {
+        name: string; db_type: string; host: string; port: number
+        db_name: string; username: string; password?: string; variable_name: string
+    }
+
     const createMutation = useMutation({
-        mutationFn: (data: unknown) => projectsApi.createDataSource(projectId, data),
+        mutationFn: (data: DataSourcePayload) => projectsApi.createDataSource(projectId!, data),
         onSuccess: async () => {
             // 先让后端有时间保存数据
             await new Promise(resolve => setTimeout(resolve, 200))
@@ -81,7 +98,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
     })
 
     const updateMutation = useMutation({
-        mutationFn: (data: unknown) => projectsApi.updateDataSource(projectId, editData.id, data),
+        mutationFn: (data: DataSourcePayload) => projectsApi.updateDataSource(projectId!, editData!.id, data),
         onSuccess: async () => {
             // 先让后端有时间保存数据
             await new Promise(resolve => setTimeout(resolve, 200))
@@ -156,9 +173,8 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
         }
 
         // 准备提交的数据
-        const submitData: unknown = { ...form }
+        const submitData: DataSourcePayload = { ...form }
 
-        // 编辑模式：如果密码为空，移除密码字段（后端会保留原密码）
         if (editData && !form.password) {
             delete submitData.password
         }
@@ -230,7 +246,7 @@ export function DatabaseConfigModal({ isOpen, onClose, projectId, projectName, e
                                     <CustomSelect
                                         value={form.db_type}
                                         onChange={val => {
-                                            const type = val
+                                            const type = val as string
                                             const defaultPort = dbTypes.find(t => t.value === type)?.port || 3306
                                             setForm({ ...form, db_type: type, port: defaultPort });
                                             setHasTestedSuccess(false);

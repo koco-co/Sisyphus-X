@@ -63,10 +63,10 @@ export function ExtractParams({ extractions, onUpdate }: ExtractParamsProps) {
                     />
                     <div className="w-[100px]">
                         <CustomSelect
-                            value={(e as Record<string, string>).variableType || 'global'}
+                            value={(e as unknown as Record<string, string>).variableType || 'global'}
                             onChange={(v) => {
                                 const next = [...extractions];
-                                (next[i] as Record<string, string>).variableType = String(v);
+                                (next[i] as unknown as Record<string, string>).variableType = String(v);
                                 onUpdate(next);
                             }}
                             options={VARIABLE_TYPES}

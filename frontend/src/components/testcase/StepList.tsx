@@ -12,19 +12,21 @@ import { StepItem } from './StepItem'
 import { Trash2, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+export interface StepData {
+  id: string
+  type: string
+  name: string
+  params: Record<string, unknown>
+  validations?: Array<Record<string, unknown>>
+}
+
 interface StepListProps {
-  steps: Array<{
-    id: string
-    type: string
-    name: string
-    params: Record<string, unknown>
-    validations?: Array<Record<string, unknown>>
-  }>
-  onChange: (steps: unknown[]) => void
+  steps: StepData[]
+  onChange: (steps: StepData[]) => void
 }
 
 export function StepList({ steps, onChange }: StepListProps) {
-  const handleStepChange = useCallback((index: number, updatedStep: unknown) => {
+  const handleStepChange = useCallback((index: number, updatedStep: Partial<StepData>) => {
     const newSteps = [...steps]
     newSteps[index] = { ...newSteps[index], ...updatedStep }
     onChange(newSteps)

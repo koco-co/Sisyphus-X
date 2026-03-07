@@ -18,7 +18,7 @@ export interface DropdownMenuTriggerProps {
 export function DropdownMenuTrigger({ children, asChild = false, onClick }: DropdownMenuTriggerProps) {
   if (asChild && React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement, {
-      onClick: onClick || (children.props as unknown).onClick,
+      onClick: onClick || (children.props as Record<string, unknown>).onClick,
     })
   }
   return <div onClick={onClick}>{children}</div>

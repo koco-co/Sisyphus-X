@@ -18,6 +18,13 @@ import { Badge } from '@/components/ui/badge'
 import { MonacoEditor } from '@/components/ui/MonacoEditor'
 import { Save, Play, CheckCircle, XCircle, Loader2 } from 'lucide-react'
 
+interface ParamSchema {
+  name: string
+  type: string
+  description?: string
+  required: boolean
+}
+
 interface KeywordEditorProps {
   initialData?: {
     name?: string
@@ -25,7 +32,7 @@ interface KeywordEditorProps {
     category?: string
     description?: string
     function_code?: string
-    params_schema?: Record<string, unknown>
+    params_schema?: Record<string, ParamSchema>
   }
   onSave?: (data: unknown) => Promise<void>
   readOnly?: boolean
@@ -78,7 +85,7 @@ export function KeywordEditor({
         new Function(formData.function_code)
         setValidation({ valid: true })
       } catch (err: unknown) {
-        setValidation({ valid: false, error: err.message })
+        setValidation({ valid: false, error: err instanceof Error ? err.message : String(err) })
       }
     } catch (error) {
       console.error('验证失败:', error)
@@ -100,7 +107,7 @@ export function KeywordEditor({
         const result = func()
         setTestResult({ success: true, result })
       } catch (err: unknown) {
-        setTestResult({ success: false, error: err.message })
+        setTestResult({ success: false, error: err instanceof Error ? err.message : String(err) })
       }
     } catch (error) {
       console.error('测试失败:', error)
@@ -242,7 +249,7 @@ export function KeywordEditor({
         {readOnly ? (
           // 只读模式：显示参数列表
           <div className="space-y-3">
-            {Object.entries(formData.params_schema).map(([key, param]: [string, unknown]) => (
+            {Object.entries(formData.params_schema).map(([key, param]) => (
               <div key={key} className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex items-center gap-3 mb-2">
                   <span className="font-semibold text-slate-900">{param.name || '未命名参数'}</span>
@@ -266,7 +273,7 @@ export function KeywordEditor({
         ) : (
           // 编辑模式：参数编辑表单
           <div className="space-y-4">
-            {Object.entries(formData.params_schema).map(([key, param]: [string, unknown]) => (
+            {Object.entries(formData.params_schema).map(([key, param]) => (
               <div key={key} className="p-4 border border-slate-200 rounded-lg hover:border-slate-300 transition-colors">
                 {/* 第一行：参数名 + 类型 + 必填 + 删除 */}
                 <div className="flex items-center gap-3 mb-3">
@@ -427,7 +434,7 @@ export function KeywordEditor({
             <div className="font-medium mb-2">
               {testResult.success ? `✅ ${t('keywords.testPassed')}` : `❌ ${t('keywords.testFailed')}`}
             </div>
-            {testResult.result && (
+            {testResult.result != null && (
               <pre className="text-sm overflow-auto">
                 {JSON.stringify(testResult.result, null, 2)}
               </pre>

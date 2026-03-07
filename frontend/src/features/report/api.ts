@@ -2,7 +2,7 @@
  * 报告 API 客户端
  */
 
-import { get, del } from '@/api/client'
+import api from '@/api/client'
 import type {
   ReportDetail,
   ReportListResponse,
@@ -18,28 +18,31 @@ export const reportApi = {
    * 获取报告列表
    */
   list: async (params?: ReportListParams): Promise<ReportListResponse> => {
-    return get('/reports', params)
+    const res = await api.get('/reports', { params })
+    return res.data
   },
 
   /**
    * 获取报告详情
    */
   get: async (reportId: string): Promise<ReportDetail> => {
-    return get(`/reports/${reportId}`)
+    const res = await api.get(`/reports/${reportId}`)
+    return res.data
   },
 
   /**
    * 根据执行 ID 获取报告
    */
   getByExecution: async (executionId: string): Promise<ReportDetail> => {
-    return get(`/reports/execution/${executionId}`)
+    const res = await api.get(`/reports/execution/${executionId}`)
+    return res.data
   },
 
   /**
    * 删除报告
    */
   delete: async (reportId: string): Promise<void> => {
-    return del(`/reports/${reportId}`)
+    await api.delete(`/reports/${reportId}`)
   },
 
   /**
@@ -49,7 +52,7 @@ export const reportApi = {
     reportId: string,
     format: ReportExportFormat = 'json'
   ): Promise<Blob> => {
-    const response = await get(`/reports/${reportId}/export`, { format })
-    return response
+    const res = await api.get(`/reports/${reportId}/export`, { params: { format } })
+    return res.data
   },
 }

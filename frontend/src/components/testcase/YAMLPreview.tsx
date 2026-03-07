@@ -8,11 +8,17 @@
 
 import { useEffect, useState, useCallback } from 'react'
 
+interface StepData {
+  name: string
+  type: string
+  params: Record<string, unknown>
+}
+
 interface YAMLPreviewProps {
   formData: {
     name: string
     description?: string
-    steps: Array<unknown>
+    steps: StepData[]
     variables?: Record<string, unknown>
   }
 }

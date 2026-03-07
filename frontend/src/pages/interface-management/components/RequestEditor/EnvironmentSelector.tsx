@@ -21,7 +21,7 @@ export function EnvironmentSelector({ projectId, value, onChange }: EnvironmentS
     <div className="w-48">
       <CustomSelect
         value={value ? String(value) : ''}
-        onChange={(val) => onChange(val ? parseInt(val) : null)}
+        onChange={(val) => onChange(val ? parseInt(String(val)) : null)}
         options={options}
         placeholder="选择环境"
       />

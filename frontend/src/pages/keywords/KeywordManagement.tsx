@@ -73,6 +73,15 @@ interface ParamItem {
   required: boolean
 }
 
+interface KeywordFormData {
+  name: string
+  class_name: string
+  method_name: string
+  description: string
+  code: string
+  parameters?: ParamItem[]
+}
+
 // ===== 关键字类型映射 =====
 const TYPE_OPTIONS = [
   { value: 'all', label: '全部类型', icon: '🏷️' },
@@ -123,7 +132,7 @@ export default function KeywordManagement() {
   })
 
   const getQueryParams = useCallback(() => {
-    const params: unknown = { page: currentPage, size: pageSize }
+    const params: { page?: number; size?: number; project_id?: string; type?: string; is_builtin?: boolean; search?: string } = { page: currentPage, size: pageSize }
     if (activeTab === 'custom') {
       if (selectedProjectId) params.project_id = selectedProjectId
       params.is_builtin = false
@@ -150,14 +159,14 @@ export default function KeywordManagement() {
 
   // ===== Mutations =====
   const createMutation = useMutation({
-    mutationFn: async (data: unknown) => {
+    mutationFn: async (data: KeywordFormData) => {
       const payload = {
         id: crypto.randomUUID(),
         project_id: selectedProjectId || null,
         name: data.name,
         class_name: data.class_name,
         method_name: data.method_name,
-        description: data.description || null,
+        description: data.description || undefined,
         code: data.code || '',
         parameters: data.parameters ? JSON.stringify(data.parameters) : null,
         is_built_in: false,
@@ -171,13 +180,21 @@ export default function KeywordManagement() {
       queryClient.invalidateQueries({ queryKey: ['keywords'] })
     },
     onError: (error: unknown) => {
-      toast.error(error.response?.data?.detail || '创建失败')
+      const err = error as { response?: { data?: { detail?: string } } }
+      toast.error(err.response?.data?.detail || '创建失败')
     },
   })
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: unknown }) => {
-      await keywordsApi.update(id, data)
+    mutationFn: async ({ id, data }: { id: string; data: KeywordFormData }) => {
+      await keywordsApi.update(id, {
+        name: data.name,
+        class_name: data.class_name,
+        method_name: data.method_name,
+        description: data.description,
+        code: data.code,
+        parameters: data.parameters ? JSON.stringify(data.parameters) : null,
+      })
     },
     onSuccess: () => {
       toast.success('编辑成功')
@@ -186,7 +203,8 @@ export default function KeywordManagement() {
       queryClient.invalidateQueries({ queryKey: ['keywords'] })
     },
     onError: (error: unknown) => {
-      toast.error(error.response?.data?.detail || '更新失败')
+      const err = error as { response?: { data?: { detail?: string } } }
+      toast.error(err.response?.data?.detail || '更新失败')
     },
   })
 
@@ -201,7 +219,8 @@ export default function KeywordManagement() {
       queryClient.invalidateQueries({ queryKey: ['keywords'] })
     },
     onError: (error: unknown) => {
-      toast.error(error.response?.data?.detail || '删除失败')
+      const err = error as { response?: { data?: { detail?: string } } }
+      toast.error(err.response?.data?.detail || '删除失败')
     },
   })
 
@@ -214,7 +233,8 @@ export default function KeywordManagement() {
       queryClient.invalidateQueries({ queryKey: ['keywords'] })
     },
     onError: (error: unknown) => {
-      toast.error(error.response?.data?.detail || '状态更新失败')
+      const err = error as { response?: { data?: { detail?: string } } }
+      toast.error(err.response?.data?.detail || '状态更新失败')
     },
   })
 
@@ -680,7 +700,7 @@ interface KeywordFormDialogProps {
   onOpenChange: (open: boolean) => void
   title: string
   initialData?: Keyword
-  onSubmit: (data: unknown) => Promise<void>
+  onSubmit: (data: KeywordFormData) => Promise<void>
   isSaving: boolean
 }
 

@@ -14,9 +14,10 @@ export interface VariableContext {
 const systemVars: Record<string, (...args: unknown[]) => string> = {
   $timestamp: () => String(Math.floor(Date.now() / 1000)),
   $timestampMs: () => String(Date.now()),
-  $date: (format = 'YYYY-MM-DD') => {
+  $date: (...args: unknown[]) => {
+    const fmt = typeof args[0] === 'string' ? args[0] : 'YYYY-MM-DD'
     const now = new Date()
-    return format
+    return fmt
       .replace('YYYY', String(now.getFullYear()))
       .replace('MM', String(now.getMonth() + 1).padStart(2, '0'))
       .replace('DD', String(now.getDate()).padStart(2, '0'))
@@ -24,7 +25,9 @@ const systemVars: Record<string, (...args: unknown[]) => string> = {
       .replace('mm', String(now.getMinutes()).padStart(2, '0'))
       .replace('ss', String(now.getSeconds()).padStart(2, '0'))
   },
-  $randomInt: (min = 1, max = 100) => {
+  $randomInt: (...args: unknown[]) => {
+    const min = typeof args[0] === 'number' ? args[0] : Number(args[0]) || 1
+    const max = typeof args[1] === 'number' ? args[1] : Number(args[1]) || 100
     return String(Math.floor(Math.random() * (max - min + 1)) + min)
   },
   $guid: () => {

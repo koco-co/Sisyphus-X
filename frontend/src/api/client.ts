@@ -65,37 +65,37 @@ export const filesApi = {
 // 项目相关 API
 export const projectsApi = {
     list: (params?: { page?: number; size?: number; name?: string }) => api.get('/projects/', { params }),
-    get: (id: number) => api.get(`/projects/${id}`),
+    get: (id: string | number) => api.get(`/projects/${id}`),
     create: (data: { name: string; key: string; owner: string; description?: string }) =>
         api.post('/projects/', data),
-    update: (id: number, data: unknown) => api.put(`/projects/${id}`, data),
-    delete: (id: number) => api.delete(`/projects/${id}`),
+    update: (id: string | number, data: unknown) => api.put(`/projects/${id}`, data),
+    delete: (id: string | number) => api.delete(`/projects/${id}`),
 
     // 环境配置 API (projectId 支持 UUID 字符串)
     listEnvironments: (projectId: string | number) => api.get(`/projects/${projectId}/environments`),
-    createEnvironment: (projectId: number, data: { name: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> }) =>
+    createEnvironment: (projectId: string | number, data: { name: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> }) =>
         api.post(`/projects/${projectId}/environments`, data),
-    getEnvironment: (projectId: number, envId: number) => api.get(`/projects/${projectId}/environments/${envId}`),
-    updateEnvironment: (projectId: number, envId: number, data: { name?: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> }) =>
+    getEnvironment: (projectId: string | number, envId: number) => api.get(`/projects/${projectId}/environments/${envId}`),
+    updateEnvironment: (projectId: string | number, envId: number, data: { name?: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> }) =>
         api.put(`/projects/${projectId}/environments/${envId}`, data),
-    deleteEnvironment: (projectId: number, envId: number) => api.delete(`/projects/${projectId}/environments/${envId}`),
-    copyEnvironment: (projectId: number, envId: number) => api.post(`/projects/${projectId}/environments/${envId}/copy`),
-    cloneEnvironment: (projectId: number, envId: number) => api.post(`/projects/${projectId}/environments/${envId}/clone`),
+    deleteEnvironment: (projectId: string | number, envId: number) => api.delete(`/projects/${projectId}/environments/${envId}`),
+    copyEnvironment: (projectId: string | number, envId: number) => api.post(`/projects/${projectId}/environments/${envId}/copy`),
+    cloneEnvironment: (projectId: string | number, envId: number) => api.post(`/projects/${projectId}/environments/${envId}/clone`),
 
-    // 数据源 API
-    listDataSources: (projectId: number) => api.get(`/projects/${projectId}/datasources`),
-    createDataSource: (projectId: number, data: { name: string; db_type: string; host: string; port: number; db_name?: string; username?: string; password?: string }) =>
+    // 数据源 API (projectId 支持 UUID 字符串)
+    listDataSources: (projectId: string | number) => api.get(`/projects/${projectId}/datasources`),
+    createDataSource: (projectId: string | number, data: { name: string; db_type: string; host: string; port: number; db_name?: string; username?: string; password?: string; variable_name?: string }) =>
         api.post(`/projects/${projectId}/datasources`, data),
-    updateDataSource: (projectId: number, dsId: number, data: { name?: string; db_type?: string; host?: string; port?: number; db_name?: string; username?: string; password?: string }) =>
+    updateDataSource: (projectId: string | number, dsId: number, data: { name?: string; db_type?: string; host?: string; port?: number; db_name?: string; username?: string; password?: string; variable_name?: string; is_enabled?: boolean }) =>
         api.put(`/projects/${projectId}/datasources/${dsId}`, data),
-    deleteDataSource: (projectId: number, dsId: number) => api.delete(`/projects/${projectId}/datasources/${dsId}`),
+    deleteDataSource: (projectId: string | number, dsId: number) => api.delete(`/projects/${projectId}/datasources/${dsId}`),
     testDataSource: (data: { db_type: string; host: string; port: number; db_name?: string; username?: string; password?: string }) =>
         api.post('/projects/datasources/test', data),
 }
 
 // 接口相关 API
 export const interfacesApi = {
-    list: (params?: { page?: number; size?: number; folder_id?: number; project_id?: number }) => api.get('/interfaces/', { params }),
+    list: (params?: { page?: number; size?: number; folder_id?: number; project_id?: string | number }) => api.get('/interfaces/', { params }),
     get: (id: number | string) => api.get(`/interfaces/${id}`),
     create: (data: {
         project_id: number | string
@@ -117,7 +117,7 @@ export const interfacesApi = {
     delete: (id: number | string) => api.delete(`/interfaces/${id}`),
     sendRequest: (data: { url: string; method: string; headers?: Record<string, string>; params?: Record<string, unknown>; body?: unknown; files?: Record<string, string> }) =>
         api.post('/interfaces/debug/send', data),
-    listFolders: (params?: { project_id?: number }) => api.get('/interfaces/folders', { params }),
+    listFolders: (params?: { project_id?: string | number }) => api.get('/interfaces/folders', { params }),
     createFolder: (data: { project_id: number | string; name: string; parent_id?: number | string }) =>
         api.post('/interfaces/folders', data),
     updateFolder: (id: number | string, data: { name?: string; parent_id?: string | null; order?: number }) =>
@@ -238,9 +238,8 @@ export const plansApi = {
         project_id: string | number
         name: string
         description?: string
-        created_by: string
         cron_expression?: string
-        is_active?: boolean
+        status?: string
     }) => api.post('/plans/', data),
     update: (id: string | number, data: {
         name?: string
@@ -257,6 +256,7 @@ export const plansApi = {
         environment_id?: string | number
         variables?: Record<string, unknown>
         sort_order?: number
+        execution_order?: number
     }) => api.post(`/plans/${planId}/scenarios`, data),
     listScenarios: (planId: string | number) =>
         api.get(`/plans/${planId}/scenarios`),

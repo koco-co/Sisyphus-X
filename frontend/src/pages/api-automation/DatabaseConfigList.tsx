@@ -52,7 +52,7 @@ export default function DatabaseConfigList() {
     // Fetch Project Info (for header)
     const { data: project } = useQuery({
         queryKey: ['project', projectId],
-        queryFn: () => projectsApi.get(Number(projectId)),
+        queryFn: () => projectsApi.get(projectId!),
         enabled: !!projectId,
         select: (res) => res.data
     });
@@ -60,7 +60,7 @@ export default function DatabaseConfigList() {
     // Fetch DataSources
     const { data: dataSources = [], isLoading, refetch } = useQuery({
         queryKey: ['datasources', projectId],
-        queryFn: () => projectsApi.listDataSources(Number(projectId)),
+        queryFn: () => projectsApi.listDataSources(projectId!),
         enabled: !!projectId,
         refetchInterval: 30000, // Auto-refresh every 30s to see status updates
         select: (res) => res.data
@@ -69,7 +69,7 @@ export default function DatabaseConfigList() {
     // Toggle Enable Mutation
     const toggleMutation = useMutation({
         mutationFn: (ds: DataSource) =>
-            projectsApi.updateDataSource(Number(projectId), ds.id, { is_enabled: !ds.is_enabled } as unknown),
+            projectsApi.updateDataSource(projectId!, ds.id, { is_enabled: !ds.is_enabled }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['datasources', projectId] });
         },
@@ -78,7 +78,7 @@ export default function DatabaseConfigList() {
 
     // Delete Mutation
     const deleteMutation = useMutation({
-        mutationFn: (id: number) => projectsApi.deleteDataSource(Number(projectId), id),
+        mutationFn: (id: number) => projectsApi.deleteDataSource(projectId!, id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['datasources', projectId] });
             setDeleteId(null);
@@ -293,7 +293,7 @@ export default function DatabaseConfigList() {
                         // 立即刷新数据列表
                         setTimeout(() => refetch(), 100);
                     }}
-                    projectId={Number(projectId)}
+                    projectId={projectId!}
                     projectName={project?.name || ''}
                     editData={editingDs || undefined} // Pass editing data
                 />

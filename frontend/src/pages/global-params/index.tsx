@@ -88,7 +88,7 @@ export default function GlobalParamsPage() {
 
     // 更新全局参数
     const updateMutation = useMutation({
-        mutationFn: async ({ id, data }: { id: string; data: unknown }) => {
+        mutationFn: async ({ id, data }: { id: string; data: { code: string } }) => {
             return await globalParamsApi.update(id, data)
         },
         onSuccess: () => {
@@ -117,7 +117,7 @@ export default function GlobalParamsPage() {
     })
 
     // 按类名分组
-    const groupedParams = globalParams.reduce((acc: Record<string, typeof globalParams>, param: unknown) => {
+    const groupedParams = globalParams.reduce((acc: Record<string, GlobalParam[]>, param: GlobalParam) => {
         if (!acc[param.class_name]) {
             acc[param.class_name] = []
         }
@@ -132,7 +132,7 @@ export default function GlobalParamsPage() {
         const query = searchQuery.toLowerCase()
         return (
             className.toLowerCase().includes(query) ||
-            params.some((p: unknown) =>
+            params.some((p: GlobalParam) =>
                 p.method_name.toLowerCase().includes(query) ||
                 (p.description && p.description.toLowerCase().includes(query))
             )
@@ -153,7 +153,7 @@ export default function GlobalParamsPage() {
     // 复制方法名到剪贴板
     const copyMethodName = (methodName: string) => {
         navigator.clipboard.writeText(methodName)
-        success('已复制到剪贴板')
+        toast.success('已复制到剪贴板')
     }
 
     // 处理创建
@@ -258,7 +258,7 @@ export default function GlobalParamsPage() {
                                         <ChevronRight className="w-5 h-5 text-cyan-400" />
                                     )}
                                     <h3 className="text-lg font-semibold text-white">{className}</h3>
-                                    <span className="text-sm text-slate-500">({(params as unknown).length})</span>
+                                    <span className="text-sm text-slate-500">({(params as GlobalParam[]).length})</span>
                                 </div>
                             </button>
 
@@ -286,7 +286,7 @@ export default function GlobalParamsPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
-                                            {(params as unknown).map((param: unknown) => (
+                                            {(params as GlobalParam[]).map((param: GlobalParam) => (
                                                 <tr
                                                     key={param.id}
                                                     className="hover:bg-white/5 transition-colors"

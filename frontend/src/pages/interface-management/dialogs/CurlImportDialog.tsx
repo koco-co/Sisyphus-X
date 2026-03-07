@@ -59,7 +59,7 @@ export function CurlImportDialog({ open, onClose, onImport }: CurlImportDialogPr
       setParsedData(result)
       setError('')
     } catch (err: unknown) {
-      setError(err.message || '解析失败，请检查 cURL 格式')
+      setError((err as Error).message || '解析失败，请检查 cURL 格式')
       setParsedData(null)
     } finally {
       setIsParsing(false)
@@ -193,7 +193,7 @@ export function CurlImportDialog({ open, onClose, onImport }: CurlImportDialogPr
                 )}
 
                 {/* Body */}
-                {parsedData.body && parsedData.body_type !== 'none' && (
+                {parsedData.body != null && parsedData.body_type !== 'none' && (
                   <div className="space-y-2">
                     <Label className="text-slate-400">
                       Body ({parsedData.body_type})

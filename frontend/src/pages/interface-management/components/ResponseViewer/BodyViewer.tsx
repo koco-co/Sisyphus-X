@@ -122,7 +122,8 @@ function JsonView({ data, depth = 0 }: JsonViewProps) {
   }
 
   if (typeof data === 'object') {
-    const keys = Object.keys(data)
+    const obj = data as Record<string, unknown>
+    const keys = Object.keys(obj)
     if (keys.length === 0) {
       return <span className="text-slate-400">{`{}`}</span>
     }
@@ -140,7 +141,7 @@ function JsonView({ data, depth = 0 }: JsonViewProps) {
               <div key={key}>
                 <span className="text-blue-400">"{key}"</span>
                 <span className="text-slate-400">: </span>
-                <JsonView data={data[key]} depth={depth + 1} />
+                <JsonView data={obj[key]} depth={depth + 1} />
                 {index < keys.length - 1 && <span className="text-slate-400">,</span>}
               </div>
             ))}

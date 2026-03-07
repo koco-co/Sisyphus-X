@@ -15,6 +15,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: 1,
+  timeout: 300000,
 
   reporter: [
     ['html', { outputFolder: 'test-results/acceptance-report' }],

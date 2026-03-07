@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/components/ui/card'
-import { StepList } from './StepList'
+import { StepList, type StepData } from './StepList'
 import { YAMLPreview } from './YAMLPreview'
 import { Play, Save } from 'lucide-react'
 
@@ -22,13 +22,7 @@ interface TestCaseEditorProps {
   initialData?: {
     name?: string
     description?: string
-    steps?: Array<{
-      id: string
-      type: string
-      name: string
-      params: Record<string, unknown>
-      validations?: Array<Record<string, unknown>>
-    }>
+    steps?: StepData[]
     variables?: Record<string, unknown>
   }
   onSave?: (data: unknown) => Promise<void>
@@ -84,7 +78,7 @@ export function TestCaseEditor({
     }
   }
 
-  const handleStepsChange = useCallback((steps: unknown[]) => {
+  const handleStepsChange = useCallback((steps: StepData[]) => {
     setFormData(prev => ({ ...prev, steps }))
   }, [])
 

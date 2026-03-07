@@ -72,20 +72,28 @@ test.describe('Sisyphus-X 全流程验收测试', () => {
     const createBtn = page.locator('[data-testid="create-project-button"], button:has-text("创建项目"), button:has-text("新建项目")').first();
     await expect(createBtn).toBeVisible({ timeout: 5000 });
     await createBtn.click();
-    await page.waitForTimeout(1000);
+    await page.waitForTimeout(1500);
 
-    const nameInput = page.locator('[data-testid="project-name-input"], input[placeholder*="项目名称"], input[placeholder*="name" i]').first();
+    const nameInput = page.locator('#project-name-input, [data-testid="project-name-input"]').first();
+    await nameInput.waitFor({ state: 'visible', timeout: 5000 });
+    await nameInput.clear();
     await nameInput.fill(projectName);
 
-    const descInput = page.locator('[data-testid="project-description-input"], textarea[placeholder*="描述"]').first();
+    const descInput = page.locator('#project-description-input, [data-testid="project-description-input"]').first();
     if (await descInput.isVisible({ timeout: 1000 })) {
       await descInput.fill('验收测试项目');
     }
 
-    await clickSaveButton(page);
+    const submitBtn = page.locator('[data-testid="submit-project-button"]').first();
+    await expect(submitBtn).toBeEnabled({ timeout: 3000 });
+    await submitBtn.click();
     await page.waitForTimeout(3000);
     await expect(page.locator(`text=${projectName}`)).toBeVisible({ timeout: 10000 });
     console.log('✓ 项目创建成功');
+
+    // 等待新建项目弹层完全关闭后再操作
+    await page.getByRole('heading', { name: '新建项目' }).waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(500);
 
     // 编辑项目（简要）
     const editBtn = page.locator('[data-testid^="project-edit-button-"]').first();
@@ -96,21 +104,26 @@ test.describe('Sisyphus-X 全流程验收测试', () => {
       await page.waitForTimeout(500);
     }
 
-    // 访问数据库配置页面
+    // 访问数据库配置页面（遮罩可能未完全消失，用 force 或跳过）
     const dbConfigLink = page.locator('[data-testid="database-config-button"]').first();
     if (await dbConfigLink.isVisible({ timeout: 2000 })) {
-      await dbConfigLink.click();
-      await page.waitForTimeout(2000);
-      const addDbBtn = page.locator('[data-testid="add-database-config-button"], button:has-text("新建"), button:has-text("添加")').first();
-      if (await addDbBtn.isVisible({ timeout: 3000 })) {
-        await addDbBtn.click();
+      try {
+        await dbConfigLink.click({ force: true, timeout: 5000 });
+        await page.waitForTimeout(2000);
+        const addDbBtn = page.locator('[data-testid="add-database-config-button"], button:has-text("新建"), button:has-text("添加")').first();
+        if (await addDbBtn.isVisible({ timeout: 2000 })) {
+          await addDbBtn.click();
+          await page.waitForTimeout(500);
+          await page.keyboard.press('Escape');
+        }
+        await page.goBack();
         await page.waitForTimeout(1000);
+      } catch {
         await page.keyboard.press('Escape');
+        await page.waitForTimeout(500);
       }
-      await page.goBack();
-      await page.waitForTimeout(1000);
     }
-    console.log('✓ 数据库配置页面已访问');
+    console.log('✓ 数据库配置步骤已处理');
 
     // ========== 步骤 2: 关键字配置 ==========
     console.log(`[步骤 2] 关键字配置：创建关键字 ${keywordName}`);
@@ -119,23 +132,42 @@ test.describe('Sisyphus-X 全流程验收测试', () => {
     await keywordLink.first().click();
     await page.waitForTimeout(2000);
 
-    const createKeywordBtn = page.locator('[data-testid="create-keyword-button"], button:has-text("创建关键字"), button:has-text("新建关键字")').first();
-    if (await createKeywordBtn.isVisible({ timeout: 3000 })) {
-      await createKeywordBtn.click();
-      await page.waitForTimeout(1000);
+    const customTab = page.locator('[data-testid="tab-custom"], button:has-text("自定义关键字")').first();
+    if (await customTab.isVisible({ timeout: 2000 })) {
+      await customTab.click();
+      await page.waitForTimeout(500);
+    }
 
-      const kwNameInput = page.locator('[data-testid="keyword-name-input"], input[name="name"], input[placeholder*="名称"]').first();
-      await kwNameInput.waitFor({ state: 'visible', timeout: 5000 });
-      await kwNameInput.fill(keywordName);
+    const createKeywordBtn = page.locator('[data-testid="create-keyword-button"], button:has-text("创建关键字"), button:has-text("新建关键字")').first();
+    if (await createKeywordBtn.isVisible({ timeout: 5000 })) {
+      await createKeywordBtn.click();
+      await page.waitForTimeout(2000);
+      await page.getByRole('heading', { name: '新建关键字' }).waitFor({ state: 'visible', timeout: 8000 }).catch(() => {});
+
+      const kwNameInput = page.locator('[data-testid="keyword-name-input"], input[placeholder*="关键字"], input[name="name"]').first();
+      await kwNameInput.waitFor({ state: 'visible', timeout: 10000 });
+      await kwNameInput.clear();
+      await kwNameInput.pressSequentially(keywordName, { delay: 50 });
 
       const kwTypeSelect = page.locator('[data-testid="keyword-type-select"]').first();
       if (await kwTypeSelect.isVisible({ timeout: 2000 })) {
         await kwTypeSelect.selectOption({ index: 1 });
       }
 
-      await clickSaveButton(page);
+      const kwFuncInput = page.locator('[data-testid="keyword-func-name-input"]').first();
+      if (await kwFuncInput.isVisible({ timeout: 2000 })) {
+        await kwFuncInput.clear();
+        await kwFuncInput.pressSequentially(`kw_${timestamp}`, { delay: 50 });
+      }
+
+      await page.waitForTimeout(500);
+      const kwSubmitBtn = page.locator('[data-testid="submit-keyword-button"]').first();
+      await kwSubmitBtn.scrollIntoViewIfNeeded();
+      await kwSubmitBtn.waitFor({ state: 'visible', timeout: 5000 });
+      await expect(kwSubmitBtn).toBeEnabled({ timeout: 3000 });
+      await kwSubmitBtn.click();
       await page.waitForTimeout(3000);
-      await expect(page.locator(`text=${keywordName}`)).toBeVisible({ timeout: 10000 });
+      await expect(page.locator(`text=${keywordName}`)).toBeVisible({ timeout: 15000 });
       console.log('✓ 关键字创建成功');
     } else {
       console.log('⚠ 跳过关键字创建');

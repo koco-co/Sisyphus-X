@@ -22,7 +22,7 @@ export function MethodSelector({ value, onChange, className }: MethodSelectorPro
     <div className={cn("w-32", className)}>
       <CustomSelect
         value={value}
-        onChange={onChange}
+        onChange={(val) => onChange(String(val))}
         options={METHODS.map(m => ({ label: m, value: m }))}
         placeholder="Method"
         className={methodColors[value] || 'bg-slate-700 text-white'}

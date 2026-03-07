@@ -125,7 +125,7 @@ export function FormDataEditor({ pairs, onChange, projectId }: FormDataEditorPro
                                             // Trigger file input programmatically
                                             const input = document.createElement('input')
                                             input.type = 'file'
-                                            input.onchange = (e) => handleFileUpload(e as unknown, index)
+                                            input.onchange = (e) => handleFileUpload(e as unknown as React.ChangeEvent<HTMLInputElement>, index)
                                             input.click()
                                         }}
                                         disabled={uploadingIndex === index}

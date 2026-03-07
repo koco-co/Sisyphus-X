@@ -106,7 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return { success: false, error: 'Invalid OAuth response' }
             }
         } catch (error: unknown) {
-            const errorMessage = error.response?.data?.detail || 'GitHub 登录功能未配置'
+            const axiosErr = error as { response?: { data?: { detail?: string } } }
+            const errorMessage = axiosErr.response?.data?.detail || 'GitHub 登录功能未配置'
             console.error('GitHub login failed:', error)
             return { success: false, error: errorMessage }
         }
@@ -122,7 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return { success: false, error: 'Invalid OAuth response' }
             }
         } catch (error: unknown) {
-            const errorMessage = error.response?.data?.detail || 'Google 登录功能未配置'
+            const axiosErr = error as { response?: { data?: { detail?: string } } }
+            const errorMessage = axiosErr.response?.data?.detail || 'Google 登录功能未配置'
             console.error('Google login failed:', error)
             return { success: false, error: errorMessage }
         }

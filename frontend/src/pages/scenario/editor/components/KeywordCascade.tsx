@@ -62,13 +62,13 @@ export function KeywordCascade({ value, onChange, projectId }: KeywordCascadePro
 
     const { data: interfacesData } = useQuery({
         queryKey: ['interfaces', 'cascade', projectId],
-        queryFn: () => interfacesApi.list({ project_id: Number(projectId), size: 200 }),
+        queryFn: () => interfacesApi.list({ project_id: projectId, size: 200 }),
         enabled: showInterfaceSelector && !!projectId,
     });
 
     const { data: foldersData } = useQuery({
         queryKey: ['interface-folders', 'cascade', projectId],
-        queryFn: () => interfacesApi.listFolders({ project_id: Number(projectId) }),
+        queryFn: () => interfacesApi.listFolders({ project_id: projectId }),
         enabled: showInterfaceSelector && !!projectId,
     });
 

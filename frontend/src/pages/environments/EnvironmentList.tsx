@@ -61,7 +61,7 @@ export default function EnvironmentList() {
   const { data: environments = [], isLoading } = useQuery({
     queryKey: ['environments', projectId],
     queryFn: async () => {
-      const response = await projectsApi.listEnvironments(Number(projectId))
+      const response = await projectsApi.listEnvironments(projectId!)
       return response.data
     },
     enabled: !!projectId,
@@ -70,7 +70,7 @@ export default function EnvironmentList() {
   // 创建环境
   const createMutation = useMutation({
     mutationFn: async (data: Omit<Environment, 'id' | 'created_at' | 'updated_at'>) => {
-      await projectsApi.createEnvironment(Number(projectId), data)
+      await projectsApi.createEnvironment(projectId!, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
@@ -78,14 +78,14 @@ export default function EnvironmentList() {
       toast.success('环境创建成功')
     },
     onError: (err: unknown) => {
-      toast.error(err.response?.data?.detail || '创建环境失败')
+      toast.error((err as { response?: { data?: { detail?: string } } }).response?.data?.detail || '创建环境失败')
     },
   })
 
   // 更新环境
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Environment> }) => {
-      await projectsApi.updateEnvironment(Number(projectId), id, data)
+      await projectsApi.updateEnvironment(projectId!, id, data)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
@@ -94,14 +94,14 @@ export default function EnvironmentList() {
       toast.success('环境更新成功')
     },
     onError: (err: unknown) => {
-      toast.error(err.response?.data?.detail || '更新环境失败')
+      toast.error((err as { response?: { data?: { detail?: string } } }).response?.data?.detail || '更新环境失败')
     },
   })
 
   // 删除环境
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      await projectsApi.deleteEnvironment(Number(projectId), id)
+      await projectsApi.deleteEnvironment(projectId!, id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
@@ -110,21 +110,21 @@ export default function EnvironmentList() {
       toast.success('环境删除成功')
     },
     onError: (err: unknown) => {
-      toast.error(err.response?.data?.detail || '删除环境失败')
+      toast.error((err as { response?: { data?: { detail?: string } } }).response?.data?.detail || '删除环境失败')
     },
   })
 
   // 克隆环境
   const cloneMutation = useMutation({
     mutationFn: async (id: number) => {
-      await projectsApi.cloneEnvironment(Number(projectId), id)
+      await projectsApi.cloneEnvironment(projectId!, id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
       toast.success('环境克隆成功')
     },
     onError: (err: unknown) => {
-      toast.error(err.response?.data?.detail || '克隆环境失败')
+      toast.error((err as { response?: { data?: { detail?: string } } }).response?.data?.detail || '克隆环境失败')
     },
   })
 

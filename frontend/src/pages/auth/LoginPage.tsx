@@ -197,7 +197,7 @@ export default function LoginPage() {
                 navigate('/')
             } else {
                 await register(username, email, password)
-                toast.toast.success('注册成功！正在跳转到首页...')
+                toast.success('注册成功！正在跳转到首页...')
                 // 立即跳转到首页
                 navigate('/')
             }

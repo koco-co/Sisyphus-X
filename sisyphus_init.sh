@@ -709,6 +709,40 @@ cmd_start() {
     force_kill_port "$FRONTEND_PORT"
     echo ""
 
+    # debug + 单服务模式下，按“全栈启动 + 指定服务前台日志”的方式执行
+    # - start --backend --debug: infra + frontend 后台，backend 前台流式日志
+    # - start --frontend --debug: infra + backend 后台，frontend 前台流式日志
+    if [ "${SISYPHUS_DEBUG}" = "1" ] && { [ "$target" = "--backend" ] || [ "$target" = "--frontend" ]; }; then
+        local debug_focus="$target"
+        log_info "🎯 debug 聚焦模式: 启动全栈服务，仅实时输出 ${debug_focus#--} 日志"
+        echo ""
+
+        start_infra || log_warning "中间件启动失败（如 Docker 未运行或权限不足），继续启动应用层服务..."
+        echo ""
+        cmd_migrate || log_warning "迁移未完成，继续启动..."
+        echo ""
+
+        if [ "$debug_focus" = "--backend" ]; then
+            # 前端改为后台启动，避免占用当前终端
+            local prev_debug="$SISYPHUS_DEBUG"
+            SISYPHUS_DEBUG=0
+            start_frontend
+            SISYPHUS_DEBUG="$prev_debug"
+            echo ""
+            start_backend
+            return $?
+        fi
+
+        # debug_focus == --frontend
+        local prev_debug="$SISYPHUS_DEBUG"
+        SISYPHUS_DEBUG=0
+        start_backend
+        SISYPHUS_DEBUG="$prev_debug"
+        echo ""
+        start_frontend
+        return $?
+    fi
+
     case "$target" in
         --all)
             start_infra || log_warning "中间件启动失败（如 Docker 未运行或权限不足），继续启动后端与前端..."
@@ -1173,6 +1207,8 @@ cmd_help() {
     echo ""
     echo -e "  ${GREEN}start${NC}   [--all|--backend|--frontend|--infra] [--debug]"
     echo "          启动服务 (默认: --all)。--debug 时前台流式输出日志"
+    echo "          - --backend --debug: 启动全栈，仅后端日志实时输出"
+    echo "          - --frontend --debug: 启动全栈，仅前端日志实时输出"
     echo ""
     echo -e "  ${GREEN}stop${NC}    [--all|--backend|--frontend|--infra]"
     echo "          停止服务 (默认: --all)"
@@ -1205,6 +1241,8 @@ cmd_help() {
     echo -e "${BOLD}示例:${NC}"
     echo "  ./sisyphus_init.sh start              # 启动所有服务"
     echo "  ./sisyphus_init.sh start --debug      # 前台流式输出日志"
+    echo "  ./sisyphus_init.sh start --backend --debug  # 启动全栈，仅后端日志实时输出"
+    echo "  ./sisyphus_init.sh start --frontend --debug # 启动全栈，仅前端日志实时输出"
     echo "  ./sisyphus_init.sh start --backend    # 仅启动后端"
     echo "  ./sisyphus_init.sh stop               # 停止所有服务"
     echo "  ./sisyphus_init.sh restart --frontend # 重启前端"

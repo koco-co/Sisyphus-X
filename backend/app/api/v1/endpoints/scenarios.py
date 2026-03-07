@@ -5,6 +5,7 @@
 """
 import csv
 import io
+import json
 import uuid
 from typing import Any
 
@@ -501,62 +502,193 @@ def _generate_scenario_yaml(
     return yaml.dump(yaml_dict, allow_unicode=True, sort_keys=False, default_flow_style=False)
 
 
+def _coerce_scalar_value(value: Any) -> Any:
+    """尽量将字符串值恢复为更合适的标量类型。"""
+    if not isinstance(value, str):
+        return value
+
+    stripped = value.strip()
+    if stripped == "":
+        return value
+
+    try:
+        return json.loads(stripped)
+    except json.JSONDecodeError:
+        return value
+
+
+def _normalize_key_value_items(value: Any) -> Any:
+    """兼容前端以数组形式保存的键值对。"""
+    if isinstance(value, list):
+        pairs: dict[str, Any] = {}
+        for item in value:
+            if not isinstance(item, dict):
+                continue
+            key = item.get("key")
+            if not key:
+                continue
+            pairs[str(key)] = item.get("value", "")
+        return pairs
+    return value
+
+
+def _normalize_assertion_target(value: str) -> str:
+    mapping = {
+        "response_json": "json",
+        "response_header": "header",
+        "status_code": "status_code",
+    }
+    return mapping.get(value, value)
+
+
+def _normalize_comparator(value: str | None) -> str:
+    mapping = {
+        "equals": "eq",
+        "not_equals": "neq",
+        "greater_than": "gt",
+        "less_than": "lt",
+        "contains": "contains",
+    }
+    return mapping.get(value or "", value or "eq")
+
+
+def _normalize_extract_source(value: str) -> str:
+    mapping = {
+        "response_json": "json",
+        "response_header": "header",
+        "status_code": "json",
+    }
+    return mapping.get(value, value)
+
+
+def _build_request_payload(parameters: dict[str, Any]) -> dict[str, Any]:
+    config = parameters.get("config") if isinstance(parameters.get("config"), dict) else parameters
+    request_payload: dict[str, Any] = {
+        "method": config.get("method", parameters.get("method", "GET")),
+        "url": config.get("url", parameters.get("url", "")),
+    }
+
+    headers = _normalize_key_value_items(config.get("headers", parameters.get("headers")))
+    if headers:
+        request_payload["headers"] = headers
+
+    params = _normalize_key_value_items(config.get("params", parameters.get("params")))
+    if params:
+        request_payload["params"] = params
+
+    raw_body = config.get("json")
+    if raw_body is None:
+        raw_body = config.get("body", parameters.get("json", parameters.get("body")))
+    body = _coerce_scalar_value(raw_body)
+    if body not in (None, "", {}, []):
+        request_payload["json"] = body
+
+    return request_payload
+
+
+def _normalize_validate_rule(rule: dict[str, Any]) -> dict[str, Any]:
+    if {"target", "comparator", "expected"}.issubset(rule.keys()):
+        normalized = {
+            "target": rule["target"],
+            "comparator": rule["comparator"],
+            "expected": _coerce_scalar_value(rule["expected"]),
+        }
+        if rule.get("expression") not in (None, ""):
+            normalized["expression"] = rule["expression"]
+        if rule.get("message") not in (None, ""):
+            normalized["message"] = rule["message"]
+        return normalized
+
+    if len(rule) == 1:
+        comparator_name, values = next(iter(rule.items()))
+        if isinstance(values, list) and len(values) >= 2:
+            normalized = {
+                "target": values[0],
+                "comparator": _normalize_comparator(str(comparator_name)),
+                "expected": _coerce_scalar_value(values[1]),
+            }
+            if len(values) >= 3 and values[2] not in (None, ""):
+                normalized["expression"] = values[2]
+            return normalized
+
+    return rule
+
+
+def _build_validate_rules(parameters: dict[str, Any]) -> list[dict[str, Any]]:
+    if parameters.get("validate"):
+        return [
+            _normalize_validate_rule(rule)
+            for rule in parameters["validate"]
+            if isinstance(rule, dict)
+        ]
+
+    rules: list[dict[str, Any]] = []
+    for assertion in parameters.get("assertions", []):
+        if not isinstance(assertion, dict):
+            continue
+        rule = {
+            "target": _normalize_assertion_target(str(assertion.get("type", "json"))),
+            "comparator": _normalize_comparator(assertion.get("message") if isinstance(assertion.get("message"), str) else None),
+            "expected": _coerce_scalar_value(assertion.get("expected")),
+        }
+        expression = assertion.get("expression")
+        if expression not in (None, ""):
+            rule["expression"] = expression
+        rules.append(rule)
+    return rules
+
+
+def _build_extract_rules(parameters: dict[str, Any]) -> list[dict[str, Any]]:
+    if parameters.get("extract"):
+        return parameters["extract"]
+
+    rules: list[dict[str, Any]] = []
+    for extraction in parameters.get("extractions", []):
+        if not isinstance(extraction, dict):
+            continue
+        name = extraction.get("name")
+        expression = extraction.get("expression")
+        if not name or expression in (None, ""):
+            continue
+        rules.append(
+            {
+                "name": name,
+                "type": _normalize_extract_source(str(extraction.get("source", "json"))),
+                "expression": expression,
+                "scope": extraction.get("variableType", "global"),
+            }
+        )
+    return rules
+
+
 def _convert_step_to_yaml(step: ScenarioStep) -> dict[str, Any] | None:
-    """将场景步骤转换为 YAML 格式
-
-    引擎期望每个步骤包含 keyword_type 和 keyword_name 字段。
-    参考: docs/api-engine/Sisyphus-api-engine YAML 输入规范.md
-
-    Args:
-        step: 场景步骤对象
-
-    Returns:
-        YAML 步骤字典，如果不支持的类型返回 None
-    """
+    """将场景步骤转换为 YAML 格式。"""
     keyword_type = step.keyword_type
     keyword_name = step.keyword_name
     parameters = step.parameters or {}
 
     if keyword_type == "request":
-        # API/HTTP 请求步骤: keyword_type: "request", keyword_name: "http_request"
         teststep = {
             "name": step.description or keyword_name,
             "keyword_type": "request",
             "keyword_name": "http_request",
-            "request": {
-                "method": parameters.get("method", "GET"),
-                "url": parameters.get("url", ""),
-            },
+            "request": _build_request_payload(parameters),
         }
 
-        # 添加可选参数
-        if "headers" in parameters and parameters["headers"]:
-            teststep["request"]["headers"] = parameters["headers"]
+        validate_rules = _build_validate_rules(parameters)
+        if validate_rules:
+            teststep["validate"] = validate_rules
 
-        if "params" in parameters and parameters["params"]:
-            teststep["request"]["params"] = parameters["params"]
-
-        if "json" in parameters and parameters["json"]:
-            teststep["request"]["json"] = parameters["json"]
-
-        if "body" in parameters and parameters["body"]:
-            teststep["request"]["json"] = parameters["body"]
-
-        # 添加验证规则
-        if "validate" in parameters and parameters["validate"]:
-            teststep["validate"] = parameters["validate"]
-
-        # 添加提取规则
-        if "extract" in parameters and parameters["extract"]:
-            teststep["extract"] = parameters["extract"]
+        extract_rules = _build_extract_rules(parameters)
+        if extract_rules:
+            teststep["extract"] = extract_rules
 
         return teststep
 
-    elif keyword_type == "database":
-        # 数据库操作步骤: keyword_type: "db", keyword_name: "execute_sql"
-        # 使用 db: {datasource, sql} 格式，而非 testcase/parameters
-        datasource = parameters.get("datasource", "")
-        sql = parameters.get("sql", "")
+    if keyword_type == "database":
+        config = parameters.get("config") if isinstance(parameters.get("config"), dict) else parameters
+        datasource = config.get("datasource", config.get("datasourceId", parameters.get("datasource", "")))
+        sql = config.get("sql", parameters.get("sql", ""))
         teststep = {
             "name": step.description or keyword_name,
             "keyword_type": "db",
@@ -566,30 +698,30 @@ def _convert_step_to_yaml(step: ScenarioStep) -> dict[str, Any] | None:
                 "sql": sql,
             },
         }
-        if "extract" in parameters and parameters["extract"]:
+        if parameters.get("extract"):
             teststep["db"]["extract"] = parameters["extract"]
-        if "validate" in parameters and parameters["validate"]:
+        if parameters.get("validate"):
             teststep["db"]["validate"] = parameters["validate"]
         return teststep
 
-    elif keyword_type == "custom":
-        # 自定义/脚本步骤: keyword_type: "custom", keyword_name: "custom_script"
+    if keyword_type == "custom":
+        custom_parameters = parameters.get("config") if isinstance(parameters.get("config"), dict) else parameters
         teststep = {
             "name": step.description or keyword_name,
             "keyword_type": "custom",
             "keyword_name": keyword_name or "custom_script",
             "custom": {
-                "parameters": parameters,
+                "parameters": custom_parameters,
             },
         }
-        if "extract" in parameters and parameters["extract"]:
-            teststep["custom"]["extract"] = parameters["extract"]
+        extract_rules = _build_extract_rules(parameters)
+        if extract_rules:
+            teststep["custom"]["extract"] = extract_rules
         return teststep
 
-    elif keyword_type == "wait":
-        # 等待步骤: keyword_type: "wait", keyword_name: "wait"
+    if keyword_type == "wait":
         wait_seconds = parameters.get("seconds", 1)
-        teststep = {
+        return {
             "name": step.description or f"Wait {wait_seconds}s",
             "keyword_type": "wait",
             "keyword_name": "wait",
@@ -597,11 +729,8 @@ def _convert_step_to_yaml(step: ScenarioStep) -> dict[str, Any] | None:
                 "parameters": {"seconds": wait_seconds},
             },
         }
-        return teststep
 
-    else:
-        # 不支持的步骤类型
-        return None
+    return None
 
 
 @router.post("/{scenario_id}/debug", response_model=DebugScenarioResponse)

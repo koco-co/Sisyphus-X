@@ -165,7 +165,8 @@ class ExecutionManager:
                         execution.passed_scenarios += 1
                     else:
                         step.status = "failed"
-                        step.error_message = run_result.get("error", "执行失败")[:500]
+                        error_message = run_result.get("error") or "执行失败"
+                        step.error_message = str(error_message)[:500]
                         execution.failed_scenarios += 1
 
                     # 从引擎输出提取详细信息

@@ -52,18 +52,25 @@ Git 历史采用 Conventional Commits 风格，如 `feat: ...`、`fix: ...`、`d
 
 ## 项目运行命令
 
-./sisyphus_init.sh # 启动所有服务 (Docker 中间件 + 后端 + 前端)
-./sisyphus_init.sh start --backend --debug # 仅启动后端并前台流式输出
-./sisyphus_init.sh start --frontend --debug # 仅启动前端并前台流式输出
+```bash
+./sisyphus_init.sh
+# 启动全部服务（Docker 中间件 + 后端 + 前端）
 
-# 项目开发规范
+./sisyphus_init.sh start --backend --debug
+# 仅启动后端，前台流式输出日志（便于调试）
+
+./sisyphus_init.sh start --frontend --debug
+# 仅启动前端，前台流式输出日志（便于调试）
+```
+
+## 项目开发规范
 
 ## 代码风格
 
-开发范式和代码风格遵循 Google Style，注释使用中文。
+开发范式与代码风格遵循 Google Style，注释统一使用中文，优先说明设计意图与业务语义。
 
 ## 提交前检查
 
-每次提交前, 检查是否需要更新以下文档: README.md、CHANGELOG.md、CLAUDE.md、AGENTS.md。
+每次提交前，检查是否需要同步更新以下文档：`README.md`、`CHANGELOG.md`、`CLAUDE.md`、`AGENTS.md`。
 
-如果存在需求变更、新增时, 更新需求文档: docs/Sisyphus-X需求文档.md。
+若存在需求新增或需求变更，必须同步更新需求文档：`docs/Sisyphus-X需求文档.md`。

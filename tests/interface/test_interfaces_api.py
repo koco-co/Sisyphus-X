@@ -173,6 +173,35 @@ class TestInterfaces:
         assert data["method"] == "POST"
         assert "headers" in data
 
+    async def test_list_interfaces_by_uuid_project_id(self, async_client: AsyncClient, db_session, sample_project):
+        """测试按 UUID 项目 ID 过滤接口列表"""
+        interface = Interface(
+            id=str(uuid.uuid4()),
+            project_id=sample_project.id,
+            folder_id=None,
+            name="按项目过滤接口",
+            method="GET",
+            url="/api/filter",
+            status="draft",
+            description=None,
+            headers={},
+            params={},
+            body=None,
+            body_type="json",
+            cookies={},
+            auth_config={},
+            order=0,
+        )
+        db_session.add(interface)
+        await db_session.commit()
+
+        response = await async_client.get(f"/api/v1/interfaces/?project_id={sample_project.id}")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] >= 1
+        assert any(item["id"] == interface.id for item in data["items"])
+
     async def test_list_interfaces(self, async_client: AsyncClient, sample_project):
         """测试获取接口列表"""
         response = await async_client.get(
@@ -255,6 +284,24 @@ class TestInterfaces:
         data = response.json()
         assert data["name"] == "更新后的接口"
         assert data["url"] == "/api/updated"
+
+    async def test_send_interface_request_success(self, async_client: AsyncClient):
+        """测试调试发送接口请求"""
+        response = await async_client.post(
+            "/api/v1/interfaces/debug/send",
+            json={
+                "url": "http://localhost:8000/health",
+                "method": "GET",
+                "headers": {},
+                "params": {},
+                "body": None,
+                "timeout": 30,
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status_code"] == 200
 
     async def test_delete_interface(self, async_client: AsyncClient, db_session, sample_project):
         """测试删除接口"""

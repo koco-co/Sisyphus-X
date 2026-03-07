@@ -65,7 +65,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 找到创建按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -87,7 +87,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
           dialogVisible = true;
           console.log(`✓ 对话框已打开: ${selector}`);
           break;
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -115,7 +115,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 填写项目名称: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -141,7 +141,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 填写项目描述: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -168,7 +168,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 点击保存按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -220,7 +220,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 找到创建关键字按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -262,7 +262,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
               console.log(`✓ 点击保存按钮: ${selector}`);
               break;
             }
-          } catch (e) {
+          } catch {
             continue;
           }
         }
@@ -295,7 +295,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
       try {
         await page.keyboard.press('Escape');
         await page.waitForTimeout(1000);
-      } catch (e) {
+      } catch {
         // 忽略错误
       }
     }
@@ -329,7 +329,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
       try {
         await page.waitForSelector('text=新建请求', { timeout: 5000 });
         console.log('✓ 欢迎页面加载完成');
-      } catch (e) {
+      } catch {
         console.log('⚠️  未检测到欢迎页面,可能需要刷新');
         await page.reload();
         await page.waitForTimeout(2000);
@@ -357,7 +357,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             await page.waitForTimeout(2000);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -392,7 +392,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 点击保存按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -415,7 +415,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 点击发送按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -438,7 +438,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 找到响应指示器: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -485,7 +485,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 找到新建场景按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -532,7 +532,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 点击添加步骤按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -555,7 +555,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 点击保存按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -602,7 +602,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 找到新建计划按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -649,7 +649,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 点击添加场景按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -672,7 +672,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 点击保存按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -695,7 +695,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 点击执行按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -720,7 +720,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
           statusFound = true;
           console.log(`✓ 找到状态指示器: ${selector}`);
           break;
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -768,7 +768,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 找到查看按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -798,7 +798,7 @@ test.describe('Sisyphus-X 主干流程验证', () => {
             console.log(`✓ 找到报告指示器: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }

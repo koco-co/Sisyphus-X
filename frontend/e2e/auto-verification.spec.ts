@@ -41,7 +41,7 @@ test.describe('Sisyphus-X 主干流程自动验证', () => {
             console.log(`  ✓ 导航到项目管理页面`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -78,7 +78,7 @@ test.describe('Sisyphus-X 主干流程自动验证', () => {
             console.log(`  ✓ 找到创建项目按钮: ${selector}`);
             break;
           }
-        } catch (e) {
+        } catch {
           continue;
         }
       }
@@ -111,7 +111,7 @@ test.describe('Sisyphus-X 主干流程自动验证', () => {
           await descInput.fill('自动化测试项目');
           console.log(`  ✓ 填写项目描述`);
         }
-      } catch (e) {
+      } catch {
         console.log(`  ⚠️  未找到描述输入框（可选）`);
       }
       
@@ -134,7 +134,7 @@ test.describe('Sisyphus-X 主干流程自动验证', () => {
         try {
           await saveButton.waitFor({ state: 'enabled', timeout: 5000 });
           console.log(`  ✓ 创建按钮已变为可用`);
-        } catch (e) {
+        } catch {
           await page.screenshot({ path: `test-results/step1-button-still-disabled-${timestamp}.png`, fullPage: true });
           issues.push('❌ 阻断问题 [步骤1]: 创建按钮一直被禁用\n  复现步骤: 点击新建项目 → 填写项目名称\n  实际现象: 创建按钮保持禁用状态\n  可能根因: 表单验证逻辑有问题或需要填写其他必填字段');
           throw new Error('创建按钮一直被禁用');
@@ -151,7 +151,7 @@ test.describe('Sisyphus-X 主干流程自动验证', () => {
       try {
         await expect(page.locator(`text=${projectName}`)).toBeVisible({ timeout: 5000 });
         console.log(`  ✓ 项目创建成功: ${projectName}\n`);
-      } catch (e) {
+      } catch {
         await page.screenshot({ path: `test-results/step1-project-not-found-${timestamp}.png`, fullPage: true });
         issues.push('❌ 阻断问题 [步骤1]: 项目创建后未在列表中显示\n  复现步骤: 创建项目 → 保存\n  实际现象: 项目未出现在列表中\n  可能根因: 保存失败或列表未刷新');
         throw new Error('项目创建后未在列表中显示');

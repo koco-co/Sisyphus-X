@@ -28,17 +28,27 @@ Git 历史采用 Conventional Commits 风格，如 `feat: ...`、`fix: ...`、`d
 
 ## Git Commit & Push Convention
 
-- 每次仅提交一个最小功能改动点（atomic commit），禁止混合无关变更。
-- Commit message 格式必须为：`<emoji> <type>(<scope>): <description>`
-- 推荐类型：
-  - `🔧 chore`: 配置/依赖
-  - `✨ feat` / `🐛 fix`: 功能/修复
-  - `♻️ refactor`: 重构
-  - `✅ test`: 测试与用例
-  - `📝 docs`: 文档
-  - `💄 style`: 样式与资源
-- 提交前自动执行最小必要校验（lint/test 仅针对受影响范围）。
-- Push 前自动清理临时产物与缓存（不影响源码），并确保工作区干净。
+- 必须采用智能原子化提交：每次仅提交一个最小改动点，禁止将无关改动混入同一个 commit。
+- Commit message 固定格式：`<emoji> <type>(<scope>): <description>`。
+- 推荐类型映射：
+  - `🔧 chore`：配置、依赖、脚本、CI 调整
+  - `✨ feat`：新功能实现
+  - `🐛 fix`：缺陷修复
+  - `♻️ refactor`：不改变行为的重构
+  - `✅ test`：测试脚本、测试数据、回归用例
+  - `📝 docs`：文档更新
+  - `💄 style`：样式、UI 资源、纯展示调整
+- 默认按以下顺序拆分 commit（按存在的改动点择需执行）：
+  1. `🔧 chore` 配置与依赖
+  2. `✨ feat` / `🐛 fix` 功能与修复
+  3. `♻️ refactor` 重构
+  4. `✅ test` 测试与数据
+  5. `📝 docs` 文档
+  6. `💄 style` 样式与静态资源
+- 提交前校验：仅运行受影响范围的最小必要检查（lint/test/build），确保结果可复现。
+- Push 前清理：自动清理临时产物与缓存（如 `playwright-report/`、`test-results/`、`.pytest_cache/`、`.mypy_cache/`、`__pycache__/`），不得删除源码与业务数据。
+- 提交后要求：工作区保持干净（`git status` 无待提交内容）再执行 push。
+- 目标：保证每个 commit 可独立回滚、可独立审阅、可独立追踪。
 
 ## 项目运行命令
 
@@ -52,7 +62,7 @@ Git 历史采用 Conventional Commits 风格，如 `feat: ...`、`fix: ...`、`d
 
 开发范式和代码风格遵循 Google Style，注释使用中文。
 
-# 提交前检查
+## 提交前检查
 
 每次提交前, 检查是否需要更新以下文档: README.md、CHANGELOG.md、CLAUDE.md、AGENTS.md。
 

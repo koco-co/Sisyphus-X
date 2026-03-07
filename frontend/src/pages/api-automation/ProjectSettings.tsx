@@ -21,8 +21,8 @@ import { CustomSelect } from '@/components/ui/CustomSelect'
 
 // 类型定义
 interface Environment {
-    id: number
-    project_id: number
+    id: string
+    project_id: string
     name: string
     domain: string
     variables: Record<string, string>
@@ -30,8 +30,8 @@ interface Environment {
 }
 
 interface DataSource {
-    id: number
-    project_id: number
+    id: string
+    project_id: string
     name: string
     db_type: string
     host: string
@@ -126,14 +126,14 @@ export default function ProjectSettings() {
     /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
     const { t } = useTranslation()
     const { projectId: projectIdParam } = useParams<{ projectId: string }>()
-    const projectId = parseInt(projectIdParam || '0')
+    const projectId = projectIdParam || ''
     const queryClient = useQueryClient()
 
     // 当前标签页
     const [activeTab, setActiveTab] = useState<'environments' | 'datasources'>('environments')
 
     // 环境编辑状态
-    const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null)
+    const [selectedEnvId, setSelectedEnvId] = useState<string | null>(null)
     const [envForm, setEnvForm] = useState({
         name: '',
         domain: '',
@@ -187,7 +187,7 @@ export default function ProjectSettings() {
     })
 
     const updateEnvMutation = useMutation({
-        mutationFn: ({ envId, data }: { envId: number; data: { name?: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> } }) =>
+        mutationFn: ({ envId, data }: { envId: string; data: { name?: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> } }) =>
             projectsApi.updateEnvironment(projectId, envId, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
@@ -195,7 +195,7 @@ export default function ProjectSettings() {
     })
 
     const deleteEnvMutation = useMutation({
-        mutationFn: (envId: number) => projectsApi.deleteEnvironment(projectId, envId),
+        mutationFn: (envId: string) => projectsApi.deleteEnvironment(projectId, envId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
             if (selectedEnvId) setSelectedEnvId(null)
@@ -203,7 +203,7 @@ export default function ProjectSettings() {
     })
 
     const copyEnvMutation = useMutation({
-        mutationFn: (envId: number) => projectsApi.copyEnvironment(projectId, envId),
+        mutationFn: (envId: string) => projectsApi.copyEnvironment(projectId, envId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
         }
@@ -221,7 +221,7 @@ export default function ProjectSettings() {
     })
 
     const deleteDsMutation = useMutation({
-        mutationFn: (dsId: number) => projectsApi.deleteDataSource(projectId, dsId),
+        mutationFn: (dsId: string) => projectsApi.deleteDataSource(projectId, dsId),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['datasources', projectId] })
         }
@@ -311,7 +311,7 @@ export default function ProjectSettings() {
             {/* 顶部导航 */}
             <header className="flex items-center gap-4 mb-8">
                 <Link
-                    to="/api/projects"
+                    to="/projects"
                     className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/5 transition-colors"
                 >
                     <ArrowLeft className="w-5 h-5" />

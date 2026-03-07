@@ -2,8 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projectsApi } from '@/api/client'
 
 export interface Environment {
-  id: number
-  project_id: number
+  id: string
+  project_id: string
   name: string
   domain: string
   variables: Record<string, string>
@@ -16,8 +16,9 @@ export interface Environment {
 /**
  * 环境管理 Hook
  */
-export function useEnvironment(projectId: number) {
+export function useEnvironment(projectId: string | number | null) {
   const queryClient = useQueryClient()
+  const activeProjectId = projectId ?? ''
 
   // 获取环境列表
   const {
@@ -27,7 +28,7 @@ export function useEnvironment(projectId: number) {
   } = useQuery({
     queryKey: ['environments', projectId],
     queryFn: async () => {
-      const res = await projectsApi.listEnvironments(projectId)
+      const res = await projectsApi.listEnvironments(activeProjectId)
       return (res.data || []) as Environment[]
     },
     enabled: !!projectId
@@ -36,7 +37,7 @@ export function useEnvironment(projectId: number) {
   // 创建环境
   const createMutation = useMutation({
     mutationFn: (data: Omit<Environment, 'id' | 'project_id' | 'created_at' | 'updated_at'>) =>
-      projectsApi.createEnvironment(projectId, data),
+      projectsApi.createEnvironment(activeProjectId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
     }
@@ -44,8 +45,8 @@ export function useEnvironment(projectId: number) {
 
   // 更新环境
   const updateMutation = useMutation({
-    mutationFn: ({ envId, data }: { envId: number; data: Partial<Environment> }) =>
-      projectsApi.updateEnvironment(projectId, envId, data),
+    mutationFn: ({ envId, data }: { envId: string | number; data: Partial<Environment> }) =>
+      projectsApi.updateEnvironment(activeProjectId, envId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
     }
@@ -53,8 +54,8 @@ export function useEnvironment(projectId: number) {
 
   // 删除环境
   const deleteMutation = useMutation({
-    mutationFn: (envId: number) =>
-      projectsApi.deleteEnvironment(projectId, envId),
+    mutationFn: (envId: string | number) =>
+      projectsApi.deleteEnvironment(activeProjectId, envId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
     }
@@ -63,15 +64,15 @@ export function useEnvironment(projectId: number) {
   // 克隆环境
   const copyMutation = useMutation({
     /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-    mutationFn: ({ envId, name }: { envId: number; name: string }) =>
-      projectsApi.copyEnvironment(projectId, envId),
+    mutationFn: ({ envId, name }: { envId: string | number; name: string }) =>
+      projectsApi.copyEnvironment(activeProjectId, envId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['environments', projectId] })
     }
   })
 
   // 获取单个环境
-  const getEnvironment = (envId: number) => {
+  const getEnvironment = (envId: string | number) => {
     return environments.find(env => env.id === envId)
   }
 

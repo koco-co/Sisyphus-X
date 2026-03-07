@@ -5,11 +5,11 @@ import { cn } from '@/lib/utils'
 
 interface WelcomeCardsProps {
   recentInterfaces?: Array<{
-    id: number
+    id: number | string
     name: string
     method: string
   }>
-  projectId: number
+  projectId: number | string
   onImportSwagger?: () => void
 }
 
@@ -33,7 +33,7 @@ export function WelcomeCards({ recentInterfaces = [], projectId, onImportSwagger
     navigate(`/interface-management/new?projectId=${projectId}&mode=curl`)
   }
 
-  const handleOpenInterface = (id: number) => {
+  const handleOpenInterface = (id: number | string) => {
     navigate(`/interface-management/${id}?projectId=${projectId}`)
   }
 

@@ -129,7 +129,7 @@ export function EnvironmentSelector({
                             <button
                                 onClick={() => {
                                     // Navigate to environment management page
-                                    window.location.href = `/api/projects/${projectId}/settings`
+                                    window.location.href = `/projects/${projectId}/settings`
                                     setIsOpen(false)
                                 }}
                                 className={cn(

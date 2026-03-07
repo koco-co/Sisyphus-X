@@ -33,7 +33,7 @@ export interface RequestData {
 }
 
 interface RequestEditorProps {
-  projectId: number
+  projectId: string | number
   data: RequestData
   onChange: (data: RequestData) => void
   onSend: () => void
@@ -56,7 +56,7 @@ export function RequestEditor({
   isSending = false
 }: RequestEditorProps) {
   const [activeTab, setActiveTab] = useState<typeof REQUEST_TABS[number]['id']>('params')
-  const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null)
+  const [selectedEnvId, setSelectedEnvId] = useState<string | null>(null)
 
   const updateData = (updates: Partial<RequestData>) => {
     onChange({ ...data, ...updates })

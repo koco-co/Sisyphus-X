@@ -2,11 +2,12 @@ import { CustomSelect } from '@/components/ui/CustomSelect'
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 import { Globe } from 'lucide-react'
 import { useEnvironment } from '../../hooks/useEnvironment'
+import { normalizeResourceId, toSelectValue } from '../../utils/identifierUtils'
 
 interface EnvironmentSelectorProps {
-  projectId: number
-  value: number | null
-  onChange: (envId: number | null) => void
+  projectId: string | number | null
+  value: string | null
+  onChange: (envId: string | null) => void
 }
 
 export function EnvironmentSelector({ projectId, value, onChange }: EnvironmentSelectorProps) {
@@ -20,8 +21,8 @@ export function EnvironmentSelector({ projectId, value, onChange }: EnvironmentS
   return (
     <div className="w-48">
       <CustomSelect
-        value={value ? String(value) : ''}
-        onChange={(val) => onChange(val ? parseInt(String(val)) : null)}
+        value={toSelectValue(value)}
+        onChange={(val) => onChange(normalizeResourceId(val))}
         options={options}
         placeholder="选择环境"
       />

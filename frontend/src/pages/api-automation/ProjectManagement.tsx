@@ -337,7 +337,7 @@ export default function ProjectManagement() {
                                                 </Tooltip>
                                                 <Tooltip content="数据库配置" position="top">
                                                     <Link
-                                                        to={`/api/projects/${project.id}/database-configs`}
+                                                        to={`/projects/${project.id}/database-configs`}
                                                         className="p-2 text-slate-400 hover:text-purple-400 hover:bg-purple-400/10 rounded-lg transition-colors"
                                                         data-testid="database-config-button"
                                                     >

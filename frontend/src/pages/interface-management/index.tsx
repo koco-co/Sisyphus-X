@@ -31,6 +31,8 @@ import type { BodyType } from './components/RequestEditor/BodyTab'
 import type { Environment } from './dialogs/EnvironmentDialog'
 import { useEnvironment } from './hooks/useEnvironment'
 import { replaceVariables } from './utils/variableParser'
+import { normalizeResourceId, toSelectValue } from './utils/identifierUtils'
+import { normalizeGlobalParams } from './utils/globalParamsUtils'
 
 // 工具函数
 const objectToKeyValueArray = (obj: Record<string, string>): KeyValuePair[] => {
@@ -68,13 +70,13 @@ export default function InterfaceManagementPage() {
 
   const effectiveId = pathId !== undefined ? pathId : id
 
-  const interfaceId = effectiveId && effectiveId !== 'new' ? parseInt(effectiveId) : null
-  const currentProjectId = projectIdFromQuery ? parseInt(projectIdFromQuery) : null
+  const interfaceId = effectiveId && effectiveId !== 'new' ? normalizeResourceId(effectiveId) : null
+  const currentProjectId = normalizeResourceId(projectIdFromQuery)
   const isNew = effectiveId === 'new'
 
   // 环境选择状态
-  const [selectedEnvId, setSelectedEnvId] = useState<number | null>(null)
-  const { environments } = useEnvironment(currentProjectId ?? 0)
+  const [selectedEnvId, setSelectedEnvId] = useState<string | null>(null)
+  const { environments } = useEnvironment(currentProjectId)
 
   // 状态机模式: 明确管理页面状态
   const [pageMode, setPageMode] = useState<'welcome' | 'new' | 'edit'>('welcome')
@@ -143,7 +145,7 @@ export default function InterfaceManagementPage() {
     queryKey: ['global-params'],
     queryFn: async () => {
       const res = await globalParamsApi.list()
-      return res.data || []
+      return normalizeGlobalParams(res.data)
     }
   })
 
@@ -159,7 +161,7 @@ export default function InterfaceManagementPage() {
 
   // 项目切换
   const handleProjectChange = useCallback((val: unknown) => {
-    const newProjectId = val ? String(val) : ''
+    const newProjectId = normalizeResourceId(val) ?? ''
     setSearchParams(prev => {
       const next = new URLSearchParams(prev)
       if (newProjectId) {
@@ -237,7 +239,7 @@ export default function InterfaceManagementPage() {
     }) => {
       if (isNew) {
         return interfacesApi.create({
-          project_id: currentProjectId || 0,
+          project_id: currentProjectId || '',
           name: data.name,
           url: data.url,
           method: data.method,
@@ -321,7 +323,7 @@ export default function InterfaceManagementPage() {
 
     try {
       // 收集变量上下文: 环境变量 + 全局变量
-      const selectedEnv = environments.find(e => e.id === selectedEnvId)
+      const selectedEnv = environments.find(e => String(e.id) === selectedEnvId)
       const envVars: Record<string, string> = selectedEnv?.variables || {}
       const globalVars: Record<string, string> = {}
       for (const gp of globalParams) {
@@ -455,7 +457,7 @@ export default function InterfaceManagementPage() {
   }
 
   // 选择接口
-  const handleSelectInterface = (id: number) => {
+  const handleSelectInterface = (id: number | string) => {
     navigate(`/interface-management/${id}${currentProjectId ? `?projectId=${currentProjectId}` : ''}`)
   }
 
@@ -471,7 +473,7 @@ export default function InterfaceManagementPage() {
   // 项目选项
   const projectOptions = [
     { label: '选择项目...', value: '' },
-    ...projects.map((p: { id: number; name: string }) => ({ label: p.name, value: String(p.id) }))
+    ...projects.map((p: { id: string | number; name: string }) => ({ label: p.name, value: String(p.id) }))
   ]
 
   // 环境选项
@@ -486,7 +488,7 @@ export default function InterfaceManagementPage() {
       <div className="flex items-center gap-4">
         <h1 className="text-lg font-bold text-white whitespace-nowrap">接口定义</h1>
         <CustomSelect
-          value={currentProjectId ? String(currentProjectId) : ''}
+          value={toSelectValue(currentProjectId)}
           onChange={handleProjectChange}
           options={projectOptions}
           placeholder="选择项目"
@@ -496,8 +498,8 @@ export default function InterfaceManagementPage() {
       </div>
       <div className="flex items-center gap-3">
         <CustomSelect
-          value={selectedEnvId ? String(selectedEnvId) : ''}
-          onChange={(val) => setSelectedEnvId(val ? parseInt(String(val)) : null)}
+          value={toSelectValue(selectedEnvId)}
+          onChange={(val) => setSelectedEnvId(normalizeResourceId(val))}
           options={envOptions}
           placeholder="选择环境"
           size="sm"
@@ -539,7 +541,7 @@ export default function InterfaceManagementPage() {
         <SwaggerImportDialog
           open={showSwaggerDialog}
           onClose={() => setShowSwaggerDialog(false)}
-          projectId={currentProjectId ? String(currentProjectId) : ''}
+          projectId={currentProjectId || ''}
           onSuccess={() => queryClient.invalidateQueries({ queryKey: ['interfaces'] })}
         />
       </div>
@@ -554,7 +556,7 @@ export default function InterfaceManagementPage() {
       <div className="flex flex-1 min-h-0">
         {/* 左侧目录树 */}
         <InterfaceTree
-          projectId={currentProjectId || 0}
+          projectId={currentProjectId || ''}
           onSelectInterface={handleSelectInterface}
           selectedInterfaceId={interfaceId ?? undefined}
         />
@@ -598,7 +600,7 @@ export default function InterfaceManagementPage() {
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="flex-1 overflow-auto min-h-0">
               <RequestEditor
-                projectId={currentProjectId || 0}
+                projectId={currentProjectId || ''}
                 data={requestData}
                 onChange={setRequestData}
                 onSend={handleSend}

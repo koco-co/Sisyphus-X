@@ -67,9 +67,9 @@ function AppRoutes() {
         <Route path="/" element={<Dashboard />} />
 
         {/* 接口自动化 */}
-        <Route path="/api/projects" element={<ProjectManagement />} />
-        <Route path="/api/projects/:projectId/settings" element={<ProjectSettings />} />
-        <Route path="/api/projects/:projectId/database-configs" element={<DatabaseConfigList />} />
+        <Route path="/projects" element={<ProjectManagement />} />
+        <Route path="/projects/:projectId/settings" element={<ProjectSettings />} />
+        <Route path="/projects/:projectId/database-configs" element={<DatabaseConfigList />} />
         <Route path="/keywords" element={<KeywordManagement />} />
         <Route path="/interface-management/new" element={<InterfaceManagementPage key="interface-new" />} />
         <Route path="/interface-management/:id" element={<InterfaceManagementPage />} />

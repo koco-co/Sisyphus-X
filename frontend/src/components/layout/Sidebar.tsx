@@ -51,7 +51,7 @@ const navItems: NavItem[] = [
         icon: Zap,
         labelKey: 'nav.apiAutomation',
         children: [
-            { icon: FolderKanban, labelKey: 'nav.projectManagement', href: '/api/projects' },
+            { icon: FolderKanban, labelKey: 'nav.projectManagement', href: '/projects' },
             { icon: Key, labelKey: 'nav.keywordManagement', href: '/keywords' },
             { icon: Network, labelKey: 'nav.apiManagement', href: '/interface-management' },
             { icon: Workflow, labelKey: 'nav.testScenarios', href: '/scenarios' },

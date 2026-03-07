@@ -75,20 +75,20 @@ export const projectsApi = {
     listEnvironments: (projectId: string | number) => api.get(`/projects/${projectId}/environments`),
     createEnvironment: (projectId: string | number, data: { name: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> }) =>
         api.post(`/projects/${projectId}/environments`, data),
-    getEnvironment: (projectId: string | number, envId: number) => api.get(`/projects/${projectId}/environments/${envId}`),
-    updateEnvironment: (projectId: string | number, envId: number, data: { name?: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> }) =>
+    getEnvironment: (projectId: string | number, envId: string | number) => api.get(`/projects/${projectId}/environments/${envId}`),
+    updateEnvironment: (projectId: string | number, envId: string | number, data: { name?: string; domain?: string; variables?: Record<string, string>; headers?: Record<string, string> }) =>
         api.put(`/projects/${projectId}/environments/${envId}`, data),
-    deleteEnvironment: (projectId: string | number, envId: number) => api.delete(`/projects/${projectId}/environments/${envId}`),
-    copyEnvironment: (projectId: string | number, envId: number) => api.post(`/projects/${projectId}/environments/${envId}/copy`),
-    cloneEnvironment: (projectId: string | number, envId: number) => api.post(`/projects/${projectId}/environments/${envId}/clone`),
+    deleteEnvironment: (projectId: string | number, envId: string | number) => api.delete(`/projects/${projectId}/environments/${envId}`),
+    copyEnvironment: (projectId: string | number, envId: string | number) => api.post(`/projects/${projectId}/environments/${envId}/copy`),
+    cloneEnvironment: (projectId: string | number, envId: string | number) => api.post(`/projects/${projectId}/environments/${envId}/clone`),
 
     // 数据源 API (projectId 支持 UUID 字符串)
     listDataSources: (projectId: string | number) => api.get(`/projects/${projectId}/datasources`),
     createDataSource: (projectId: string | number, data: { name: string; db_type: string; host: string; port: number; db_name?: string; username?: string; password?: string; variable_name?: string }) =>
         api.post(`/projects/${projectId}/datasources`, data),
-    updateDataSource: (projectId: string | number, dsId: number, data: { name?: string; db_type?: string; host?: string; port?: number; db_name?: string; username?: string; password?: string; variable_name?: string; is_enabled?: boolean }) =>
+    updateDataSource: (projectId: string | number, dsId: string | number, data: { name?: string; db_type?: string; host?: string; port?: number; db_name?: string; username?: string; password?: string; variable_name?: string; is_enabled?: boolean }) =>
         api.put(`/projects/${projectId}/datasources/${dsId}`, data),
-    deleteDataSource: (projectId: string | number, dsId: number) => api.delete(`/projects/${projectId}/datasources/${dsId}`),
+    deleteDataSource: (projectId: string | number, dsId: string | number) => api.delete(`/projects/${projectId}/datasources/${dsId}`),
     testDataSource: (data: { db_type: string; host: string; port: number; db_name?: string; username?: string; password?: string }) =>
         api.post('/projects/datasources/test', data),
 }

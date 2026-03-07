@@ -82,9 +82,9 @@ const METHOD_COLORS: Record<string, string> = {
 }
 
 interface InterfaceTreeProps {
-  projectId: number
-  onSelectInterface: (id: number) => void
-  selectedInterfaceId?: number
+  projectId: number | string
+  onSelectInterface: (id: number | string) => void
+  selectedInterfaceId?: number | string
 }
 
 function SortableFolder({ children, id }: { children: React.ReactNode; id: string }) {
@@ -424,7 +424,7 @@ export function InterfaceTree({ projectId, onSelectInterface, selectedInterfaceI
           isDragging && activeId === node.id && 'opacity-50',
         )}
         style={{ paddingLeft: depth * 16 + 8 }}
-        onClick={() => !isRenaming && node.interfaceId !== undefined && onSelectInterface(Number(node.interfaceId))}
+        onClick={() => !isRenaming && node.interfaceId !== undefined && onSelectInterface(node.interfaceId)}
         onContextMenu={(e) => handleContextMenu(e, { type: 'interface', id: node.interfaceId!, name: node.name })}
       >
         <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0', METHOD_COLORS[node.method || 'GET'])}>

@@ -10,8 +10,12 @@ class ReportDetailResponse(BaseModel):
 
     id: str
     report_id: str
+    scenario_id: str | None = None
+    scenario_name: str | None = None
     node_id: str
     node_name: str
+    method: str | None = None
+    url: str | None = None
     status: str
     request_data: dict | None = None
     response_data: dict | None = None
@@ -24,6 +28,9 @@ class ReportResponse(BaseModel):
     """报告响应"""
 
     id: str
+    plan_id: str | None = None
+    plan_name: str | None = None
+    execution_id: str | None = None
     scenario_id: str | None = None
     name: str
     status: str

@@ -52,6 +52,9 @@ async def list_reports_by_scenario_name(
     items = [
         ReportResponse(
             id=str(r.id),
+            plan_id=r.plan_id,
+            plan_name=r.plan_name,
+            execution_id=r.execution_id,
             scenario_id=r.scenario_id,
             name=r.name,
             status=r.status,
@@ -151,6 +154,9 @@ async def get_report(
         logger.info(f"获取测试报告成功: id={report_id}")
         return ReportResponse(
             id=str(report.id),
+            plan_id=report.plan_id,
+            plan_name=report.plan_name,
+            execution_id=report.execution_id,
             scenario_id=report.scenario_id,
             name=report.name,
             status=report.status,
@@ -192,6 +198,9 @@ async def get_report_with_details(
         # 组装响应（TestReport 为 SQLAlchemy 模型，无 model_dump，需手动构建）
         report_dict = {
             "id": str(report.id),
+            "plan_id": report.plan_id,
+            "plan_name": report.plan_name,
+            "execution_id": report.execution_id,
             "scenario_id": report.scenario_id,
             "name": report.name,
             "status": report.status,
@@ -207,8 +216,12 @@ async def get_report_with_details(
             ReportDetailResponse(
                 id=str(d.id),
                 report_id=str(d.report_id),
+                scenario_id=d.scenario_id,
+                scenario_name=d.scenario_name,
                 node_id=d.node_id,
                 node_name=d.node_name,
+                method=d.method,
+                url=d.url,
                 status=d.status,
                 request_data=d.request_data,
                 response_data=d.response_data,

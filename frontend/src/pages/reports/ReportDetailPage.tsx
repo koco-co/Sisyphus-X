@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,15 +19,19 @@ import {
     Timer,
     AlertCircle,
 } from 'lucide-react';
-import { reportsApi } from '@/api/client';
+import { plansApi, reportsApi } from '@/api/client';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 
 interface ReportDetailItem {
     id: string;
     report_id: string;
+    scenario_id?: string | null;
+    scenario_name?: string | null;
     node_id: string;
     node_name: string;
+    method?: string | null;
+    url?: string | null;
     status: string;
     request_data?: Record<string, unknown> | null;
     response_data?: Record<string, unknown> | null;
@@ -39,6 +43,8 @@ interface ReportDetailItem {
 interface ReportDetail {
     id: number | string;
     name?: string;
+    plan_id?: string;
+    plan_name?: string;
     scenario_id?: string;
     scenario_name?: string;
     status: string;
@@ -57,8 +63,10 @@ interface ReportDetail {
 /** 解析后端 duration 字符串（如 "1.5s"、"2m 30s"）为秒数 */
 function parseDurationToSeconds(durationStr?: string): number | undefined {
     if (!durationStr) return undefined;
-    const sMatch = durationStr.match(/(\d+\.?\d*)\s*s/);
-    const mMatch = durationStr.match(/(\d+)\s*m/);
+    const msMatch = durationStr.match(/(\d+\.?\d*)\s*ms/i);
+    if (msMatch) return parseFloat(msMatch[1]) / 1000;
+    const sMatch = durationStr.match(/(\d+\.?\d*)\s*s/i);
+    const mMatch = durationStr.match(/(\d+)\s*m/i);
     const seconds = parseFloat(sMatch?.[1] ?? '0') + (parseInt(mMatch?.[1] ?? '0', 10) * 60);
     return seconds || undefined;
 }
@@ -104,6 +112,14 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
     cancelled: { label: '已终止', color: 'text-orange-400', icon: AlertCircle },
     skipped: { label: '跳过', color: 'text-slate-400', icon: AlertCircle },
     pending: { label: '等待中', color: 'text-slate-400', icon: Clock },
+};
+
+const METHOD_COLORS: Record<string, string> = {
+    GET: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20',
+    POST: 'bg-blue-500/15 text-blue-400 border-blue-500/20',
+    PUT: 'bg-orange-500/15 text-orange-400 border-orange-500/20',
+    PATCH: 'bg-amber-500/15 text-amber-400 border-amber-500/20',
+    DELETE: 'bg-red-500/15 text-red-400 border-red-500/20',
 };
 
 function JsonBlock({ data }: { data: unknown }) {
@@ -188,12 +204,22 @@ export default function ReportDetailPage() {
         }
     };
 
-    const handleRunAgain = () => {
-        if (report?.scenario_id) {
-            navigate(`/scenarios/editor/${report.scenario_id}`);
-            toast.info('已跳转至场景，可重新调试执行');
-        } else {
-            toast.info('无法确定关联场景');
+    const handleRunAgain = async () => {
+        if (!report?.plan_id) {
+            toast.info('无法确定关联测试计划');
+            return;
+        }
+        try {
+            const res = await plansApi.execute(report.plan_id);
+            const execution = (res.data as { execution_id?: string })?.execution_id;
+            if (!execution) {
+                toast.error('重新执行失败：未返回执行 ID');
+                return;
+            }
+            toast.success('已开始重新执行测试计划');
+            navigate(`/plans/${report.plan_id}/executions/${execution}`);
+        } catch {
+            toast.error('重新执行失败');
         }
     };
 
@@ -213,7 +239,8 @@ export default function ReportDetailPage() {
 
     const formatDuration = (seconds?: number) => {
         if (seconds == null) return '-';
-        if (seconds < 60) return `${seconds.toFixed(1)}s`;
+        if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
+        if (seconds < 60) return `${seconds.toFixed(2).replace(/\.00$/, '')}s`;
         return `${Math.floor(seconds / 60)}m ${(seconds % 60).toFixed(0)}s`;
     };
 
@@ -227,7 +254,22 @@ export default function ReportDetailPage() {
         ? Math.round(((report?.success ?? 0) / (report?.total ?? 1)) * 100)
         : 0;
 
-    const details = report?.details ?? [];
+    const details = useMemo(() => report?.details ?? [], [report?.details]);
+    const groupedDetails = useMemo(() => {
+        const groups = new Map<string, { key: string; name: string; items: ReportDetailItem[] }>();
+        for (const detail of details) {
+            const key = detail.scenario_id || detail.scenario_name || 'ungrouped';
+            const name = detail.scenario_name || '未标记场景';
+            const existing = groups.get(key);
+            if (existing) {
+                existing.items.push(detail);
+            } else {
+                groups.set(key, { key, name, items: [detail] });
+            }
+        }
+        return Array.from(groups.values());
+    }, [details]);
+    const scenarioCount = groupedDetails.length;
     const avgElapsed = details.length > 0
         ? details.reduce((sum, d) => sum + d.elapsed, 0) / details.length
         : 0;
@@ -265,7 +307,7 @@ export default function ReportDetailPage() {
                 </Link>
                 <span>/</span>
                 <span className="text-white font-medium truncate">
-                    {report.name || report.scenario_name || `报告 #${report.id}`}
+                    {report.plan_name || report.name || `报告 #${report.id}`}
                 </span>
             </motion.div>
 
@@ -279,7 +321,7 @@ export default function ReportDetailPage() {
                     <FileBarChart2 className="w-8 h-8 text-cyan-500" />
                     <div>
                         <h1 className="text-2xl font-bold text-white">
-                            {report.name || report.scenario_name || `报告 #${report.id}`}
+                            {report.plan_name || report.name || `报告 #${report.id}`}
                         </h1>
                         <p className="text-slate-400 text-sm mt-1">
                             运行时间: {formatDate(report.start_time || report.created_at)}
@@ -335,8 +377,12 @@ export default function ReportDetailPage() {
                     <StatCard icon={Activity} label="用例统计">
                         <div className="space-y-1.5">
                             <div className="flex justify-between text-xs">
-                                <span className="text-slate-400">总计</span>
+                                <span className="text-slate-400">接口步骤</span>
                                 <span className="text-white font-medium">{report.total ?? 0}</span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-slate-400">场景数</span>
+                                <span className="text-white font-medium">{scenarioCount}</span>
                             </div>
                             <div className="flex justify-between text-xs">
                                 <span className="text-slate-400">通过</span>
@@ -403,7 +449,7 @@ export default function ReportDetailPage() {
             )}
 
             {/* Step-by-step results */}
-            {details.length > 0 && (
+            {groupedDetails.length > 0 && (
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -411,102 +457,111 @@ export default function ReportDetailPage() {
                     className="rounded-2xl border border-white/5 bg-slate-900/50 overflow-hidden"
                 >
                     <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
-                        <span className="font-medium text-white">执行步骤详情</span>
+                        <span className="font-medium text-white">接口执行详情</span>
                         <span className="text-xs text-slate-500">
-                            共 {details.length} 个步骤
+                            共 {scenarioCount} 个场景，{details.length} 个接口步骤
                         </span>
                     </div>
 
                     <div className="divide-y divide-white/5">
-                        {details.map((step, idx) => {
-                            const isExpanded = expandedSteps.has(step.id);
-                            const cfg = STATUS_CONFIG[step.status] ?? STATUS_CONFIG.pending;
-                            const StepIcon = cfg.icon;
-                            const isLast = idx === details.length - 1;
-
-                            return (
-                                <div key={step.id}>
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleStep(step.id)}
-                                        className="w-full px-6 py-3.5 flex items-center gap-4 text-left hover:bg-white/[0.03] transition-colors"
-                                    >
-                                        <div className="flex-shrink-0 text-slate-600 text-xs w-6 text-right">
-                                            {idx + 1}
-                                        </div>
-                                        <div className="flex-shrink-0 text-slate-500">
-                                            {isExpanded
-                                                ? <ChevronDown className="w-4 h-4" />
-                                                : <ChevronRight className="w-4 h-4" />
-                                            }
-                                        </div>
-                                        <StepIcon className={`w-4 h-4 flex-shrink-0 ${cfg.color}`} />
-                                        <span className="text-sm text-white truncate flex-1 font-medium">
-                                            {step.node_name}
-                                        </span>
-                                        <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${cfg.color} ${
-                                            step.status === 'success' || step.status === 'passed'
-                                                ? 'bg-emerald-500/10'
-                                                : step.status === 'failed'
-                                                ? 'bg-red-500/10'
-                                                : 'bg-slate-500/10'
-                                        }`}>
-                                            {cfg.label}
-                                        </span>
-                                        <span className="text-xs text-slate-500 flex-shrink-0 w-16 text-right">
-                                            {formatElapsed(step.elapsed)}
-                                        </span>
-                                        {!isLast && <span className="sr-only">展开</span>}
-                                    </button>
-
-                                    <AnimatePresence>
-                                        {isExpanded && (
-                                            <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: 'auto', opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                transition={{ duration: 0.2 }}
-                                                className="overflow-hidden"
-                                            >
-                                                <div className="mx-6 mb-4 bg-slate-900/80 border border-white/5 rounded-xl p-4 space-y-3">
-                                                    {step.error_msg && (
-                                                        <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-lg">
-                                                            <div className="text-xs text-red-400 font-medium mb-1">错误信息</div>
-                                                            <pre className="text-xs text-red-300/80 whitespace-pre-wrap break-all font-mono">
-                                                                {step.error_msg}
-                                                            </pre>
-                                                        </div>
-                                                    )}
-
-                                                    {step.request_data && Object.keys(step.request_data).length > 0 && (
-                                                        <div>
-                                                            <div className="text-xs text-cyan-400 font-medium mb-1.5">Request</div>
-                                                            <JsonBlock data={step.request_data} />
-                                                        </div>
-                                                    )}
-
-                                                    {step.response_data && Object.keys(step.response_data).length > 0 && (
-                                                        <div>
-                                                            <div className="text-xs text-emerald-400 font-medium mb-1.5">Response</div>
-                                                            <JsonBlock data={step.response_data} />
-                                                        </div>
-                                                    )}
-
-                                                    {!step.error_msg && !step.request_data && !step.response_data && (
-                                                        <span className="text-xs text-slate-500 italic">暂无请求/响应详情</span>
-                                                    )}
-
-                                                    <div className="flex items-center gap-4 text-xs text-slate-500 pt-2 border-t border-white/5">
-                                                        <span>节点 ID: {step.node_id}</span>
-                                                        <span>耗时: {formatElapsed(step.elapsed)}</span>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
+                        {groupedDetails.map((group, groupIndex) => (
+                            <div key={group.key} className="border-b border-white/5 last:border-b-0">
+                                <div className="px-6 py-3 bg-slate-950/40 flex items-center justify-between gap-3">
+                                    <div>
+                                        <div className="text-sm font-medium text-white">{group.name}</div>
+                                        <div className="text-xs text-slate-500">{group.items.length} 个接口步骤</div>
+                                    </div>
+                                    <span className="text-xs text-slate-500">场景 {groupIndex + 1}</span>
                                 </div>
-                            );
-                        })}
+                                <div className="divide-y divide-white/5">
+                                    {group.items.map((step, idx) => {
+                                        const isExpanded = expandedSteps.has(step.id);
+                                        const cfg = STATUS_CONFIG[step.status] ?? STATUS_CONFIG.pending;
+                                        const StepIcon = cfg.icon;
+                                        return (
+                                            <div key={step.id}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleStep(step.id)}
+                                                    className="w-full px-6 py-3.5 flex items-center gap-4 text-left hover:bg-white/[0.03] transition-colors"
+                                                >
+                                                    <div className="flex-shrink-0 text-slate-600 text-xs w-6 text-right">{idx + 1}</div>
+                                                    <div className="flex-shrink-0 text-slate-500">
+                                                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                                    </div>
+                                                    <StepIcon className={`w-4 h-4 flex-shrink-0 ${cfg.color}`} />
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            {step.method && (
+                                                                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${METHOD_COLORS[(step.method || '').toUpperCase()] || 'bg-slate-500/10 text-slate-300 border-slate-500/20'}`}>
+                                                                    {step.method}
+                                                                </span>
+                                                            )}
+                                                            <span className="text-sm text-white truncate font-medium">{step.node_name}</span>
+                                                        </div>
+                                                        {step.url && <div className="text-xs text-slate-500 truncate mt-1">{step.url}</div>}
+                                                    </div>
+                                                    <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${cfg.color} ${
+                                                        step.status === 'success' || step.status === 'passed'
+                                                            ? 'bg-emerald-500/10'
+                                                            : step.status === 'failed'
+                                                            ? 'bg-red-500/10'
+                                                            : 'bg-slate-500/10'
+                                                    }`}>
+                                                        {cfg.label}
+                                                    </span>
+                                                    <span className="text-xs text-slate-500 flex-shrink-0 w-16 text-right">{formatElapsed(step.elapsed)}</span>
+                                                </button>
+
+                                                <AnimatePresence>
+                                                    {isExpanded && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: 'auto', opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            transition={{ duration: 0.2 }}
+                                                            className="overflow-hidden"
+                                                        >
+                                                            <div className="mx-6 mb-4 bg-slate-900/80 border border-white/5 rounded-xl p-4 space-y-3">
+                                                                {step.error_msg && (
+                                                                    <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-lg">
+                                                                        <div className="text-xs text-red-400 font-medium mb-1">错误信息</div>
+                                                                        <pre className="text-xs text-red-300/80 whitespace-pre-wrap break-all font-mono">{step.error_msg}</pre>
+                                                                    </div>
+                                                                )}
+
+                                                                {step.request_data && Object.keys(step.request_data).length > 0 && (
+                                                                    <div>
+                                                                        <div className="text-xs text-cyan-400 font-medium mb-1.5">Request</div>
+                                                                        <JsonBlock data={step.request_data} />
+                                                                    </div>
+                                                                )}
+
+                                                                {step.response_data && Object.keys(step.response_data).length > 0 && (
+                                                                    <div>
+                                                                        <div className="text-xs text-emerald-400 font-medium mb-1.5">Response</div>
+                                                                        <JsonBlock data={step.response_data} />
+                                                                    </div>
+                                                                )}
+
+                                                                {!step.error_msg && !step.request_data && !step.response_data && (
+                                                                    <span className="text-xs text-slate-500 italic">暂无请求/响应详情</span>
+                                                                )}
+
+                                                                <div className="flex items-center gap-4 text-xs text-slate-500 pt-2 border-t border-white/5">
+                                                                    <span>节点 ID: {step.node_id}</span>
+                                                                    <span>耗时: {formatElapsed(step.elapsed)}</span>
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </motion.div>
             )}

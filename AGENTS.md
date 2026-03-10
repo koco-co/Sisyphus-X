@@ -74,3 +74,20 @@ Git 历史采用 Conventional Commits 风格，如 `feat: ...`、`fix: ...`、`d
 每次提交前，检查是否需要同步更新以下文档：`README.md`、`CHANGELOG.md`、`CLAUDE.md`、`AGENTS.md`。
 
 若存在需求新增或需求变更，必须同步更新需求文档：`docs/Sisyphus-X需求文档.md`。
+
+{
+"env": {
+"ANTHROPIC_AUTH_TOKEN": "8a0e9badd00244b39932c49ebc780e48.Ic4UuSFAuEOUEssM",
+"ANTHROPIC_BASE_URL": "https://open.bigmodel.cn/api/anthropic",
+"ANTHROPIC_DEFAULT_HAIKU_MODEL": "glm-5",
+"ANTHROPIC_DEFAULT_OPUS_MODEL": "glm-5",
+"ANTHROPIC_DEFAULT_SONNET_MODEL": "glm-5",
+"ANTHROPIC_MODEL": "glm-5"
+},
+"enabledPlugins": {
+"frontend-design@claude-plugins-official": true,
+"superpowers@claude-plugins-official": true
+},
+"language": "中文",
+"skipDangerousModePermissionPrompt": true
+}

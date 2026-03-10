@@ -269,22 +269,15 @@ export default function ScenarioEditorLayout() {
             if (environmentId) debugPayload.environment_id = environmentId;
             if (datasetId) debugPayload.dataset_id = datasetId;
 
-            const res = await scenariosApi.debug(targetId, debugPayload);
-            const result = res?.data?.data ?? res?.data;
-
-            if (result?.report_id) {
-                toast.success('调试完成，正在跳转到报告...');
-                navigate(`/reports/${result.report_id}`);
-            } else {
-                toast.success('调试请求已发送');
-            }
+            await scenariosApi.debug(targetId, debugPayload);
+            toast.success('场景调试完成，结果仅在当前页临时展示，不会写入测试报告');
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : '未知错误';
             toast.error(`调试失败: ${msg}`);
         } finally {
             setDebugging(false);
         }
-    }, [scenarioId, isNew, environmentId, datasetId, handleSave, navigate]);
+    }, [scenarioId, isNew, environmentId, datasetId, handleSave]);
 
     // --- Variables KV editor ---
     const variableEntries = Object.entries(scenarioData.variables);
@@ -347,16 +340,21 @@ export default function ScenarioEditorLayout() {
                         <Save className="w-3.5 h-3.5 mr-1.5" />
                         {saving ? '保存中...' : '保存'}
                     </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
-                        onClick={handleDebug}
-                        disabled={debugging || saving}
-                    >
-                        <Bug className="w-3.5 h-3.5 mr-1.5" />
-                        {debugging ? '调试中...' : '调试'}
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20"
+                            onClick={handleDebug}
+                            disabled={debugging || saving}
+                        >
+                            <Bug className="w-3.5 h-3.5 mr-1.5" />
+                            {debugging ? '调试中...' : '调试'}
+                        </Button>
+                        <span className="hidden lg:inline text-[11px] text-slate-500">
+                            场景调试仅用于临时验证，不会写入测试报告
+                        </span>
+                    </div>
                     <Button
                         variant="ghost"
                         size="icon"

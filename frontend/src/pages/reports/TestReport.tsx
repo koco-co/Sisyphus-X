@@ -28,6 +28,8 @@ import { Tooltip } from '@/components/ui/tooltip';
 interface ReportItem {
     id: number | string;
     name: string;
+    plan_id?: string;
+    plan_name?: string;
     scenario_id?: string;
     scenario_name?: string;
     /** 后端返回字符串如 "1.5s"，需解析为秒数 */
@@ -46,8 +48,10 @@ interface ReportItem {
 /** 解析后端 duration 字符串（如 "1.5s"、"2m 30s"）为秒数 */
 function parseDurationToSeconds(durationStr?: string): number | undefined {
     if (!durationStr) return undefined;
-    const sMatch = durationStr.match(/(\d+\.?\d*)\s*s/);
-    const mMatch = durationStr.match(/(\d+)\s*m/);
+    const msMatch = durationStr.match(/(\d+\.?\d*)\s*ms/i);
+    if (msMatch) return parseFloat(msMatch[1]) / 1000;
+    const sMatch = durationStr.match(/(\d+\.?\d*)\s*s/i);
+    const mMatch = durationStr.match(/(\d+)\s*m/i);
     const seconds = parseFloat(sMatch?.[1] ?? '0') + (parseInt(mMatch?.[1] ?? '0', 10) * 60);
     return seconds || undefined;
 }
@@ -87,6 +91,7 @@ function ProgressRing({ percentage, size = 40 }: { percentage: number; size?: nu
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: LucideIcon }> = {
     completed: { label: '已完成', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', icon: CheckCircle2 },
     running: { label: '运行中', color: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: Loader2 },
+    success: { label: '通过', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', icon: CheckCircle2 },
     failed: { label: '失败', color: 'bg-red-500/10 text-red-400 border-red-500/20', icon: XCircle },
     cancelled: { label: '已终止', color: 'bg-orange-500/10 text-orange-400 border-orange-500/20', icon: AlertCircle },
     paused: { label: '已暂停', color: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20', icon: Pause },
@@ -143,10 +148,11 @@ export default function TestReport() {
     };
 
     const formatDuration = (seconds?: number) => {
-        if (!seconds) return '-';
-        if (seconds < 60) return `${seconds}s`;
+        if (seconds == null) return '-';
+        if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
+        if (seconds < 60) return `${seconds.toFixed(2).replace(/\.00$/, '')}s`;
         const min = Math.floor(seconds / 60);
-        const sec = seconds % 60;
+        const sec = Math.round(seconds % 60);
         return `${min}m ${sec}s`;
     };
 
@@ -183,7 +189,7 @@ export default function TestReport() {
                         <FileBarChart2 className="w-8 h-8 text-cyan-500" />
                         测试报告
                     </h1>
-                    <p className="text-slate-400">查看测试执行结果和历史报告</p>
+                    <p className="text-slate-400">查看测试计划执行结果和聚合报告</p>
                 </div>
             </motion.header>
 
@@ -200,7 +206,7 @@ export default function TestReport() {
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') setPage(1); }}
-                        placeholder="搜索报告名称..."
+                        placeholder="搜索计划名称或报告名称..."
                         className="w-full bg-slate-900 border border-white/10 rounded-2xl pl-12 pr-4 py-3 text-white focus:outline-none focus:border-cyan-500/50 placeholder:text-slate-600 transition-colors"
                     />
                 </div>
@@ -221,9 +227,9 @@ export default function TestReport() {
                     <table className="w-full text-left table-fixed">
                         <thead className="bg-slate-800/50 border-b border-white/5">
                             <tr>
-                                <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[200px]">报告名称</th>
+                                <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[200px]">计划 / 报告</th>
                                 <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[100px]">运行状态</th>
-                                <th className="px-6 py-4 text-sm font-medium text-slate-400">测试结果</th>
+                                <th className="px-6 py-4 text-sm font-medium text-slate-400">接口结果</th>
                                 <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[100px]">运行时长</th>
                                 <th className="px-6 py-4 text-sm font-medium text-slate-400">运行时间</th>
                                 <th className="px-6 py-4 text-sm font-medium text-slate-400 w-[140px]">操作</th>
@@ -235,6 +241,7 @@ export default function TestReport() {
                                     const statusConf = STATUS_CONFIG[report.status] || STATUS_CONFIG.completed;
                                     const StatusIcon = statusConf.icon;
                                     const passRate = getPassRate(report);
+                                    const displayName = report.plan_name || report.name || report.scenario_name || '-';
                                     return (
                                         <motion.tr
                                             key={report.id}
@@ -244,13 +251,18 @@ export default function TestReport() {
                                             transition={{ delay: 0.3 + index * 0.05 }}
                                         >
                                             <td className="px-6 py-4 w-[200px]">
-                                                <Tooltip content={report.name || report.scenario_name || '-'} position="top">
-                                                    <Link
-                                                        to={`/reports/${report.id}`}
-                                                        className="font-medium text-white group-hover:text-cyan-400 transition-colors truncate block w-full"
-                                                    >
-                                                        {report.name || report.scenario_name || '-'}
-                                                    </Link>
+                                                <Tooltip content={displayName} position="top">
+                                                    <div className="space-y-1 min-w-0">
+                                                        <Link
+                                                            to={`/reports/${report.id}`}
+                                                            className="font-medium text-white group-hover:text-cyan-400 transition-colors truncate block w-full"
+                                                        >
+                                                            {displayName}
+                                                        </Link>
+                                                        <div className="text-xs text-slate-500 truncate">
+                                                            {report.execution_id ? `执行 ID: ${report.execution_id}` : (report.name && report.name !== displayName ? report.name : '计划执行聚合报告')}
+                                                        </div>
+                                                    </div>
                                                 </Tooltip>
                                             </td>
                                             <td className="px-6 py-4">

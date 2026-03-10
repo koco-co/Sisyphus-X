@@ -33,6 +33,7 @@ import { useEnvironment } from './hooks/useEnvironment'
 import { replaceVariables } from './utils/variableParser'
 import { normalizeResourceId, toSelectValue } from './utils/identifierUtils'
 import { normalizeGlobalParams } from './utils/globalParamsUtils'
+import config from '@/config'
 
 // 工具函数
 const objectToKeyValueArray = (obj: Record<string, string>): KeyValuePair[] => {
@@ -49,6 +50,17 @@ const keyValueArrayToObject = (pairs: KeyValuePair[]): Record<string, string> =>
       }
       return acc
     }, {} as Record<string, string>)
+}
+
+const getApiOrigin = (): string => {
+  try {
+    const apiBaseUrl = config.apiBaseURL || ''
+    if (!apiBaseUrl) return ''
+    const parsed = new URL(apiBaseUrl, window.location.origin)
+    return `${parsed.protocol}//${parsed.host}`
+  } catch {
+    return ''
+  }
 }
 
 export default function InterfaceManagementPage() {
@@ -130,6 +142,20 @@ export default function InterfaceManagementPage() {
     },
     enabled: !isNew && !!interfaceId
   })
+
+  // 深链进入详情页时自动回填 projectId，避免左侧树和环境区空白
+  useEffect(() => {
+    const interfaceProjectId = normalizeResourceId(
+      (interfaceData as { project_id?: string | number } | null)?.project_id
+    )
+    if (!interfaceProjectId || currentProjectId === interfaceProjectId) return
+
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev)
+      next.set('projectId', interfaceProjectId)
+      return next
+    })
+  }, [interfaceData, currentProjectId, setSearchParams])
 
   // 获取项目列表
   const { data: projects = [] } = useQuery({
@@ -345,6 +371,19 @@ export default function InterfaceManagementPage() {
         const domain = selectedEnv.domain.replace(/\/+$/, '')
         const path = fullUrl.startsWith('/') ? fullUrl : `/${fullUrl}`
         fullUrl = `${domain}${path}`
+      }
+
+      // 无环境时，为相对路径补齐后端 origin，保证本地接口调试可直接闭环
+      if (!/^https?:\/\//i.test(fullUrl)) {
+        const apiOrigin = getApiOrigin()
+        if (apiOrigin) {
+          const path = fullUrl.startsWith('/') ? fullUrl : `/${fullUrl}`
+          fullUrl = `${apiOrigin}${path}`
+        }
+      }
+
+      if (!/^https?:\/\//i.test(fullUrl)) {
+        throw new Error('请求地址不完整，请选择环境或填写完整 URL')
       }
 
       // 替换 headers 中的变量
@@ -608,6 +647,9 @@ export default function InterfaceManagementPage() {
               />
             </div>
             <div className="flex-1 overflow-auto min-h-0 border-t border-white/5">
+              <div className="px-4 py-2 border-b border-white/5 bg-slate-950/40 text-[11px] text-slate-500">
+                单接口发送结果仅用于临时调试，不会写入测试报告；正式报告仅由测试计划执行产生。
+              </div>
               <ResponseViewer response={response} isLoading={isSending} />
             </div>
           </div>

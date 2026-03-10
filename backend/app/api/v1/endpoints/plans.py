@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 # WebSocket 进度推送 (BE-050)
 from app.api.v1.endpoints.websocket import manager as ws_manager
 from app.core.db import async_session_maker, get_session
-from app.models.report import TestReport
+from app.models.report import TestReport, TestReportDetail
 from app.models.scenario import Scenario, ScenarioStep
 from app.models.test_plan import PlanExecutionStep, PlanScenario, TestPlan, TestPlanExecution
 from app.schemas.plan import AddScenarioToPlan, PlanCreate, PlanUpdate, ReorderScenarioItem
@@ -47,6 +47,7 @@ class ExecutionManager:
         使用独立的数据库 session,不依赖请求级 session。
         """
         execution = None
+        report = None
         async with async_session_maker() as session:
             try:
                 self.status[execution_id] = "running"
@@ -56,9 +57,41 @@ class ExecutionManager:
                     self.status[execution_id] = "failed"
                     return
 
+                plan = await session.get(TestPlan, plan_id)
+                if not plan:
+                    execution.status = "failed"
+                    execution.completed_at = utcnow()
+                    self.status[execution_id] = "failed"
+                    await session.commit()
+                    return
+
+                report_result = await session.execute(
+                    select(TestReport)
+                    .where(TestReport.execution_id == execution_id)
+                    .order_by(TestReport.id.desc())
+                    .limit(1)
+                )
+                report = report_result.scalar_one_or_none()
+
+                started_at = utcnow()
                 execution.status = "running"
-                execution.started_at = utcnow()
+                execution.started_at = started_at
+                if report is None:
+                    report = TestReport(
+                        plan_id=plan.id,
+                        plan_name=plan.name,
+                        execution_id=execution_id,
+                        name=f"{plan.name} - {started_at.strftime('%Y-%m-%d %H:%M:%S')}",
+                        status="running",
+                        total=0,
+                        success=0,
+                        failed=0,
+                        start_time=started_at,
+                    )
+                    session.add(report)
+
                 await session.commit()
+                await session.refresh(report)
 
                 result = await session.execute(
                     select(PlanScenario)
@@ -69,6 +102,10 @@ class ExecutionManager:
 
                 execution.total_scenarios = len(plan_scenarios)
                 await session.commit()
+
+                total_interface_steps = 0
+                passed_interface_steps = 0
+                failed_interface_steps = 0
 
                 await ws_manager.broadcast_to_execution(
                     execution_id,
@@ -83,6 +120,9 @@ class ExecutionManager:
                     if current_status == "cancelled":
                         execution.status = "cancelled"
                         execution.completed_at = utcnow()
+                        report.status = "cancelled"
+                        report.end_time = execution.completed_at
+                        report.duration = _format_report_duration(report.start_time, report.end_time)
                         await session.commit()
                         await ws_manager.broadcast_to_execution(
                             execution_id, {"type": "completed", "data": {"status": "cancelled"}}
@@ -94,6 +134,9 @@ class ExecutionManager:
                             if self.status.get(execution_id) == "cancelled":
                                 execution.status = "cancelled"
                                 execution.completed_at = utcnow()
+                                report.status = "cancelled"
+                                report.end_time = execution.completed_at
+                                report.duration = _format_report_duration(report.start_time, report.end_time)
                                 await session.commit()
                                 return
 
@@ -126,6 +169,9 @@ class ExecutionManager:
                         step.error_message = "场景不存在"
                         step.completed_at = utcnow()
                         execution.failed_scenarios += 1
+                        report.status = "failed"
+                        report.end_time = step.completed_at
+                        report.duration = _format_report_duration(report.start_time, report.end_time)
                         await session.commit()
                         continue
 
@@ -139,6 +185,8 @@ class ExecutionManager:
                         step.status = "skipped"
                         step.completed_at = utcnow()
                         execution.skipped_scenarios += 1
+                        report.end_time = step.completed_at
+                        report.duration = _format_report_duration(report.start_time, report.end_time)
                         await session.commit()
                         continue
 
@@ -169,40 +217,40 @@ class ExecutionManager:
                         step.error_message = str(error_message)[:500]
                         execution.failed_scenarios += 1
 
-                    # 从引擎输出提取详细信息
                     engine_out = run_result.get("result") or {}
                     summary = engine_out.get("summary") or {}
                     engine_steps = engine_out.get("steps") or []
-                    total_steps = summary.get("total_steps", 1)
-                    passed_steps = summary.get(
-                        "passed_steps", 1 if run_result.get("success") else 0
+                    total_steps = int(summary.get("total_steps", len(engine_steps) or 1) or 0)
+                    passed_steps = int(
+                        summary.get("passed_steps", total_steps if run_result.get("success") else 0) or 0
                     )
-                    failed_steps = summary.get(
-                        "failed_steps", 0 if run_result.get("success") else 1
+                    failed_steps = int(
+                        summary.get("failed_steps", 0 if run_result.get("success") else max(total_steps, 1)) or 0
                     )
-                    duration_ms = engine_out.get("duration") or 0
-                    if isinstance(duration_ms, (int, float)):
-                        duration_str = (
-                            f"{duration_ms / 1000}s" if duration_ms >= 1000 else f"{duration_ms}ms"
-                        )
-                    else:
-                        duration_str = str(duration_ms)
 
-                    test_report = TestReport(
-                        scenario_id=scenario.id,
-                        name=scenario.name,
-                        status="success" if run_result.get("success") else "failed",
-                        total=total_steps,
-                        success=passed_steps,
-                        failed=failed_steps,
-                        duration=duration_str,
-                        start_time=step.started_at or utcnow(),
-                        end_time=step.completed_at,
+                    total_interface_steps += total_steps
+                    passed_interface_steps += passed_steps
+                    failed_interface_steps += failed_steps
+
+                    detail_rows = _build_report_step_details(
+                        report_id=report.id,
+                        scenario=scenario,
+                        scenario_steps=steps_list,
+                        engine_steps=engine_steps,
                     )
-                    session.add(test_report)
+                    if detail_rows:
+                        session.add_all(detail_rows)
+
+                    report.total = total_interface_steps
+                    report.success = passed_interface_steps
+                    report.failed = failed_interface_steps
+                    report.status = (
+                        "failed" if failed_interface_steps > 0 or execution.failed_scenarios > 0 else "running"
+                    )
+                    report.end_time = step.completed_at
+                    report.duration = _format_report_duration(report.start_time, report.end_time)
                     await session.commit()
 
-                    # 构建接口级详情 (interface-level step details)
                     ws_steps = _build_ws_step_details(engine_steps)
 
                     await ws_manager.broadcast_to_execution(
@@ -222,10 +270,17 @@ class ExecutionManager:
                         },
                     )
 
-                # 执行完成
                 execution.status = "completed"
                 execution.completed_at = utcnow()
                 self.status[execution_id] = "completed"
+                report.total = total_interface_steps
+                report.success = passed_interface_steps
+                report.failed = failed_interface_steps
+                report.status = (
+                    "failed" if failed_interface_steps > 0 or execution.failed_scenarios > 0 else "success"
+                )
+                report.end_time = execution.completed_at
+                report.duration = _format_report_duration(report.start_time, report.end_time)
                 await session.commit()
                 await ws_manager.broadcast_to_execution(
                     execution_id,
@@ -236,6 +291,7 @@ class ExecutionManager:
                             "passed": execution.passed_scenarios,
                             "failed": execution.failed_scenarios,
                             "total": execution.total_scenarios,
+                            "report_id": report.id,
                         },
                     },
                 )
@@ -244,10 +300,15 @@ class ExecutionManager:
                 self.status[execution_id] = "failed"
                 logger.exception("Execution %s failed", execution_id)
                 try:
+                    failed_at = utcnow()
                     if execution:
                         execution.status = "failed"
-                        execution.completed_at = utcnow()
-                        await session.commit()
+                        execution.completed_at = failed_at
+                    if report:
+                        report.status = "failed"
+                        report.end_time = failed_at
+                        report.duration = _format_report_duration(report.start_time, report.end_time)
+                    await session.commit()
                     await ws_manager.broadcast_to_execution(
                         execution_id,
                         {"type": "error", "data": {"message": str(e), "status": "failed"}},
@@ -257,6 +318,78 @@ class ExecutionManager:
             finally:
                 if execution_id in self.tasks:
                     del self.tasks[execution_id]
+
+
+def _normalize_report_step_status(engine_step: dict) -> str:
+    """统一引擎步骤状态字段。"""
+    raw_status = engine_step.get("status")
+    if raw_status:
+        return str(raw_status)
+    if engine_step.get("success") is True:
+        return "success"
+    if engine_step.get("success") is False:
+        return "failed"
+    return "unknown"
+
+
+def _extract_report_error(engine_step: dict) -> str | None:
+    """提取引擎步骤错误信息。"""
+    error = engine_step.get("error")
+    if isinstance(error, dict):
+        message = error.get("message")
+        return str(message) if message else str(error)
+    if error in (None, ""):
+        return None
+    return str(error)
+
+
+def _build_report_step_details(
+    report_id: int,
+    scenario: Scenario,
+    scenario_steps: list[ScenarioStep],
+    engine_steps: list[dict],
+) -> list[TestReportDetail]:
+    """将引擎步骤结果转换为报告详情记录。"""
+    detail_rows: list[TestReportDetail] = []
+    for index, engine_step in enumerate(engine_steps):
+        scenario_step = scenario_steps[index] if index < len(scenario_steps) else None
+        request_data = engine_step.get("request_detail") or {}
+        response_data = engine_step.get("response_detail") or {}
+        node_name = (
+            (scenario_step.description if scenario_step and scenario_step.description else None)
+            or engine_step.get("name")
+            or (scenario_step.keyword_name if scenario_step else None)
+            or f"步骤 {index + 1}"
+        )
+        detail_rows.append(
+            TestReportDetail(
+                report_id=report_id,
+                scenario_id=scenario.id,
+                scenario_name=scenario.name,
+                node_id=scenario_step.id if scenario_step else str(uuid4()),
+                node_name=node_name,
+                method=request_data.get("method"),
+                url=request_data.get("url"),
+                status=_normalize_report_step_status(engine_step),
+                request_data=request_data or None,
+                response_data=response_data or None,
+                error_msg=_extract_report_error(engine_step),
+                elapsed=float(engine_step.get("duration") or 0.0),
+            )
+        )
+    return detail_rows
+
+
+def _format_report_duration(start_time, end_time) -> str:
+    """将开始结束时间格式化为报告耗时字符串。"""
+    if not start_time or not end_time:
+        return "0s"
+    seconds = max((end_time - start_time).total_seconds(), 0)
+    if seconds >= 1:
+        formatted = f"{seconds:.3f}".rstrip("0").rstrip(".")
+        return f"{formatted}s"
+    milliseconds = int(seconds * 1000)
+    return f"{milliseconds}ms"
 
 
 def _build_ws_step_details(engine_steps: list[dict]) -> list[dict]:
@@ -596,6 +729,7 @@ async def execute_plan(
 
     # 创建执行记录
     execution_id = str(uuid4())
+    started_at = utcnow()
     execution = TestPlanExecution(
         id=execution_id,
         test_plan_id=plan_id,
@@ -607,10 +741,24 @@ async def execute_plan(
     )
     session.add(execution)
 
+    report = TestReport(
+        plan_id=plan.id,
+        plan_name=plan.name,
+        execution_id=execution_id,
+        name=f"{plan.name} - {started_at.strftime('%Y-%m-%d %H:%M:%S')}",
+        status="running",
+        total=0,
+        success=0,
+        failed=0,
+        start_time=started_at,
+    )
+    session.add(report)
+
     # 更新计划的最后运行时间
     plan.last_run = utcnow()
     await session.commit()
     await session.refresh(execution)
+    await session.refresh(report)
 
     # 初始化执行状态
     execution_manager.status[execution_id] = "pending"
@@ -622,6 +770,7 @@ async def execute_plan(
     return {
         "execution_id": execution_id,
         "plan_id": plan_id,
+        "report_id": report.id,
         "status": "pending",
         "message": "测试计划已开始执行",
     }

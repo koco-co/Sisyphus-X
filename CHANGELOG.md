@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-03-08
+
+### Changed
+- 测试报告改为仅持久化“测试计划执行”的聚合结果，不再接收接口调试或场景调试数据
+- 测试报告详情按场景聚合展示接口步骤，并补充计划级字段
+
+### Fixed
+- 修复计划执行按场景拆分多条报告的问题
+- 修复 `ms` 耗时在前端被误解析为 `m` 的显示错误
+
 All notable changes to Sisyphus-X will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
